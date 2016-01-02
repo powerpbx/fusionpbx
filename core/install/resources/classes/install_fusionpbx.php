@@ -424,7 +424,7 @@ include "root.php";
 					if ($this->global_settings->db_create()) {
 						$this->write_progress("\tCreating database");				
 						try {
-							$this->dbh = new PDO($connect_string, $this->global_settings->db_create_username(), db_create_password, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
+							$this->dbh = new PDO($connect_string, $this->global_settings->db_create_username(), $this->global_settings->db_create_password(), array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 							$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 							$this->dbh->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 						}
@@ -503,7 +503,7 @@ include "root.php";
 				$this->write_progress("\tInstalling data to database");
 				//select the database
 					try {
-						$this->dbh = new PDO($connect_string, $this->global_settings->db_username(), db_password, array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
+						$this->dbh = new PDO($connect_string, $this->global_settings->db_username(), $this->global_settings->db_password(), array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'));
 						$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 						$this->dbh->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
 					}
