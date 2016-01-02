@@ -410,14 +410,14 @@ include "root.php";
 					$connect_string;
 					if (strlen($this->global_settings->db_host()) == 0 && strlen($this->global_settings->db_port()) == 0) {
 						//if both host and port are empty use the unix socket
-						$connect_string = "mysql:host=$this->global_settings->db_host();unix_socket=/var/run/mysqld/mysqld.sock;";
+						$connect_string = "mysql:host={$this->global_settings->db_host()};unix_socket=/var/run/mysqld/mysqld.sock;";
 					}
 					elseif (strlen($this->global_settings->db_port()) == 0) {
 						//leave out port if it is empty
-						$connect_string = "mysql:host=$this->global_settings->db_host();";
+						$connect_string = "mysql:host={$this->global_settings->db_host()};";
 					}
 					else {
-						$connect_string = "mysql:host=$this->global_settings->db_host();port=$this->global_settings->db_port();";
+						$connect_string = "mysql:host={$this->global_settings->db_host()};port={$this->global_settings->db_port()};";
 					}
 
 				//create the table, user and set the permissions only if the db_create_username was provided
