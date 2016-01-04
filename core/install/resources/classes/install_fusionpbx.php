@@ -456,7 +456,7 @@ include "root.php";
 									$tmp_sql .= "WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0; ";
 									$this->dbh->query($tmp_sql);
 
-									$tmp_sql = "GRANT USAGE ON * . * TO '".$this->global_settings->db_username()."'@'127.0.0.1' ";
+									$tmp_sql = "GRANT USAGE ON * . * TO '".$this->global_settings->db_username()."'@'localhost' ";
 									$tmp_sql .= "IDENTIFIED BY '".$this->global_settings->db_password()."' ";
 									$tmp_sql .= "WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0; ";
 									$this->dbh->query($tmp_sql);
