@@ -483,7 +483,7 @@ include "root.php";
 
 						//set user permissions
 							try {
-								$this->dbh->query("GRANT ALL PRIVILEGES ON ".$this->global_settings->db_name().".* TO '".$this->global_settings->db_username()."'@'%'; ");
+								$this->dbh->query("GRANT ALL PRIVILEGES ON ".$this->global_settings->db_name().".* TO '".$this->global_settings->db_username()."'@'localhost'; ");
 							}
 							catch (PDOException $error) {
 								throw new Exception("error in database: " . $error->getMessage() . "\n" . $sql );
