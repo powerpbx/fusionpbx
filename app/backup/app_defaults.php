@@ -23,7 +23,7 @@
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Admin <admin@powepbx.org>
+	DevOps <devops@powepbx.org>
 */
 
 	//Run once
