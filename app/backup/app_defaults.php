@@ -14,6 +14,7 @@
 	License.
 
 	The Original Code is FusionPBX
+	The adapted code is a PowerPBX enhancement
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
