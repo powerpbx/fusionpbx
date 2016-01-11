@@ -14,7 +14,6 @@
 	License.
 
 	The Original Code is FusionPBX
-	This adapted code is a PowerPBX enhancement
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
@@ -23,47 +22,73 @@
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Admin <admin@powerpbx.org>
+	Admin <admin@powepbx.org>
 */
-//process this only one time
-if ($domains_processed == 1) {
 
-	//add default backup path if it is missing
-		$sql = "select count(*) as num_rows from v_default_settings ";
+	//Run once
+	if ($domains_processed == 1) {
+
+		//Add Backup settings to default settings
+		$x = 0;
+		$array[$x]['default_setting_category'] = 'backup';
+		$array[$x]['default_setting_subcategory'] = 'path';
+		$array[$x]['default_setting_name'] = 'array';
+		$array[$x]['default_setting_value'] = $_SESSION['switch']['conf']['dir'];
+		$array[$x]['default_setting_enabled'] = 'true';
+		$array[$x]['default_setting_description'] = '';
+		$x++;
+		$array[$x]['default_setting_category'] = 'backup';
+		$array[$x]['default_setting_subcategory'] = 'path';
+		$array[$x]['default_setting_name'] = 'array';
+		$array[$x]['default_setting_value'] = $_SESSION['switch']['storage']['dir'];
+		$array[$x]['default_setting_enabled'] = 'true';
+		$array[$x]['default_setting_description'] = '';
+		$x++;
+		$array[$x]['default_setting_category'] = 'backup';
+		$array[$x]['default_setting_subcategory'] = 'path';
+		$array[$x]['default_setting_name'] = 'array';
+		$array[$x]['default_setting_value'] = $_SESSION['switch']['recordings']['dir'];
+		$array[$x]['default_setting_enabled'] = 'true';
+		$array[$x]['default_setting_description'] = '';
+		$x++;
+		$array[$x]['default_setting_category'] = 'backup';
+		$array[$x]['default_setting_subcategory'] = 'path';
+		$array[$x]['default_setting_name'] = 'array';
+		$array[$x]['default_setting_value'] = $_SESSION['switch']['db']['dir'];
+		$array[$x]['default_setting_enabled'] = 'true';
+		$array[$x]['default_setting_description'] = '';
+		$x++;
+		$array[$x]['default_setting_category'] = 'backup';
+		$array[$x]['default_setting_subcategory'] = 'path';
+		$array[$x]['default_setting_name'] = 'array';
+		$array[$x]['default_setting_value'] = $_SESSION['switch']['db']['dir'];
+		$array[$x]['default_setting_enabled'] = 'true';
+		$array[$x]['default_setting_description'] = '';
+
+		$sql = "select * from v_default_settings ";
 		$sql .= "where default_setting_category = 'backup' ";
-		$sql .= "and default_setting_subcategory = 'path' ";
-		$sql .= "and default_setting_name = 'array' ";
-		$prep_statement = $db->prepare($sql);
-		if ($prep_statement) {
-			$prep_statement->execute();
-			$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-			if ($row['num_rows'] == 0) {
-				$sql = "insert into v_default_settings ";
-				$sql .= "(";
-				$sql .= "default_setting_uuid, ";
-				$sql .= "default_setting_category, ";
-				$sql .= "default_setting_subcategory, ";
-				$sql .= "default_setting_name, ";
-				$sql .= "default_setting_value, ";
-				$sql .= "default_setting_enabled, ";
-				$sql .= "default_setting_description ";
-				$sql .= ")";
-				$sql .= "values ";
-				$sql .= "(";
-				$sql .= "'".uuid()."', ";
-				$sql .= "'backup', ";
-				$sql .= "'path', ";
-				$sql .= "'array', ";
-				$sql .= "'".$_SESSION['switch']['conf']['dir']."', ";
-				$sql .= "'true', ";
-				$sql .= "'' ";
-				$sql .= ")";
-				$db->exec(check_sql($sql));
-				unset($sql);
+		$prep_statement = $db->prepare(check_sql($sql));
+		$prep_statement->execute();
+		$default_settings = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+
+		$x = 0;
+		foreach ($array as $row) {
+			$found = false;
+			foreach ($default_settings as $field) {
+				if ($row['default_setting_subcategory'] == $field['default_setting_subcategory']) {
+					$found = true;
+					$break;
+				}
 			}
-			unset($prep_statement, $row);
+			if (!$found) {
+				$orm = new orm;
+				$orm->name('default_settings');
+				$orm->save($array[$x]);
+				$message = $orm->message;
+			}
+			$x++;
 		}
 
-}
+	}
 
 ?>
