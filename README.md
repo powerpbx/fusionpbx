@@ -69,7 +69,9 @@ We ask that you sign the Contributor License Agreement for the following reasons
 
 How to Install FusionPBX
 ----------------------------
-* As root do the following:
+* [Click here for PowerPBX install guide.](http://http://www.powerpbx.org/content/fusionpbx-v4-freeswitch-v16-centos-v7-install-guide-v1.1)
+
+* Alternatively, as root do the following:
 
 ```bash
 cd /usr/src
