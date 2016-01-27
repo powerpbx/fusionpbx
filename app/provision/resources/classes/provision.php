@@ -132,6 +132,12 @@ include "root.php";
 			case "aastra":
 				$mac = strtoupper($mac);
 				break;
+			case "cisco":
+				$mac = strtoupper($mac);
+				break;
+			case "linksys":
+				$mac = strtolower($mac);
+				break;
 			case "mitel":
 				$mac = strtoupper($mac);
 				break;
@@ -496,6 +502,70 @@ include "root.php";
 									$view->assign("register_expires_".$line_number, $register_expires);
 							}
 							unset ($prep_statement);
+					}
+
+				//get the list of contact directly assigned to the user
+					if (strlen($device_uuid) > 0 and strlen($domain_uuid) > 0 and $_SESSION['provision']['directory_personal']['boolean'] == "true") {
+						foreach ($device_lines as &$line) {
+							//get the extension uuid from the line username [one result]
+								$sql = "select * from v_extensions ";
+								$sql .= "where (extension = '".$line["user_id"]."' or number_alias = '".$line["user_id"]."') ";
+								$sql .= "and domain_uuid = '$domain_uuid' ";
+								//echo $sql."\n";
+								$prep_statement = $this->db->prepare(check_sql($sql));
+								$prep_statement->execute();
+								$extensions = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+								unset($prep_statement);
+								foreach ($extensions as &$extension) {
+									$extension_uuid = $extension["extension_uuid"];
+								}
+								//echo "extension uuid: ".$extension_uuid."\n";
+
+							//get the user_uuid assigned to the extension_uuid [multiple results]
+								$sql = "select user_uuid from v_extension_users ";
+								$sql .= "where extension_uuid = '$extension_uuid' ";
+								$sql .= "and domain_uuid = '$domain_uuid' ";
+								$prep_statement = $this->db->prepare(check_sql($sql));
+								$prep_statement->execute();
+								$extension_users = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+								unset($prep_statement);
+								foreach ($extension_users as &$row) {
+									//echo "user uuid: ".$row["user_uuid"]."\n";
+									//get the list of contacts [multiple results]
+									$sql = "select contact_uuid from v_contact_users ";
+									$sql .= "where user_uuid = '".$row["user_uuid"]."' ";
+									$sql .= "and domain_uuid = '$domain_uuid' ";
+									//echo $sql."\n";
+									$prep_statement = $this->db->prepare(check_sql($sql));
+									$prep_statement->execute();
+									$extension_users = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+									unset($prep_statement);
+									foreach ($extension_users as &$row) {
+										$contact_uuids[] = $row["contact_uuid"];
+									}
+								}
+						}
+
+						//get the contacts assigned to the user
+							//SQL 'in' with implode contacts array prevents returning duplicate contacts
+							if (sizeof($contacts) > 0) {
+								//get the contact details
+									$sql = "select c.contact_organization, c.contact_name_given, c.contact_name_family, ";
+									$sql .= "p.phone_number, p.phone_extension ";
+									$sql .= "from v_contacts as c, v_contact_phones as p ";
+									$sql .= "where c.contact_uuid in ('".implode("','",$contact_uuids)."') ";
+									$sql .= "and c.contact_uuid = p.contact_uuid ";
+									$sql .= "and p.phone_type_voice = '1' ";
+									$sql .= "and c.domain_uuid = '$domain_uuid' ";
+									//echo $sql."\n";
+									$prep_statement = $this->db->prepare(check_sql($sql));
+									$prep_statement->execute();
+									$user_contacts = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+									unset($prep_statement);
+								//assign the contacts array
+									$view->assign("user_contacts", $user_contacts);
+							}
+
 					}
 
 				//get the contact extensions array and add to the template engine
