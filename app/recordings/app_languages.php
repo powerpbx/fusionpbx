@@ -180,7 +180,7 @@ $text['description-file']['sv-se'] = "Namn på filen. exempel: inspelning.wav";
 $text['description-file']['uk'] = "";
 $text['description-file']['de-at'] = "Dateiname (z.B.: example.wav)";
 
-$text['description']['en-us'] = "Dial *732 to create a recording, or (for best results) upload a 16bit 8khz/16khz mono WAV file.";
+$text['description']['en-us'] = "Dial *732 to create a recording, or (for best results) upload a 16bit 8khz/16khz mono WAV file.  The password can be found at Dialplan > Dialplan Manager > recordings > pin_number=";
 $text['description']['es-cl'] = "Para realizar una grabación marque *732 o puede crear un archivo en formato WAV a 16 bit 8khz/16khz Mono y luego copiarlo en el siguiente directorio y refrezcar la página para reproducirlo.";
 $text['description']['pt-pt'] = "Para fazer uma gravação marque *732 ou crie um ficheiro WAV de 16bit 8khz/16khz e copie-o para a seguinte directoria e actualize a página para o ouvir.";
 $text['description']['fr-fr'] = "Pour créer un guide vocal, composer le *732 ou créer un fichier audio WAV 16bit 8khz/16khz Mono et ensuite le copier dans le répertoire qui suit. Rafraîchir ensuite cette page pour le voir apparaitre.";
