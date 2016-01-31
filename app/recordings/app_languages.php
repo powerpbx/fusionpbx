@@ -181,13 +181,14 @@ $text['description-file']['uk'] = "";
 $text['description-file']['de-at'] = "Dateiname (z.B.: example.wav)";
 
 $text['description']['en-us'] = "Dial *732 to create a recording, or (for best results) upload a 16bit 8khz/16khz mono WAV file.  The password can be found at Dialplan > Dialplan Manager > recordings > pin_number=";
-$text['description']['es-cl'] = "Para realizar una grabación marque *732 o puede crear un archivo en formato WAV a 16 bit 8khz/16khz Mono y luego copiarlo en el siguiente directorio y refrezcar la página para reproducirlo.";
-$text['description']['pt-pt'] = "Para fazer uma gravação marque *732 ou crie um ficheiro WAV de 16bit 8khz/16khz e copie-o para a seguinte directoria e actualize a página para o ouvir.";
-$text['description']['fr-fr'] = "Pour créer un guide vocal, composer le *732 ou créer un fichier audio WAV 16bit 8khz/16khz Mono et ensuite le copier dans le répertoire qui suit. Rafraîchir ensuite cette page pour le voir apparaitre.";
-$text['description']['pt-br'] = "Editar informações da conta.";
-$text['description']['pl'] = "Aby stworzyć własne nagranie wybierz *732 z klawiatury telefonu lub stwórz plik audio w formacie  WAV o następujących parametrach: 16bit 8khz/16khz Mono, a następnie skopiuj go do odpowiedniego katalogu i odśwież, aby go odsłuchać.";
-$text['description']['sv-se'] = "För att göra en inspelning ring * 732 eller så kan du göra en 16bit 8kHz/16kHz Mono WAV-fil och kopiera den till följande katalog uppdatera sedan sidan för att spela upp den.";
-$text['description']['uk'] = "Редагування інформації облікового запису";
-$text['description']['de-at'] = "Wählen Sie *732 um eine Aufnahme direkt vom Telefon zu starten oder laden Sie eine 16bit 8/16kHz mono WAV Datei hoch.";
+$text['description']['es-cl'] = "Para realizar una grabación marque *732 o puede crear un archivo en formato WAV a 16 bit 8khz/16khz Mono y luego copiarlo en el siguiente directorio y refrezcar la página para reproducirlo.  La contraseña se puede encontrar en Dialplan > Dialplan managers> grabaciones > pin_number = ";
+$text['description']['pt-pt'] = "Para fazer uma gravação marque *732 ou crie um ficheiro WAV de 16bit 8khz/16khz e copie-o para a seguinte directoria e actualize a página para o ouvir.  A senha pode ser encontrada em Dialplan > Dialplan Manager> gravações > pin_number =";
+$text['description']['fr-fr'] = "Pour créer un guide vocal, composer le *732 ou créer un fichier audio WAV 16bit 8khz/16khz Mono et ensuite le copier dans le répertoire qui suit. Rafraîchir ensuite cette page pour le voir apparaitre.  Le mot de passe peut être trouvé à Dialplan > Dialplan Manager> enregistrements > pin_number = ";
+$text['description']['pt-br'] = "Editar informações da conta. A senha pode ser encontrada em Dialplan > Dialplan Manager> gravações > pin_number =";
+$text['description']['pl'] = "Aby stworzyć własne nagranie wybierz *732 z klawiatury telefonu lub stwórz plik audio w formacie  WAV o następujących parametrach: 16bit 8khz/16khz Mono, a następnie skopiuj go do odpowiedniego katalogu i odśwież, aby go odsłuchać.  Hasło można znaleźć na Dialplan > Dialplan Manager> nagrania > pin_number = ";
+$text['description']['sv-se'] = "För att göra en inspelning ring * 732 eller så kan du göra en 16bit 8kHz/16kHz Mono WAV-fil och kopiera den till följande katalog uppdatera sedan sidan för att spela upp den.  Lösenordet kan hittas på Dialplan > Dialplan Manager> inspelningar > pin_number =";
+$text['description']['uk'] = "Редагування інформації облікового запису.  
+Пароль может быть найден в плане набора > DialPlan Manager> Записи > pin_number =";
+$text['description']['de-at'] = "Wählen Sie *732 um eine Aufnahme direkt vom Telefon zu starten oder laden Sie eine 16bit 8/16kHz mono WAV Datei hoch.  Das Passwort kann im Wählplan > Wählplan Manager> Aufnahmen > pin_number =  gefunden werden";
 
 ?>
