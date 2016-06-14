@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2015
+	Portions created by the Initial Developer are Copyright (C) 2008-2016
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -28,6 +28,7 @@ require_once "root.php";
 require_once "resources/require.php";
 require_once "resources/check_auth.php";
 require_once "resources/classes/logging.php";
+require_once "resources/classes/ringbacks.php";
 if (permission_exists('ivr_menu_add') || permission_exists('ivr_menu_edit')) {
 	//access granted
 }
@@ -250,6 +251,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 			//clear the cache
 				$cache = new cache;
 				$cache->delete("dialplan:".$_SESSION["context"]);
+				$cache->delete("configuration:ivr.conf:".$ivr_menu_uuid);
 
 			//redirect the user
 				$_SESSION["message"] = $text['message-update'];
@@ -304,17 +306,20 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 			}
 		}
 		unset ($prep_statement);
+	}else{
+		$ivr_menu_ringback = 'default_ringback';
 	}
 
 //set defaults
 	if (strlen($ivr_menu_timeout) == 0) { $ivr_menu_timeout = '3000'; }
 	if (strlen($ivr_menu_invalid_sound) == 0) { $ivr_menu_invalid_sound = 'ivr/ivr-that_was_an_invalid_entry.wav'; }
+	//if (strlen($ivr_menu_confirm_key) == 0) { $ivr_menu_confirm_key = '#'; }
 	if (strlen($ivr_menu_tts_engine) == 0) { $ivr_menu_tts_engine = 'flite'; }
 	if (strlen($ivr_menu_tts_voice) == 0) { $ivr_menu_tts_voice = 'rms'; }
-	if (strlen($ivr_menu_confirm_attempts) == 0) { $ivr_menu_confirm_attempts = '3'; }
+	if (strlen($ivr_menu_confirm_attempts) == 0) { $ivr_menu_confirm_attempts = '1'; }
 	if (strlen($ivr_menu_inter_digit_timeout) == 0) { $ivr_menu_inter_digit_timeout = '2000'; }
-	if (strlen($ivr_menu_max_failures) == 0) { $ivr_menu_max_failures = '0'; }
-	if (strlen($ivr_menu_max_timeouts) == 0) { $ivr_menu_max_timeouts = '0'; }
+	if (strlen($ivr_menu_max_failures) == 0) { $ivr_menu_max_failures = '1'; }
+	if (strlen($ivr_menu_max_timeouts) == 0) { $ivr_menu_max_timeouts = '1'; }
 	if (strlen($ivr_menu_digit_len) == 0) { $ivr_menu_digit_len = '5'; }
 	if (strlen($ivr_menu_direct_dial) == 0) { $ivr_menu_direct_dial = 'false'; }
 	if (strlen($ivr_menu_enabled) == 0) { $ivr_menu_enabled = 'true'; }
@@ -428,7 +433,6 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	//misc optgroup
 		if (if_group("superadmin")) {
 			echo "<optgroup label='Misc'>\n";
-			echo "	<option value='phrase:'>phrase:</option>\n";
 			echo "	<option value='say:'>say:</option>\n";
 			echo "	<option value='tone_stream:'>tone_stream:</option>\n";
 			echo "</optgroup>\n";
@@ -506,6 +510,9 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				else if (substr($ivr_menu_greet_long, -3) == "wav" || substr($ivr_menu_greet_long, -3) == "mp3") {
 					echo "	<option value='".$ivr_menu_greet_long."' selected='selected'>".$ivr_menu_greet_long."</option>\n";
 				}
+				else {
+					echo "	<option value='".$ivr_menu_greet_long."' selected='selected'>".$ivr_menu_greet_long."</option>\n";
+				}
 				echo "</optgroup>\n";
 			}
 			unset($tmp_selected);
@@ -526,7 +533,6 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	//misc
 		if (if_group("superadmin")) {
 			echo "<optgroup label='Misc'>\n";
-			echo "	<option value='phrase:'>phrase:</option>\n";
 			echo "	<option value='say:'>say:</option>\n";
 			echo "	<option value='tone_stream:'>tone_stream:</option>\n";
 			echo "</optgroup>\n";
@@ -786,57 +792,8 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 
-	$select_options = "";
-	if ($ivr_menu_ringback == "\${us-ring}" || $ivr_menu_ringback == "us-ring") {
-		$select_options .= "		<option value='\${us-ring}' selected='selected'>us-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${us-ring}'>us-ring</option>\n";
-	}
-	if ($ivr_menu_ringback == "\${pt-ring}" || $ivr_menu_ringback == "pt-ring") {
-		$select_options .= "		<option value='\${pt-ring}' selected='selected'>pt-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${pt-ring}'>pt-ring</option>\n";
-	}
-	if ($ivr_menu_ringback == "\${fr-ring}" || $ivr_menu_ringback == "fr-ring") {
-		$select_options .= "		<option value='\${fr-ring}' selected='selected'>fr-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${fr-ring}'>fr-ring</option>\n";
-	}
-	if ($ivr_menu_ringback == "\${uk-ring}" || $ivr_menu_ringback == "uk-ring") {
-		$select_options .= "		<option value='\${uk-ring}' selected='selected'>uk-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${uk-ring}'>uk-ring</option>\n";
-	}
-	if ($ivr_menu_ringback == "\${rs-ring}" || $ivr_menu_ringback == "rs-ring") {
-		$select_options .= "		<option value='\${rs-ring}' selected='selected'>rs-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${rs-ring}'>rs-ring</option>\n";
-	}
-	if ($ivr_menu_ringback == "\${it-ring}" || $ivr_menu_ringback == "it-ring") {
-		$select_options .= "		<option value='\${it-ring}' selected='selected'>it-ring</option>\n";
-	}
-	else {
-		$select_options .= "		<option value='\${it-ring}'>it-ring</option>\n";
-	}
-	if (is_dir($_SERVER["DOCUMENT_ROOT"].PROJECT_PATH.'/app/music_on_hold')) {
-		require_once "app/music_on_hold/resources/classes/switch_music_on_hold.php";
-		$moh = new switch_music_on_hold;
-		$moh->select_name = "ivr_menu_ringback";
-		$moh->select_value = $ivr_menu_ringback;
-		$moh->select_options = $select_options;
-		echo $moh->select();
-	}
-	else {
-		echo "	<select class='formfld' name='ivr_menu_ringback'>\n";
-		//echo "	<option value=''></option>\n";
-		echo $select_options;
-		echo "	</select>\n";
-	}
+	$ringbacks = new ringbacks;
+	echo $ringbacks->select('ivr_menu_ringback', $ivr_menu_ringback);
 
 	echo "<br />\n";
 	echo $text['description-ring_back']."\n";
