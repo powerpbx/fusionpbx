@@ -406,8 +406,9 @@ else {
 			$ring_group_timeout_action = $ring_group_timeout_app.":".$ring_group_timeout_data;
 		}
 	}else{
-		$ring_group_ringback = 'default_ringback';
-	}
+ 		$ring_group_ringback = 'default_ringback';
+ 	}				 
+ 
 
 //get the ring group destination array
 	if ($action == "add") { $x = 0; $limit = 5; }
