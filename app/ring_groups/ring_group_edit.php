@@ -405,10 +405,14 @@ else {
 		if (strlen($ring_group_timeout_app) > 0) {
 			$ring_group_timeout_action = $ring_group_timeout_app.":".$ring_group_timeout_data;
 		}
-	}else{
- 		$ring_group_ringback = 'default_ringback';
- 	}				 
- 
+
+	}
+
+//set the default
+	if (strlen($ring_group_ringback) == 0) {
+		$ring_group_ringback = '${us-ring}';
+	}
+>>>>>>> bca0d39b9614a3faa8622bf73364a3da36887954
 
 //get the ring group destination array
 	if ($action == "add") { $x = 0; $limit = 5; }
