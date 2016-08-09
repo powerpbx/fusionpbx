@@ -234,29 +234,41 @@
 
 	//audio playback functions
 		var recording_audio;
+		var audio_clock;
 
 		function recording_play(recording_id) {
 			if (document.getElementById('recording_progress_bar_'+recording_id)) {
 				document.getElementById('recording_progress_bar_'+recording_id).style.display='';
 			}
-			recording_audio = document.getElementById('recording_audio_'+recording_id)
+			recording_audio = document.getElementById('recording_audio_'+recording_id);
 
 			if (recording_audio.paused) {
 				recording_audio.volume = 1;
 				recording_audio.play();
 				document.getElementById('recording_button_'+recording_id).innerHTML = "<?php echo str_replace("class='list_control_icon'", "class='list_control_icon' style='opacity: 1;'", $v_link_label_pause); ?>";
+				audio_clock = setInterval(function () { update_progress(recording_id); }, 20);
 			}
 			else {
 				recording_audio.pause();
 				document.getElementById('recording_button_'+recording_id).innerHTML = "<?php echo $v_link_label_play; ?>";
+				clearInterval(audio_clock);
 			}
 		}
 
+		function recording_stop(recording_id) {
+			recording_reset(recording_id);
+			clearInterval(audio_clock);
+		}
+
 		function recording_reset(recording_id) {
+			recording_audio = document.getElementById('recording_audio_'+recording_id);
+			recording_audio.pause();
+			recording_audio.currentTime = 0;
 			if (document.getElementById('recording_progress_bar_'+recording_id)) {
 				document.getElementById('recording_progress_bar_'+recording_id).style.display='none';
 			}
 			document.getElementById('recording_button_'+recording_id).innerHTML = "<?php echo $v_link_label_play; ?>";
+			clearInterval(audio_clock);
 		}
 
 		function update_progress(recording_id) {
@@ -266,7 +278,10 @@
 			if (recording_audio.currentTime > 0) {
 				value = (100 / recording_audio.duration) * recording_audio.currentTime;
 			}
-			recording_progress.style.width = value + "%";
+			recording_progress.style.marginLeft = value + "%";
+			if (parseInt(recording_audio.duration) > 30) { //seconds
+				clearInterval(audio_clock);
+			}
 		}
 
 </script>

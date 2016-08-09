@@ -46,46 +46,18 @@ else {
 	$show = check_str($_GET['show']);
 	$user = check_str($_GET['user']);
 	$agent = check_str($_GET['agent']);
-
-//get the vendor
-	if (preg_replace('/^.*?(aastra).*$/i', '$1', strtolower($agent)) == "aastra") {
-		$vendor = "aastra";
-	}
-	if (preg_replace('/^.*?(cisco).*$/i', '$1', strtolower($agent)) == "cisco") {
-		$vendor = "cisco";
-	}
-	if (preg_replace('/^.*?(cisco\/spa).*$/i', '$1', strtolower($agent)) == "cisco/spa") {
-		$vendor = "cisco-spa";
-	}
-	if (preg_replace('/^.*?(grandstream).*$/i', '$1', strtolower($agent)) == "grandstream") {
-		$vendor = "grandstream";
-	}
-	if (preg_replace('/^.*?(linksys).*$/i', '$1', strtolower($agent)) == "linksys") {
-		$vendor = "linksys";
-	}
-	if (preg_replace('/^.*?(polycom).*$/i', '$1', strtolower($agent)) == "polycom") {
-		$vendor = "polycom";
-	}
-	if (preg_replace('/^.*?(yealink).*$/i', '$1', strtolower($agent)) == "yealink") {
-		$vendor = "yealink";
-	}
-	if (preg_replace('/^.*?(vp530p).*$/i', '$1', strtolower($agent)) == "vp530p") {
-		$vendor = "yealink";
-	}
-	if (preg_replace('/^.*?(snom).*$/i', '$1', strtolower($agent)) == "snom") {
-		$vendor = "snom";
-	}
+	$vendor = device::get_vendor_by_agent($agent);
 
 //create the event socket connection
 	$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
 	if ($fp) {
+
 		//prepare the command
 			if ($cmd == "unregister") {
 				$command = "sofia profile ".$profile." flush_inbound_reg ".$user." reboot";
 			}
 			else {
 				$command = "lua app.lua event_notify ".$profile." ".$cmd." ".$user." ".$vendor;
-
 				//if ($cmd == "check_sync") {
 				//	$command = "sofia profile ".$profile." check_sync ".$user;
 				//}
@@ -93,8 +65,10 @@ else {
 		//send the command
 			$response = event_socket_request($fp, "api ".$command);
 			$response = event_socket_request($fp, "api log notice ".$command);
+
 		//show the response
 			$_SESSION['message'] = $text['label-event']." ".ucwords($cmd)."&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".$text['label-response'].$response;
+
 		//close the connection
 			fclose($fp);
 	}
@@ -105,7 +79,15 @@ else {
 		echo $response;
 	}
 	else {
-		header("Location: status_registrations.php?profile=".$profile."&show=".$show);
+		//send the message
+			$_SESSION["message_delay"] = 3500;
+			$_SESSION["message_mood"] = 'positive';
+			$_SESSION["message"] = $text['button-applied'];
+
+		//send the redirect
+			if (isset($_SERVER['HTTP_REFERER'])) {
+				header("Location: ".$_SERVER['HTTP_REFERER']);
+			}
 	}
 
 ?>

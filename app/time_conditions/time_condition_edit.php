@@ -17,24 +17,26 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2015
+	Portions created by the Initial Developer are Copyright (C) 2008-2016
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-include "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('time_condition_add') || permission_exists('time_condition_edit')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
-require_once "resources/header.php";
 
+//includes
+	include "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('time_condition_add') || permission_exists('time_condition_edit')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
@@ -554,6 +556,9 @@ require_once "resources/header.php";
 
 	}
 
+//include the header
+	require_once "resources/header.php";
+
 ?>
 
 <script type="text/javascript">
@@ -562,7 +567,7 @@ require_once "resources/header.php";
 		condition_id = Math.floor((Math.random() * 1000) + 1);
 		html = "<table cellpadding='0' cellspacing='0' border='0' style='margin-top: 3px;' width='100%'>";
 		html += "	<tr>";
-		html += "		<td style='vertical-align: middle; min-width: 390px;' width='100%'>";
+		html += "		<td style='vertical-align: middle; min-width: 390px;' width='100%' nowrap='nowrap'>";
 		html += "			<select class='formfld' style='width: 120px;' name='variable[" + type + "][" + group_id + "][" + condition_id + "]' id='variable_" + group_id + "_" + condition_id + "' onchange=\"load_value_fields(" + group_id + ", " + condition_id + ", this.options[this.selectedIndex].value);\">";
 		html += "				<option value=''></option>";
 		<?php
@@ -803,7 +808,6 @@ echo "	<tr>\n";
 echo "		<td align='left' valign='top'>\n";
 echo "			<span class='title'>".$text['title-time_conditions']."</span>";
 echo "			<br /><br />\n";
-echo "			".$text['description-time_conditions']."\n";
 echo "		</td>\n";
 echo "		<td align='right' valign='top'>\n";
 echo "			<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='".PROJECT_PATH."/app/time_conditions/time_conditions.php?app_uuid=4b821450-926b-175a-af93-a03c441818b1'\" value='".$text['button-back']."'>\n";
@@ -811,6 +815,11 @@ if (if_group("superadmin") && $action == 'update') {
 	echo "		<input type='button' class='btn' name='' alt='".$text['button-dialplan']."' onclick=\"document.location.href='".PROJECT_PATH."/app/dialplan/dialplan_edit.php?id=".$dialplan_uuid."&app_uuid=4b821450-926b-175a-af93-a03c441818b1'\" value='".$text['button-dialplan']."'>\n";
 }
 echo "			<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
+echo "		</td>\n";
+echo "	</tr>\n";
+echo "	<tr>\n";
+echo "		<td colspan='2'>\n";
+echo "			".$text['description-time_conditions']."\n";
 echo "		</td>\n";
 echo "	</tr>\n";
 echo "</table>";
@@ -1048,66 +1057,66 @@ if ($action == 'update') {
 		echo "</tr>\n";
 	}
 
-echo "<tr>\n";
-echo "<td id='td_alt_dest' class='vncell' valign='top' align='left' nowrap>\n";
-echo "	".$text['label-alternate-destination']."\n";
-echo "</td>\n";
-echo "<td class='vtable' align='left'>\n";
-echo 				$destination->select('dialplan', 'dialplan_anti_action', $dialplan_anti_action);
-echo "</td>\n";
-echo "</tr>\n";
+	echo "<tr>\n";
+	echo "<td id='td_alt_dest' class='vncell' valign='top' align='left' nowrap>\n";
+	echo "	".$text['label-alternate-destination']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo 				$destination->select('dialplan', 'dialplan_anti_action', $dialplan_anti_action);
+	echo "</td>\n";
+	echo "</tr>\n";
 
-echo "<tr>\n";
-echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
-echo "    ".$text['label-order']."\n";
-echo "</td>\n";
-echo "<td class='vtable' align='left'>\n";
-echo "	<select name='dialplan_order' class='formfld'>\n";
-for ($i = 300; $i <= 999; $i += 10) {
-	$padded_i = str_pad($i, 3, '0', STR_PAD_LEFT);
-	$selected = ($dialplan_order == $i) ? "selected='selected'" : null;
-	echo "<option value='".$padded_i."' ".$selected.">".$padded_i."</option>\n";
-}
-echo "	</select>\n";
-echo "	<br />\n";
-echo "</td>\n";
-echo "</tr>\n";
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-order']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "	<select name='dialplan_order' class='formfld'>\n";
+	for ($i = 300; $i <= 999; $i += 10) {
+		$padded_i = str_pad($i, 3, '0', STR_PAD_LEFT);
+		$selected = ($dialplan_order == $i) ? "selected='selected'" : null;
+		echo "<option value='".$padded_i."' ".$selected.">".$padded_i."</option>\n";
+	}
+	echo "	</select>\n";
+	echo "	<br />\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
-echo "<tr>\n";
-echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
-echo "    ".$text['label-enabled']."\n";
-echo "</td>\n";
-echo "<td class='vtable' align='left'>\n";
-echo "<select class='formfld' name='dialplan_enabled'>\n";
-echo "	<option value='true' ".(($dialplan_enabled == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
-echo "	<option value='false' ".(($dialplan_enabled == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-echo "</select>\n";
-echo "<br />\n";
-echo "</td>\n";
-echo "</tr>\n";
+	echo "<tr>\n";
+	echo "<td class='vncellreq' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-enabled']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "<select class='formfld' name='dialplan_enabled'>\n";
+	echo "	<option value='true' ".(($dialplan_enabled == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+	echo "	<option value='false' ".(($dialplan_enabled == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+	echo "</select>\n";
+	echo "<br />\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
-echo "<tr>\n";
-echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-echo "	".$text['label-description']."\n";
-echo "</td>\n";
-echo "<td colspan='4' class='vtable' align='left'>\n";
-echo "	<input class='formfld' type='text' name='dialplan_description' maxlength='255' value=\"".$dialplan_description."\">\n";
-echo "<br />\n";
-echo "</td>\n";
-echo "</tr>\n";
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "	".$text['label-description']."\n";
+	echo "</td>\n";
+	echo "<td colspan='4' class='vtable' align='left'>\n";
+	echo "	<input class='formfld' type='text' name='dialplan_description' maxlength='255' value=\"".$dialplan_description."\">\n";
+	echo "<br />\n";
+	echo "</td>\n";
+	echo "</tr>\n";
 
-echo "</table>\n";
-echo "<br />";
+	echo "</table>\n";
+	echo "<br />";
 
-echo "<div align='right'>\n";
-if ($action == "update") {
-	echo "	<input type='hidden' name='dialplan_uuid' value='".$dialplan_uuid."'>\n";
-}
-echo "	<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
-echo "</div>";
+	echo "<div align='right'>\n";
+	if ($action == "update") {
+		echo "	<input type='hidden' name='dialplan_uuid' value='".$dialplan_uuid."'>\n";
+	}
+	echo "	<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
+	echo "</div>";
 
-echo "</form>";
-echo "<br />";
+	echo "</form>";
+	echo "<br />";
 
 //include the footer
 	require_once "resources/footer.php";

@@ -64,19 +64,19 @@ else {
 
 		//make sure the directories exist
 			if (!is_dir($_SESSION['switch']['storage']['dir'])) {
-				mkdir($_SESSION['switch']['storage']['dir'],02770,true);
+				event_socket_mkdir($_SESSION['switch']['storage']['dir']);
 			}
 			if (!is_dir($fax_dir.'/'.$fax_extension)) {
-				mkdir($fax_dir.'/'.$fax_extension,02770,true);
+				event_socket_mkdir($fax_dir.'/'.$fax_extension);
 			}
 			if (!is_dir($dir_fax_inbox)) {
-				mkdir($dir_fax_inbox,02770,true);
+				event_socket_mkdir($dir_fax_inbox);
 			}
 			if (!is_dir($dir_fax_sent)) {
-				mkdir($dir_fax_sent,02770,true);
+				event_socket_mkdir($dir_fax_sent);
 			}
 			if (!is_dir($dir_fax_temp)) {
-				mkdir($dir_fax_temp,02770,true);
+				event_socket_mkdir($dir_fax_temp);
 			}
 	}
 
@@ -747,11 +747,10 @@ if (count($_POST)>0 && strlen($_POST["persistformvar"]) == 0) {
 				echo "</optgroup>\n";
 			}
 		//sounds
-			$dir_path = $_SESSION['switch']['sounds']['dir'];
-			recur_sounds_dir($_SESSION['switch']['sounds']['dir']);
-			if (count($dir_array) > 0) {
+			$files = recur_sounds_dir($_SESSION['switch']['sounds']['dir']);
+			if (count($files) > 0) {
 				echo "<optgroup label='Sounds'>\n";
-				foreach ($dir_array as $key => $value) {
+				foreach ($files as $key => $value) {
 					if (strlen($value) > 0) {
 						if (substr($fax_send_greeting, 0, 71) == "\$\${sounds_dir}/\${default_language}/\${default_dialect}/\${default_voice}/") {
 							$fax_send_greeting = substr($fax_send_greeting, 71);

@@ -230,7 +230,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 					$dialplan->dialplan_uuid = $dialplan_uuid;
 					$dialplan->dialplan_detail_tag = 'condition'; //condition, action, antiaction
 					$dialplan->dialplan_detail_type = 'destination_number';
-					$dialplan->dialplan_detail_data = '^'.str_replace('*', '\*', $call_flow_feature_code).'$';
+					$dialplan->dialplan_detail_data = '^'.str_replace('+', '\+', str_replace('*', '\*', $call_flow_feature_code)).'$';
 					$dialplan->dialplan_detail_break = 'on-true';
 					//$dialplan->dialplan_detail_inline = '';
 					$dialplan->dialplan_detail_group = '1';
@@ -287,7 +287,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 					$dialplan->dialplan_uuid = $dialplan_uuid;
 					$dialplan->dialplan_detail_tag = 'condition'; //condition, action, antiaction
 					$dialplan->dialplan_detail_type = 'destination_number';
-					$dialplan->dialplan_detail_data = '^'.str_replace('*', '\*', $call_flow_extension).'$';
+					$dialplan->dialplan_detail_data = '^'.str_replace('+', '\+', str_replace('*', '\*', $call_flow_extension)).'$';
 					//$dialplan->dialplan_detail_break = '';
 					//$dialplan->dialplan_detail_inline = '';
 					$dialplan->dialplan_detail_group = '2';
@@ -444,7 +444,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 		echo "	tb.type='text';\n";
 		echo "	tb.name=obj.name;\n";
 		echo "	tb.setAttribute('class', 'formfld');\n";
-		echo "	tb.setAttribute('style', 'width: 380px;');\n";
+		//echo "	tb.setAttribute('style', 'width: 380px;');\n";
 		echo "	tb.value=obj.options[obj.selectedIndex].value;\n";
 		echo "	tbb=document.createElement('INPUT');\n";
 		echo "	tbb.setAttribute('class', 'btn');\n";
@@ -476,7 +476,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 
-		echo "<select name='$name' class='formfld' style='width: 400px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
+		echo "<select name='$name' class='formfld' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
 		echo "	<option value=''></option>\n";
 		//misc optgroup
 			if (if_group("superadmin")) {
@@ -527,12 +527,10 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 			}
 		//sounds
 			if ($load_sound) {
-				global $dir_path, $dir_array;
-				$dir_path = $_SESSION['switch']['sounds']['dir'];
-				recur_sounds_dir($_SESSION['switch']['sounds']['dir']);
-				if (count($dir_array) > 0) {
+				$files = recur_sounds_dir($_SESSION['switch']['sounds']['dir']);
+				if (count($files) > 0) {
 					echo "<optgroup label=".$text["sounds"].">\n";
-					foreach ($dir_array as $key => $value) {
+					foreach ($files as $key => $value) {
 						if (strlen($value) > 0) {
 							if (substr($var, 0, 71) == "\$\${sounds_dir}/\${default_language}/\${default_dialect}/\${default_voice}/") {
 								$var = substr($var, 71);
