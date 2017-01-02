@@ -73,7 +73,7 @@ How to Install FusionPBX
 
 * Alternatively, as root do the following:
 
-```bash
+```
 apt-get update && apt-get upgrade && apt-get install -y git
 ```
 ```bash
