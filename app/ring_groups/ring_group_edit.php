@@ -379,7 +379,6 @@
 		if (strlen($ring_group_timeout_app) > 0) {
 			$ring_group_timeout_action = $ring_group_timeout_app.":".$ring_group_timeout_data;
 		}
-
 	}
 
 //set the default
