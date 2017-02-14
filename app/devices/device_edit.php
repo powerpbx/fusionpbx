@@ -137,11 +137,11 @@
 				$_POST["device_mac_address"] = $device_mac_address;
 			}
 			else {
-				$orm = new orm;
-				$orm->name('devices');
-				$orm->uuid($device_uuid);
-				$result = $orm->find()->get();
-				//$message = $orm->message;
+				$sql = "select * from v_devices ";
+				$sql .= "where device_uuid = '$device_uuid' ";
+				$prep_statement = $db->prepare(check_sql($sql));
+				$prep_statement->execute();
+				$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 				foreach ($result as &$row) {
 					$device_mac_address = $row["device_mac_address"];
 					$_POST["device_mac_address"] = $device_mac_address;
@@ -296,15 +296,19 @@
 						$save = true;
 					}
 
+				//prepare the array
+					$array['devices'][] = $_POST;
+
 				//save the device
 					if ($save) {
-						$orm = new orm;
-						$orm->name('devices');
+						$database = new database;
+						$database->app_name = 'devices';
+						$database->app_uuid = '4efa1a1a-32e7-bf83-534b-6c8299958a8e';
 						if (strlen($device_uuid) > 0) {
-							$orm->uuid($device_uuid);
+							$database->uuid($device_uuid);
 						}
-						$orm->save($_POST);
-						$response = $orm->message;
+						$database->save($array);
+						$response = $database->message;
 						if (strlen($response['uuid']) > 0) {
 							$device_uuid = $response['uuid'];
 						}
@@ -312,7 +316,9 @@
 
 				//write the provision files
 					if (strlen($_SESSION['provision']['path']['text']) > 0) {
-						require_once "app/provision/provision_write.php";
+						$prov = new provision;
+						$prov->domain_uuid = $domain_uuid;
+						$response = $prov->write();
 					}
 
 				//set the message
@@ -337,11 +343,11 @@
 
 //pre-populate the form
 	if (count($_GET) > 0 && $_POST["persistformvar"] != "true") {
-		$orm = new orm;
-		$orm->name('devices');
-		$orm->uuid($device_uuid);
-		$result = $orm->find()->get();
-		//$message = $orm->message;
+		$sql = "select * from v_devices ";
+		$sql .= "where device_uuid = '$device_uuid' ";
+		$prep_statement = $db->prepare(check_sql($sql));
+		$prep_statement->execute();
+		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 		foreach ($result as &$row) {
 			$device_mac_address = $row["device_mac_address"];
 			$domain_uuid = $row["domain_uuid"];
@@ -933,12 +939,14 @@
 			echo "	<tr>";
 			echo "		<td class='vncell' valign='top'>".$text['label-profile']."</td>";
 			echo "		<td class='vtable' align='left'>";
-			echo "			<select class='formfld' name='device_profile_uuid'>\n";
+			echo "			<select class='formfld' id='device_profile_uuid' name='device_profile_uuid'>\n";
 			echo "				<option value=''></option>\n";
 			foreach($result as $row) {
 				echo "			<option value='".$row['device_profile_uuid']."' ".(($row['device_profile_uuid'] == $device_profile_uuid) ? "selected='selected'" : null).">".$row['device_profile_name']." ".(($row['domain_uuid'] == '') ? "&nbsp;&nbsp;(".$text['select-global'].")" : null)."</option>\n";
 			}
 			echo "			</select>\n";
+			echo "			<button type='button' class='btn btn-default list_control_icon' id='device_profile_edit' onclick=\"if($('#device_profile_uuid').val() != '') window.location='device_profile_edit.php?id='+$('#device_profile_uuid').val();\"><span class='glyphicon glyphicon-pencil'></span></button>";
+			echo "			<button type='button' class='btn btn-default list_control_icon' onclick=\"window.location='device_profile_edit.php'\"><span class='glyphicon glyphicon-plus'></span></button>";
 			echo "			<br>".$text['description-profile2']."\n";
 			echo "		</td>";
 			echo "	</tr>";
@@ -965,7 +973,9 @@
 			echo "				<td class='vtable'>".$text['label-device_key_type']."</td>\n";
 			echo "				<td class='vtable'>".$text['label-device_key_line']."</td>\n";
 			echo "				<td class='vtable'>".$text['label-device_key_value']."</td>\n";
-			echo "				<td class='vtable'>".$text['label-device_key_extension']."</td>\n";
+			if (permission_exists('device_key_extension')) {
+				echo "				<td class='vtable'>".$text['label-device_key_extension']."</td>\n";
+			}
 			echo "				<td class='vtable'>".$text['label-device_key_label']."</td>\n";
 			echo "				<td>&nbsp;</td>\n";
 			echo "			</tr>\n";
@@ -1068,10 +1078,8 @@
 				$selected = "selected='selected'";
 				echo "	<select class='formfld' name='device_keys[".$x."][device_key_id]'>\n";
 				echo "	<option value=''></option>\n";
-				$i = 1;
-				while ($i < 100) {
-					echo "	<option value='$i' ".($row['device_key_id'] == $i ? $selected:"").">$i</option>\n";
-					$i++;
+				for ($i = 1; $i <= 255; $i++) {
+					echo "	<option value='$i' ".($row['device_key_id'] == $i ? "selected":null).">$i</option>\n";
 				}
 				echo "	</select>\n";
 				echo "</td>\n";
@@ -1436,10 +1444,18 @@
 	echo "</form>";
 
 	echo "<script>\n";
+	echo "	$(window).load(function(event){\n";
+	// triger initial onchage to set button state
+	echo "      $('#device_profile_uuid').trigger('change')";
+	echo "	});\n";
 	//capture enter key to submit form
 	echo "	$(window).keypress(function(event){\n";
 	echo "		if (event.which == 13) { submit_form(); }\n";
 	echo "	});\n";
+	// capture device selection events
+	echo "  $('#device_profile_uuid').change(function(event){ \n";
+	echo "      if (this.value == '') {\$('#device_profile_edit').hide()} else {\$('#device_profile_edit').show()} \n";
+	echo "	}); \n";
 	// convert password fields to
 	echo "	function submit_form() {\n";
 	echo "		check_duplicates();\n";

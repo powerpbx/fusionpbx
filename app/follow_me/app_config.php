@@ -63,8 +63,9 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "follow_me_ignore_busy";
-		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		//$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "follow_me_cid_name_prefix";
 		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
@@ -111,6 +112,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "call_prompt";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en'] = "";
+		$apps[$x]['db'][$y]['fields'][$z]['deprecated'] = "true";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "dial_string";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";

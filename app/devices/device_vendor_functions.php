@@ -1,4 +1,28 @@
 <?php
+/*
+ FusionPBX
+ Version: MPL 1.1
+
+ The contents of this file are subject to the Mozilla Public License Version
+ 1.1 (the "License"); you may not use this file except in compliance with
+ the License. You may obtain a copy of the License at
+ http://www.mozilla.org/MPL/
+
+ Software distributed under the License is distributed on an "AS IS" basis,
+ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ for the specific language governing rights and limitations under the
+ License.
+
+ The Original Code is FusionPBX
+
+ The Initial Developer of the Original Code is
+ Mark J Crane <markjcrane@fusionpbx.com>
+ Portions created by the Initial Developer are Copyright (C) 2016-2017
+ the Initial Developer. All Rights Reserved.
+
+ Contributor(s):
+ Mark J Crane <markjcrane@fusionpbx.com>
+*/
 
 //includes
 	require_once "root.php";
@@ -42,7 +66,7 @@
 	$sql = "select count(*) as num_rows from v_device_vendor_functions ";
 	$sql .= "where device_vendor_uuid = '$device_vendor_uuid' ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
+	if (strlen($order_by) == 0) { $sql .= "order by name asc "; } else { $sql .= "order by $order_by $order "; }
 	$prep_statement = $db->prepare($sql);
 	if ($prep_statement) {
 		$prep_statement->execute();
@@ -67,7 +91,7 @@
 	$sql = "select * from v_device_vendor_functions ";
 	$sql .= "where device_vendor_uuid = '$device_vendor_uuid' ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
+	if (strlen($order_by) == 0) { $sql .= "order by name asc "; } else { $sql .= "order by $order_by $order "; }
 	$sql .= "limit $rows_per_page offset $offset ";
 	$prep_statement = $db->prepare(check_sql($sql));
 	$prep_statement->execute();
@@ -94,6 +118,7 @@
 
 	echo "<table class='tr_hover' width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
+	echo "<th>".$text['label-label']."</th>\n";
 	echo th_order_by('name', $text['label-name'], $order_by, $order);
 	echo th_order_by('value', $text['label-value'], $order_by, $order);
 	echo "<th>".$text['label-groups']."</th>\n";
@@ -120,10 +145,10 @@
 				$sql .= "	v_groups as g ";
 				$sql .= "where ";
 				$sql .= "	fg.group_uuid = g.group_uuid ";
-				//$sql .= "	and fg.device_vendor_uuid = :device_vendor_uuid ";
-				$sql .= "	and fg.device_vendor_uuid = '$device_vendor_uuid' ";
-				//$sql .= "	and fg.device_vendor_function_uuid = :device_vendor_function_uuid ";
-				$sql .= "	and fg.device_vendor_function_uuid = '".$row['device_vendor_function_uuid']."' ";
+				$sql .= "	and fg.device_vendor_uuid = :device_vendor_uuid ";
+				//$sql .= "	and fg.device_vendor_uuid = '$device_vendor_uuid' ";
+				$sql .= "	and fg.device_vendor_function_uuid = :device_vendor_function_uuid ";
+				//$sql .= "	and fg.device_vendor_function_uuid = '".$row['device_vendor_function_uuid']."' ";
 				$sql .= "order by ";
 				$sql .= "	g.domain_uuid desc, ";
 				$sql .= "	g.group_name asc ";
@@ -145,8 +170,8 @@
 				}
 			//show the row of data
 				echo "<tr ".$tr_link.">\n";
-				//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['label']."&nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['name']."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.$row['name']]."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['name']." &nbsp;</td>\n";
 				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['value']."&nbsp;</td>\n";
 				echo "	<td valign='top' class='".$row_style[$c]."'>".$group_list."&nbsp;</td>\n";
 				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['enabled']."&nbsp;</td>\n";
@@ -167,7 +192,7 @@
 	} //end if results
 
 	echo "<tr>\n";
-	echo "<td colspan='6' align='left'>\n";
+	echo "<td colspan='7' align='left'>\n";
 	echo "	<table width='100%' cellpadding='0' cellspacing='0'>\n";
 	echo "	<tr>\n";
 	echo "		<td width='33.3%' nowrap='nowrap'>&nbsp;</td>\n";

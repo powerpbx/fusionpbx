@@ -143,9 +143,9 @@
 
 <!-- SIP/NAT_Support_Parameters -->
 <Handle_VIA_received group="SIP/NAT_Support_Parameters">No</Handle_VIA_received>
-<Handle_VIA_rport group="SIP/NAT_Support_Parameters">No</Handle_VIA_rport>
+<Handle_VIA_rport group="SIP/NAT_Support_Parameters">{$cisco_handle_via_rport}</Handle_VIA_rport>
 <Insert_VIA_received group="SIP/NAT_Support_Parameters">No</Insert_VIA_received>
-<Insert_VIA_rport group="SIP/NAT_Support_Parameters">No</Insert_VIA_rport>
+<Insert_VIA_rport group="SIP/NAT_Support_Parameters">{$cisco_insert_via_rport}</Insert_VIA_rport>
 <Substitute_VIA_Addr group="SIP/NAT_Support_Parameters">No</Substitute_VIA_Addr>
 <Send_Resp_To_Src_Port group="SIP/NAT_Support_Parameters">No</Send_Resp_To_Src_Port>
 <STUN_Enable group="SIP/NAT_Support_Parameters">No</STUN_Enable>
@@ -340,8 +340,7 @@
 <Station_Display_Name group="Phone/General">{$display_name_1}</Station_Display_Name>
 <Voice_Mail_Number group="Phone/General">*97</Voice_Mail_Number>
 
-{foreach $keys as $row}
-{if $row.device_key_category == "line"}
+{foreach $keys["line"] as $row}
 {if $row.device_key_type == "line"}
 <!-- Phone/Line_Key_{$row.device_key_id} -->
 <Extension_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_value}</Extension_{$row.device_key_id}_> <!-- options: 1/2/3/4/5/6/7/8/9/10/11/12/Disabled -->
@@ -353,7 +352,6 @@
 <Short_Name_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_label}</Short_Name_{$row.device_key_id}_>
 <Share_Call_Appearance_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">private</Share_Call_Appearance_{$row.device_key_id}_> <!-- options: private/shared -->
 <Extended_Function_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_value}</Extended_Function_{$row.device_key_id}_>
-{/if}
 {/if}
 
 {/foreach}

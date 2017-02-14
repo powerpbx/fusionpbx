@@ -6,8 +6,8 @@
 <Enable_Web_Server ua="na">Yes</Enable_Web_Server>
 <Web_Server_Port ua="na">80</Web_Server_Port>
 <Enable_Web_Admin_Access ua="na">Yes</Enable_Web_Admin_Access>
-<Admin_Passwd ua="na">{$admin_password}</Admin_Passwd>
-<User_Password ua="rw">{$user_password}</User_Password>
+{if isset ($admin_password)}<Admin_Passwd ua="na">{$admin_password}</Admin_Passwd>{/if}
+{if isset ($admin_password)}<User_Password ua="rw">{$admin_password}</User_Password>{/if}
 <Signaling_Protocol ua="na">SIP</Signaling_Protocol> <!-- options: SIP/SPCP -->
 <SPCP_Auto-detect ua="na">Yes</SPCP_Auto-detect>
 <Phone-UI-readonly ua="na">No</Phone-UI-readonly>
@@ -206,9 +206,9 @@
 
 <!-- NAT Support Parameters -->
 <Handle_VIA_received ua="na">No</Handle_VIA_received>
-<Handle_VIA_rport ua="na">No</Handle_VIA_rport>
+<Handle_VIA_rport ua="na">{$cisco_handle_via_rport}</Handle_VIA_rport>
 <Insert_VIA_received ua="na">No</Insert_VIA_received>
-<Insert_VIA_rport ua="na">No</Insert_VIA_rport>
+<Insert_VIA_rport ua="na">{$cisco_insert_via_rport}</Insert_VIA_rport>
 <Substitute_VIA_Addr ua="na">No</Substitute_VIA_Addr>
 <Send_Resp_To_Src_Port ua="na">No</Send_Resp_To_Src_Port>
 <STUN_Enable ua="na">No</STUN_Enable>
@@ -289,8 +289,8 @@
 
 <!-- Proxy and Registration -->
 <Proxy_1_ ua="na">{$server_address_1}</Proxy_1_>
-<Outbound_Proxy_1_ ua="na"></Outbound_Proxy_1_>
-<Use_Outbound_Proxy_1_ ua="na">No</Use_Outbound_Proxy_1_>
+<Outbound_Proxy_1_>{$outbound_proxy_primary_1}</Outbound_Proxy_1_>
+<Use_Outbound_Proxy_1_>{if isset ($outbound_proxy_primary_1)}Yes{else}No{/if}</Use_Outbound_Proxy_1_>
 <Use_OB_Proxy_In_Dialog_1_ ua="na">Yes</Use_OB_Proxy_In_Dialog_1_>
 <Register_1_ ua="na">Yes</Register_1_>
 <Make_Call_Without_Reg_1_ ua="na">No</Make_Call_Without_Reg_1_>
@@ -401,8 +401,8 @@
 
 <!-- Proxy and Registration -->
 <Proxy_2_ ua="na">{$server_address_2}</Proxy_2_>
-<Outbound_Proxy_2_ ua="na"></Outbound_Proxy_2_>
-<Use_Outbound_Proxy_2_ ua="na">No</Use_Outbound_Proxy_2_>
+<Outbound_Proxy_2_>{$outbound_proxy_primary_2}</Outbound_Proxy_2_>
+<Use_Outbound_Proxy_2_>{if isset ($outbound_proxy_primary_2)}Yes{else}No{/if}</Use_Outbound_Proxy_2_>
 <Use_OB_Proxy_In_Dialog_2_ ua="na">Yes</Use_OB_Proxy_In_Dialog_2_>
 <Register_2_ ua="na">Yes</Register_2_>
 <Make_Call_Without_Reg_2_ ua="na">No</Make_Call_Without_Reg_2_>
@@ -1642,8 +1642,7 @@
 <Screen_Saver_Wait ua="rw">300</Screen_Saver_Wait>
 <Screen_Saver_Icon ua="rw">Background Picture</Screen_Saver_Icon> <!-- options: StationTime/Lock/Phone/DateTime/Background Picture -->
 
-{foreach $keys as $row}
-{if $row.device_key_category == "line"}
+{foreach $keys["line"] as $row}
 {if $row.device_key_type == "line"}
 <!-- Phone/Line_Key_{$row.device_key_id} -->
 <Extension_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_value}</Extension_{$row.device_key_id}_> <!-- options: 1/2/3/4/5/6/7/8/9/10/11/12/Disabled -->
@@ -1655,7 +1654,6 @@
 <Short_Name_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_label}</Short_Name_{$row.device_key_id}_>
 <Share_Call_Appearance_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">private</Share_Call_Appearance_{$row.device_key_id}_> <!-- options: private/shared -->
 <Extended_Function_{$row.device_key_id}_ group="Phone/Line_Key_{$row.device_key_id}">{$row.device_key_value}</Extended_Function_{$row.device_key_id}_>
-{/if}
 {/if}
 
 {/foreach}
@@ -1940,16 +1938,14 @@
 <BLF_Held_LED ua="na"></BLF_Held_LED>
 
 <!-- Attendant_Console/Unit_x -->
-{foreach $keys as $row}
-{if $row.device_key_category == "expansion"}
+{foreach $keys["expansion"] as $row}
 <Unit_1_Key_{$row.device_key_id} group="Attendant_Console/Unit_1">{$row.device_key_value}</Unit_1_Key_{$row.device_key_id}>
-{/if}
-{if $row.device_key_category == "expansion-1"}
+{/foreach}
+{foreach $keys["expansion-1"] as $row}
 <Unit_1_Key_{$row.device_key_id} group="Attendant_Console/Unit_1">{$row.device_key_value}</Unit_1_Key_{$row.device_key_id}>
-{/if}
-{if $row.device_key_category == "expansion-2"}
+{/foreach}
+{foreach $keys["expansion-2"] as $row}
 <Unit_2_Key_{$row.device_key_id} group="Attendant_Console/Unit_2">{$row.device_key_value}</Unit_2_Key_{$row.device_key_id}>
-{/if}
 {/foreach}
 
 <Protect_IVR_FactoryReset ua="na">No</Protect_IVR_FactoryReset>

@@ -879,6 +879,17 @@ $text['label-phone_tools']['sv-se'] = "Verktyg";
 $text['label-phone_tools']['de-at'] = "Funktionen";
 $text['label-phone_tools']['he'] = "כלים";
 
+$text['label-phone_speed_dial']['en-us'] = "Speed Dial";
+$text['label-phone_speed_dial']['es-cl'] = "";
+$text['label-phone_speed_dial']['pt-pt'] = "";
+$text['label-phone_speed_dial']['fr-fr'] = "";
+$text['label-phone_speed_dial']['pt-br'] = "";
+$text['label-phone_speed_dial']['pl'] = "";
+$text['label-phone_speed_dial']['uk'] = "";
+$text['label-phone_speed_dial']['sv-se'] = "";
+$text['label-phone_speed_dial']['de-at'] = "";
+$text['label-phone_speed_dial']['he'] = "";
+
 $text['label-phone_numbers']['en-us'] = "Numbers";
 $text['label-phone_numbers']['es-cl'] = "Números";
 $text['label-phone_numbers']['pt-pt'] = "Números";
@@ -1022,6 +1033,11 @@ $text['label-import_duplicates']['sv-se'] = "Dubbletter";
 $text['label-import_duplicates']['de-at'] = "Duplikate";
 $text['label-import_duplicates']['he'] = "";
 
+$text['label-import_data']['en-us'] = "Data";
+$text['label-import_data']['es-cl'] = "Datos";
+$text['label-import_data']['fr-fr'] = "Donnée";
+$text['label-import_data']['pt-pt'] = "Dados";
+	
 $text['label-import_delimiter']['en-us'] = "Delimiter";
 $text['label-import_delimiter']['es-cl'] = "Delimitador";
 $text['label-import_delimiter']['pt-pt'] = "Delimitador de campos";
@@ -2019,6 +2035,17 @@ $text['description-phone_primary']['sv-se'] = "Sätt som primärt Nummer för de
 $text['description-phone_primary']['de-at'] = "Als primäre Nummer für diesen Kontakt setzen.";
 $text['description-phone_primary']['he'] = "";
 
+$text['description-phone_speed_dial']['en-us'] = "Enter the speed dial number.";
+$text['description-phone_speed_dial']['es-cl'] = "";
+$text['description-phone_speed_dial']['pt-pt'] = "";
+$text['description-phone_speed_dial']['fr-fr'] = "";
+$text['description-phone_speed_dial']['pt-br'] = "";
+$text['description-phone_speed_dial']['pl'] = "";
+$text['description-phone_speed_dial']['uk'] = "";
+$text['description-phone_speed_dial']['sv-se'] = "";
+$text['description-phone_speed_dial']['de-at'] = "";
+$text['description-phone_speed_dial']['he'] = "";
+
 $text['description-phone_number']['en-us'] = "Enter the phone number.";
 $text['description-phone_number']['es-cl'] = "Ingrese el número de teléfono.";
 $text['description-phone_number']['pt-pt'] = "Introduza o número de telefone";
@@ -2106,6 +2133,11 @@ $text['description-import_duplicates']['uk'] = "";
 $text['description-import_duplicates']['sv-se'] = "Välj hur kontakter som importerats tidigare skall hanteras.";
 $text['description-import_duplicates']['de-at'] = "Wählen Sie aus, wie mit vorhandenen Kontakten verfahren werden soll.";
 $text['description-import_duplicates']['he'] = "";
+
+$text['description-import_data']['en-us'] = "Copy and paste the comma delimitted data into the text area to begin the import.";
+$text['description-import_data']['es-cl'] = "Copie y pegue la información delimitada por comas en el cuadro de texto para comenzar su importación.";
+$text['description-import_data']['fr-fr'] = "Copier et coller les données séparées par une virgule ou un \"pipe\" dans la zone de texte pour commencer l'import.";
+$text['description-import_data']['pt-pt'] = "Copie e cole os dados separados por vírgula para iniciar a importação.";
 
 $text['description-import_delimiter']['en-us'] = "Select the delimiter (comma or pipe).";
 $text['description-import_delimiter']['es-cl'] = "Select el delimitador (coma o pipe).";

@@ -126,9 +126,9 @@
 <G729a_Codec_Name>G729a</G729a_Codec_Name>
 <EncapRTP_Codec_Name>encaprtp</EncapRTP_Codec_Name>
 <Handle_VIA_received>No</Handle_VIA_received>
-<Handle_VIA_rport>No</Handle_VIA_rport>
+<Handle_VIA_rport>{$cisco_handle_via_rport}</Handle_VIA_rport>
 <Insert_VIA_received>No</Insert_VIA_received>
-<Insert_VIA_rport>No</Insert_VIA_rport>
+<Insert_VIA_rport>{$cisco_insert_via_rport}</Insert_VIA_rport>
 <Substitute_VIA_Addr>No</Substitute_VIA_Addr>
 <Send_Resp_To_Src_Port>No</Send_Resp_To_Src_Port>
 <STUN_Enable>No</STUN_Enable>
@@ -187,8 +187,8 @@
 <Emergency_Number_1_></Emergency_Number_1_>
 <Mailbox_ID_1_></Mailbox_ID_1_>
 <Proxy_1_>{$domain_name}</Proxy_1_>
-<Outbound_Proxy_1_></Outbound_Proxy_1_>
-<Use_Outbound_Proxy_1_>No</Use_Outbound_Proxy_1_>
+<Outbound_Proxy_1_>{$outbound_proxy_primary_1}</Outbound_Proxy_1_>
+<Use_Outbound_Proxy_1_>{if isset ($outbound_proxy_primary_1)}Yes{else}No{/if}</Use_Outbound_Proxy_1_>
 <Use_OB_Proxy_In_Dialog_1_>Yes</Use_OB_Proxy_In_Dialog_1_>
 <Register_1_>Yes</Register_1_>
 <Make_Call_Without_Reg_1_>No</Make_Call_Without_Reg_1_>
@@ -313,8 +313,8 @@
 <Emergency_Number_2_></Emergency_Number_2_>
 <Mailbox_ID_2_></Mailbox_ID_2_>
 <Proxy_2_>{$domain_name}</Proxy_2_>
-<Outbound_Proxy_2_></Outbound_Proxy_2_>
-<Use_Outbound_Proxy_2_>No</Use_Outbound_Proxy_2_>
+<Outbound_Proxy_2_>{$outbound_proxy_primary_2}</Outbound_Proxy_2_>
+<Use_Outbound_Proxy_2_>{if isset ($outbound_proxy_primary_2)}Yes{else}No{/if}</Use_Outbound_Proxy_2_>
 <Use_OB_Proxy_In_Dialog_2_>Yes</Use_OB_Proxy_In_Dialog_2_>
 <Register_2_>Yes</Register_2_>
 <Make_Call_Without_Reg_2_>No</Make_Call_Without_Reg_2_>
@@ -393,7 +393,7 @@
 <FAX_Tone_Detect_Mode_2_>caller or callee</FAX_Tone_Detect_Mode_2_>
 <Symmetric_RTP_2_>No</Symmetric_RTP_2_>
 <FAX_T38_Return_to_Voice_2_>No</FAX_T38_Return_to_Voice_2_>
-<Dial_Plan_2_></Dial_Plan_2_>
+<Dial_Plan_2_>(*xxxxxx|*xxxxx|*xxxx|*xxx|*xx|*x|#x|**xx|**xxx|**xxxx|**xxxxx|[3469]11|0|00|[2-9]xxxxxx|1xxx[2-9]xxxxxxS0|xxxxxxxxxxxx.)</Dial_Plan_2_>
 <Idle_Polarity_2_>Forward</Idle_Polarity_2_>
 <Caller_Conn_Polarity_2_>Forward</Caller_Conn_Polarity_2_>
 <Callee_Conn_Polarity_2_>Forward</Callee_Conn_Polarity_2_>
@@ -748,7 +748,7 @@
 </Software_DMZ>
 <Bonjour_Enable>1</Bonjour_Enable>
 <Reset_Button_Enable>1</Reset_Button_Enable>
-<Router_Mode>0</Router_Mode>
+<Router_Mode>{$cisco_router_mode}</Router_Mode>
 <VPN_Passthrough>
 <IPSec_Passthrough>1</IPSec_Passthrough>
 <PPTP_Passthrough>1</PPTP_Passthrough>
@@ -805,10 +805,10 @@
 <MAIL>0</MAIL>
 </System>
 </Log_Configuration>
-<Web_Login_Admin_Name>{$admin_name}</Web_Login_Admin_Name>
-<Web_Login_Admin_Password>{$admin_password}</Web_Login_Admin_Password>
-<Web_Login_Guest_Name>{$user_name}</Web_Login_Guest_Name>
-<Web_Login_Guest_Password>{$user_password}</Web_Login_Guest_Password>
+{if isset ($admin_name)}<Web_Login_Admin_Name>{$admin_name}</Web_Login_Admin_Name>{/if}
+{if isset ($admin_password)}<Web_Login_Admin_Password>{$admin_password}</Web_Login_Admin_Password>{/if}
+{if isset ($admin_name)}<Web_Login_Guest_Name>{$admin_name}</Web_Login_Guest_Name>{/if}
+{if isset ($admin_password)}<Web_Login_Guest_Password>{$admin_password}</Web_Login_Guest_Password>{/if}
 <Firmware_Version>1.2.1</Firmware_Version>
 <Firmware_Build_Version>004</Firmware_Build_Version>
 <System_Model_Number>SPA122</System_Model_Number>
