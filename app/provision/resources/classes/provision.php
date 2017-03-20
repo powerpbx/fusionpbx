@@ -878,6 +878,7 @@ include "root.php";
 				//replace the variables in the template in the future loop through all the line numbers to do a replace for each possible line number
 					$view->assign("mac" , $mac);
 					$view->assign("label", $device_label);
+					$view->assign("device_label", $device_label);
 					$view->assign("firmware_version", $device_firmware_version);
 					$view->assign("domain_name", $domain_name);
 					$view->assign("project_path", PROJECT_PATH);
@@ -1078,6 +1079,7 @@ include "root.php";
 												$file_contents = $this->render();
 
 											//write the file
+												mkdir($directory,0777,true);
 												$fh = fopen($dest_path,"w") or die("Unable to write to $directory for provisioning. Make sure the path exists and permissons are set correctly.");
 												fwrite($fh, $file_contents);
 												fclose($fh);
