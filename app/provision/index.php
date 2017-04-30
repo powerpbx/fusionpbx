@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2015 All Rights Reserved.
+	Copyright (C) 2008-2016 All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
@@ -36,7 +36,6 @@
 	$dir_count = 0;
 	$file_count = 0;
 	$row_count = 0;
-	$tmp_array = '';
 	$device_template = '';
 
 //define PHP variables from the HTTP values
@@ -85,6 +84,11 @@
                 //Grandstream: $_SERVER['HTTP_USER_AGENT'] = "Grandstream Model HW GXP2135 SW 1.0.7.97 DevId 000b828aa872"
 			if (substr($_SERVER['HTTP_USER_AGENT'],0,11) == "Grandstream") {
 				$mac = substr($_SERVER['HTTP_USER_AGENT'],-12);
+				$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
+			}
+		//Audiocodes: $_SERVER['HTTP_USER_AGENT'] = "AUDC-IPPhone/2.2.8.61 (440HDG-Rev0; 00908F602AAC)"
+			if (substr($_SERVER['HTTP_USER_AGENT'],0,12) == "AUDC-IPPhone") {
+				$mac = substr($_SERVER['HTTP_USER_AGENT'],-13);
 				$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
 			}
 	}
@@ -278,7 +282,7 @@
 
 //http authentication - digest
 	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_type"]) == 0) { $provision["http_auth_type"] = "digest"; }
-	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] == "digest") {
+	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] === "digest" && $provision["http_auth_disable"] !== "true") {
 		//function to parse the http auth header
 			function http_digest_parse($txt) {
 				//protect against missing data
@@ -337,7 +341,7 @@
 	}
 
 //http authentication - basic
-	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] == "basic") {
+	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] === "basic" && $provision["http_auth_disable"] !== "true") {
 		if (!isset($_SERVER['PHP_AUTH_USER'])) {
 			header('WWW-Authenticate: Basic realm="'.$_SESSION['domain_name'].'"');
 			header('HTTP/1.0 401 Authorization Required');
