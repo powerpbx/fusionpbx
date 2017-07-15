@@ -140,7 +140,7 @@
 					$sql .= "'".$dialplan_name."', ";
 					$sql .= "'".$dialplan_number."', ";
 					$sql .= "'".$dialplan_order."', ";
-					$sql .= "'true', ";
+					$sql .= "'false', ";
 					if (strlen($domain_uuid) == 0) {
 						$sql .= "'\${domain_name}', ";
 					}
@@ -527,10 +527,10 @@
 
 		//set the message
 			if ($action == "add") {
-				$_SESSION['message'] = $text['message-add'];
+				messages::add($text['message-add']);
 			}
 			else if ($action == "update") {
-				$_SESSION['message'] = $text['message-update'];
+				messages::add($text['message-update']);
 			}
 			header("Location: time_condition_edit.php?id=".$dialplan_uuid.(($app_uuid != '') ? "&app_uuid=".$app_uuid : null));
 			return;

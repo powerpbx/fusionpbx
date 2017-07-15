@@ -80,7 +80,7 @@
 			$sql .= "and user_uuid = '".$user_uuid."' ";
 			$db->exec(check_sql($sql));
 
-		$_SESSION["message"] = $text['confirm-delete'];
+		messages::add($text['confirm-delete']);
 		header("Location: conference_edit.php?id=".$conference_uuid);
 		return;
 	}
@@ -106,10 +106,10 @@
 			$sql_insert .= "'".$user_uuid."' ";
 			$sql_insert .= ")";
 			$db->exec($sql_insert);
-
-		$_SESSION["message"] = $text['confirm-add'];
-		header("Location: conference_edit.php?id=".$conference_uuid);
-		return;
+		//send a message
+			messages::add($text['confirm-add']);
+			header("Location: conference_edit.php?id=".$conference_uuid);
+			return;
 	}
 
 //process http post variables
@@ -193,7 +193,7 @@
 						//<condition destination_number="500" />
 						$dialplan_detail_tag = 'condition'; //condition, action, antiaction
 						$dialplan_detail_type = 'destination_number';
-						$dialplan_detail_data = '^'.$conference_extension.'$';
+						$dialplan_detail_data = '^(conf\+)?'.$conference_extension.'$';
 						$dialplan_detail_order = '000';
 						$dialplan_detail_group = '2';
 						dialplan_detail_add($_SESSION['domain_uuid'], $dialplan_uuid, $dialplan_detail_tag, $dialplan_detail_order, $dialplan_detail_group, $dialplan_detail_type, $dialplan_detail_data);
@@ -217,7 +217,7 @@
 						dialplan_detail_add($_SESSION['domain_uuid'], $dialplan_uuid, $dialplan_detail_tag, $dialplan_detail_order, $dialplan_detail_group, $dialplan_detail_type, $dialplan_detail_data);
 
 					//add the message
-						$_SESSION["message"] = $text['confirm-add'];
+						messages::add($text['confirm-add']);
 				} //if ($action == "add")
 
 				if ($action == "update") {
@@ -273,7 +273,7 @@
 						$db->query($sql);
 
 					//add the message
-						$_SESSION["message"] = $text['confirm-update'];
+						messages::add($text['confirm-update']);
 				} //if ($action == "update")
 
 				//update the dialplan xml

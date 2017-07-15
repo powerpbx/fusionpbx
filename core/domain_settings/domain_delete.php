@@ -101,11 +101,18 @@ if (strlen($id) > 0) {
 		$db->beginTransaction();
 		if (isset($apps)) foreach ($apps as &$app) {
 			if (isset($app['db'])) foreach ($app['db'] as $row) {
-				$table_name = $row['table']['name'];
-				if (isset($row['fields'])) foreach ($row['fields'] as $field) {
-					if ($field['name'] == "domain_uuid") {
-						$sql = "delete from $table_name where domain_uuid = '$id' ";
-						$db->query($sql);
+				if (is_array($row['table'])) {
+					$table_name = $row['table']['name'];
+				}
+				else {
+					$table_name = $row['table'];
+				}
+				if ($table_name !== "v" && isset($row['fields'])) {
+					foreach ($row['fields'] as $field) {
+						if ($field['name'] == "domain_uuid") {
+							$sql = "delete from $table_name where domain_uuid = '$id' ";
+							$db->query($sql);
+						}
 					}
 				}
 			}
@@ -203,7 +210,7 @@ if (strlen($id) > 0) {
 	}
 
 //redirect the browser
-	$_SESSION["message"] = $text['message-delete'];
+	messages::add($text['message-delete']);
 	header("Location: domains.php");
 	return;
 
