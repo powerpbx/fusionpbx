@@ -37,8 +37,8 @@
 	direct_dial["max_digits"] = 4;
 
 --debug
-	debug["info"] = true;
-	debug["sql"] = true;
+	--debug["info"] = true;
+	--debug["sql"] = true;
 
 --get the argv values
 	script_name = argv[1];
@@ -74,26 +74,37 @@
 			destination_number = session:getVariable("destination_number");
 			caller_id_name = session:getVariable("caller_id_name");
 			caller_id_number = session:getVariable("caller_id_number");
-			if (string.sub(caller_id_number, 1, 1) == "/") then
-				caller_id_number = string.sub(caller_id_number, 2, -1);
-			end
 			voicemail_greeting_number = session:getVariable("voicemail_greeting_number");
 			skip_instructions = session:getVariable("skip_instructions");
 			skip_greeting = session:getVariable("skip_greeting");
 			vm_message_ext = session:getVariable("vm_message_ext");
 			vm_say_caller_id_number = session:getVariable("vm_say_caller_id_number");
+			vm_say_date_time = session:getVariable("vm_say_date_time");
 			vm_disk_quota = session:getVariable("vm-disk-quota");
-			if (not vm_disk_quota) then
-				vm_disk_quota = session:getVariable("vm_disk_quota");
-			end
 			record_silence_threshold = session:getVariable("record-silence-threshold");
-			if (not record_silence_threshold) then
-				record_silence_threshold = 300;
-			end
 			voicemail_authorized = session:getVariable("voicemail_authorized");
 			sip_from_user = session:getVariable("sip_from_user");
 			sip_number_alias = session:getVariable("sip_number_alias");
-			if (not vm_message_ext) then vm_message_ext = 'wav'; end
+
+		--set default values
+			if (string.sub(caller_id_number, 1, 1) == "/") then
+				caller_id_number = string.sub(caller_id_number, 2, -1);
+			end
+			if (not record_silence_threshold) then
+				record_silence_threshold = 300;
+			end
+			if (not vm_disk_quota) then
+				vm_disk_quota = session:getVariable("vm_disk_quota");
+			end
+			if (not vm_message_ext) then
+				vm_message_ext = 'wav';
+			end
+			if (not vm_say_caller_id_number) then
+				vm_say_caller_id_number = "true";
+			end
+			if (not vm_say_date_time) then
+				vm_say_date_time = "true";
+			end
 
 		--set the sounds path for the language, dialect and voice
 			default_language = session:getVariable("default_language");
@@ -141,20 +152,35 @@
 		--settings
 			require "resources.functions.settings";
 			settings = settings(domain_uuid);
-			storage_type = "";
-			storage_path = "";
 			if (settings['voicemail'] ~= nil) then
+				storage_type = '';
 				if (settings['voicemail']['storage_type'] ~= nil) then
 					if (settings['voicemail']['storage_type']['text'] ~= nil) then
 						storage_type = settings['voicemail']['storage_type']['text'];
 					end
 				end
+
+				storage_path = '';
 				if (settings['voicemail']['storage_path'] ~= nil) then
 					if (settings['voicemail']['storage_path']['text'] ~= nil) then
 						storage_path = settings['voicemail']['storage_path']['text'];
 						storage_path = storage_path:gsub("${domain_name}", domain_name);
 						storage_path = storage_path:gsub("${voicemail_id}", voicemail_id);
 						storage_path = storage_path:gsub("${voicemail_dir}", voicemail_dir);
+					end
+				end
+
+				message_order = '';
+				if (settings['voicemail']['message_order'] ~= nil) then
+					if (settings['voicemail']['message_order']['text'] ~= nil) then
+						message_order = settings['voicemail']['message_order']['text'];
+					end
+				end
+
+				remote_access = '';
+				if (settings['voicemail']['remote_access'] ~= nil) then
+					if (settings['voicemail']['remote_access']['boolean'] ~= nil) then
+						remote_access = settings['voicemail']['remote_access']['boolean'];
 					end
 				end
 			end

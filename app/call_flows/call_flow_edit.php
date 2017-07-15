@@ -88,12 +88,6 @@
 			$alternate_destination_array = explode(":", $call_flow_alternate_destination);
 			$call_flow_alternate_app = array_shift($alternate_destination_array);
 			$call_flow_alternate_data = join(':', $alternate_destination_array);
-
-
-		//set the context for users that are not in the superadmin group
-			if (!if_group("superadmin")) {
-				$call_flow_context = $_SESSION['domain_name'];
-			}
 	}
 
 //process the user data and save it to the database
@@ -158,12 +152,21 @@
 				$_POST["dialplan_uuid"] = $dialplan_uuid;
 			}
 
+		//set the context for users that are not in the superadmin group
+			if (!if_group("superadmin")) {
+				$call_flow_context = $_SESSION['domain_name'];
+			}
+
 		//escape special characters
 			$destination_extension = $call_flow_extension;
 			$destination_extension = str_replace("*", "\*", $destination_extension);
 			$destination_extension = str_replace("+", "\+", $destination_extension);
 
 			$destination_feature = $call_flow_feature_code;
+			// Allows dial feature code as `flow+<feature_code>`
+			if (substr($destination_feature, 0, 5) != 'flow+') {
+				$destination_feature = '(?:flow+)?' . $destination_feature;
+			}
 			$destination_feature = str_replace("*", "\*", $destination_feature);
 			$destination_feature = str_replace("+", "\+", $destination_feature);
 
@@ -185,7 +188,7 @@
 			$dialplan["dialplan_uuid"] = $dialplan_uuid;
 			$dialplan["dialplan_name"] = $call_flow_name;
 			$dialplan["dialplan_number"] = $call_flow_extension;
-			$dialplan["dialplan_context"] = $_SESSION['context'];
+			$dialplan["dialplan_context"] = $call_flow_context;
 			$dialplan["dialplan_continue"] = "false";
 			$dialplan["dialplan_xml"] = $dialplan_xml;
 			$dialplan["dialplan_order"] = "333";
@@ -235,10 +238,10 @@
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
-					$_SESSION["message"] = $text['message-add'];
+					messages::add($text['message-add']);
 				}
 				if ($action == "update") {
-					$_SESSION["message"] = $text['message-update'];
+					messages::add($text['message-update']);
 				}
 				header("Location: call_flows.php");
 				return;

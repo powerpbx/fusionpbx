@@ -107,9 +107,9 @@
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	if ($_GET['showall'] && permission_exists('device_all')) {
-		$param = "&showall=true";
+		$param = "&search=".$search."&showall=true";
 	} else {
-		$param = "";
+		$param = "&search=".$search;
 	}
 	$page = $_GET['page'];
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
@@ -256,7 +256,7 @@
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['device_vendor']."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['device_template']."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.$row['device_enabled']]."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['device_provisioned_date']." - ".$row['device_provisioned_method']." - ".$row['device_provisioned_ip']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['device_provisioned_date']." - ".$row['device_provisioned_method']." - <a href='http://".$row['device_provisioned_ip']."' target='_blank'>".$row['device_provisioned_ip']."</a>&nbsp;</td>\n";
 			echo "	<td valign='top' class='row_stylebg'>".$row['device_description']."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('device_edit')) {

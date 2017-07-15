@@ -1,21 +1,25 @@
 What is [FusionPBX](http://fusionpbx.com/)?
 --------------------------------------
-[FusionPBX](http://fusionpbx.com/) is a flexible, customizable administration web GUI that takes [FreeSwitch](http://freeswitch.org) and converts it into a single- or multi-tenant gateway or PBX system out of the box.
-It will run on any operating system and x86-based hardware of your choice.
-It provides the functionality your business needs and brings corporate-level phone system features to small, medium, and large businesses. Read more at [FusionPBX](http://fusionpbx.com/). [Please visit our youtube channel](https://www.youtube.com/FusionPBX)
+
+[FusionPBX](http://fusionpbx.com/) can be used as a single or domain based multi-tenant PBX, carrier grade switch, call center server, fax server, VoIP server, voicemail server, conference server, voice application server, multi-tenant appliance framework and more. [FreeSWITCH™](http://freeswitch.org) is a highly scalable, multi-threaded, multi-platform communication platform. 
+
+It provides the functionality your business needs and brings carrier grade switching, and corporate-level phone system features to small, medium, and large businesses. Read more at [FusionPBX](http://fusionpbx.com/). [Please visit our youtube channel](https://www.youtube.com/FusionPBX)
 
 In addition to providing all of the usual PBX functionality, FusionPBX allows you to configure:
 
 - Multi-Tenant
 - Unlimited Extensions
 - Voicemail-to-Email
+- Device Provisioning
 - Music on Hold
 - Call Parking
 - Automatic Call Distribution
 - Interactive Voice Response
 - Ring Groups
 - Find Me / Follow Me
-- Dialplan Features that can be endlessly combined for your preferences
+- Hot desking
+- High Availability and Redundancy
+- Dialplan Programming that allow nearly endless positiblities
 - [Many other Features](http://docs.fusionpbx.com/en/latest/features/features.html)
 
 Free Support
@@ -38,11 +42,9 @@ These options support the project and cover any kind of help you might need from
 
 Software Requirements
 --------------------------------------
-- [Debian Jessie](http://cdimage.debian.org/debian-cd/8.7.1/) - Recommended
-This is the distribution recommended by the FreeSwitch team
-- Fusion will also install on Debian Wheezy, Ubuntu 10.10 LTS and is known to work on FreeBSD
-- [FusionPBX Installer](http://fusionpbx.com/download.php)
 
+- FusionPBX will run on Debian 8, FreeBSD 10 & 11, CentOS, and more.
+- [FusionPBX Installer](http://fusionpbx.com/download.php)
 
 Community
 --------------------------------------

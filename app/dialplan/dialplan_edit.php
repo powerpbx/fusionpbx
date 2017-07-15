@@ -127,6 +127,11 @@
 			$dialplan_name = str_replace(" ", "_", $dialplan_name);
 			$dialplan_name = str_replace("/", "", $dialplan_name);
 
+		//default app_uuid
+			if (strlen($app_uuid) == 0) {
+				$app_uuid = uuid();
+			}
+
 		//build the array
 			$x = 0;
 			if (isset($_POST["dialplan_uuid"])) {
@@ -142,6 +147,7 @@
 			else {
 				$array['dialplans'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
 			}
+			$array['dialplans'][$x]['app_uuid'] = $app_uuid;
 			$array['dialplans'][$x]['hostname'] = $hostname;
 			$array['dialplans'][$x]['dialplan_name'] = $dialplan_name;
 			$array['dialplans'][$x]['dialplan_number'] = $_POST["dialplan_number"];
@@ -177,7 +183,7 @@
 				$database->app_uuid = $app_uuid;
 				$database->uuid($dialplan_uuid);
 				$database->save($array);
-				//$message = $database->message;
+				$message = $database->message;
 			}
 
 		//update the dialplan xml
@@ -196,10 +202,10 @@
 
 		//set the message
 			if ($action == "add") {
-				$_SESSION['message'] = $text['message-add'];
+				messages::add($text['message-add']);
 			}
 			else if ($action == "update") {
-				$_SESSION['message'] = $text['message-update'];
+				messages::add($text['message-update']);
 			}
 			header("Location: ?id=".$dialplan_uuid.(($app_uuid != '') ? "&app_uuid=".$app_uuid : null));
 			exit;
@@ -226,6 +232,14 @@
 			$dialplan_description = $row["dialplan_description"];
 		}
 		unset ($prep_statement);
+	}
+
+//set the defaults
+	if (strlen($dialplan_context) == 0) {
+		$dialplan_context = $_SESSION['domain_name'];
+	}
+	if (strlen($dialplan_order) == 0) {
+		$dialplan_order = '200';
 	}
 
 //get the dialplan details in an array

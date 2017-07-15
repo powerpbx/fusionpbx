@@ -65,8 +65,7 @@
 			}
 			unset($prep_statement, $row);
 			if ($total_call_center_queues >= $_SESSION['limit']['call_center_queues']['numeric']) {
-				$_SESSION['message_mood'] = 'negative';
-				$_SESSION['message'] = $text['message-maximum_queues'].' '.$_SESSION['limit']['call_center_queues']['numeric'];
+				messages::add($text['message-maximum_queues'].' '.$_SESSION['limit']['call_center_queues']['numeric'], 'negative');
 				header('Location: call_center_queues.php');
 				return;
 			}
@@ -290,10 +289,10 @@
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
-					$_SESSION["message"] = $text['message-add'];
+					messages::add($text['message-add']);
 				}
 				if ($action == "update") {
-					$_SESSION["message"] = $text['message-update'];
+					messages::add($text['message-update']);
 				}
 			}
 

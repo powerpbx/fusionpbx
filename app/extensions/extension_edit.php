@@ -63,8 +63,7 @@
 			}
 			unset($prep_statement, $row);
 			if ($total_extensions >= $_SESSION['limit']['extensions']['numeric']) {
-				$_SESSION['message_mood'] = 'negative';
-				$_SESSION['message'] = $text['message-maximum_extensions'].' '.$_SESSION['limit']['extensions']['numeric'];
+				messages::add($text['message-maximum_extensions'].' '.$_SESSION['limit']['extensions']['numeric'], 'negative');
 				header('Location: extensions.php');
 				return;
 			}
@@ -87,7 +86,8 @@
 			$outbound_caller_id_number = $_POST["outbound_caller_id_number"];
 			$emergency_caller_id_name = $_POST["emergency_caller_id_name"];
 			$emergency_caller_id_number = $_POST["emergency_caller_id_number"];
-			$directory_full_name = $_POST["directory_full_name"];
+			$directory_first_name = $_POST["directory_first_name"];
+			$directory_last_name = $_POST["directory_last_name"];
 			$directory_visible = $_POST["directory_visible"];
 			$directory_exten_visible = $_POST["directory_exten_visible"];
 			$limit_max = $_POST["limit_max"];
@@ -321,7 +321,8 @@
 									$array["extensions"][$i]["outbound_caller_id_number"] = $outbound_caller_id_number;
 									$array["extensions"][$i]["emergency_caller_id_name"] = $emergency_caller_id_name;
 									$array["extensions"][$i]["emergency_caller_id_number"] = $emergency_caller_id_number;
-									$array["extensions"][$i]["directory_full_name"] = $directory_full_name;
+									$array["extensions"][$i]["directory_first_name"] = $directory_first_name;
+									$array["extensions"][$i]["directory_last_name"] = $directory_last_name;
 									$array["extensions"][$i]["directory_visible"] = $directory_visible;
 									$array["extensions"][$i]["directory_exten_visible"] = $directory_exten_visible;
 									$array["extensions"][$i]["limit_max"] = $limit_max;
@@ -407,7 +408,9 @@
 											$array["voicemails"][$i]["voicemail_mail_to"] = $voicemail_mail_to;
 											//$array["voicemails"][$i]["voicemail_attach_file"] = $voicemail_attach_file;
 											$array["voicemails"][$i]["voicemail_file"] = $voicemail_file;
-											$array["voicemails"][$i]["voicemail_local_after_email"] = $voicemail_local_after_email;
+											if (permission_exists('voicemail_local_after_email')) {
+												$array["voicemails"][$i]["voicemail_local_after_email"] = $voicemail_local_after_email;
+											}
 											$array["voicemails"][$i]["voicemail_enabled"] = $voicemail_enabled;
 											if ( empty($voicemail_description)){
 												$voicemail_description = $description;
@@ -547,6 +550,7 @@
 
 				//show the action and redirect the user
 					if ($action == "add") {
+							messages::add($text['message-add']);
 						//prepare for alternating the row style
 							$c = 0;
 							$row_style["0"] = "row_style0";
@@ -555,7 +559,6 @@
 						//show the action and redirect the user
 							if (count($generated_users) == 0) {
 								//action add
-									$_SESSION["message"] = $text['message-add'];
 									header("Location: extension_edit.php?id=".$extension_uuid);
 							}
 							else {
@@ -585,12 +588,7 @@
 							return;
 					}
 					if ($action == "update") {
-						if ($action == "update") {
-							$_SESSION["message"] = $text['message-update'];
-						}
-						else {
-							$_SESSION["message"] = $text['message-add'];
-						}
+						messages::add($text['message-update']);
 						header("Location: extension_edit.php?id=".$extension_uuid);
 						return;
 					}
@@ -617,7 +615,8 @@
 			$outbound_caller_id_number = $row["outbound_caller_id_number"];
 			$emergency_caller_id_name = $row["emergency_caller_id_name"];
 			$emergency_caller_id_number = $row["emergency_caller_id_number"];
-			$directory_full_name = $row["directory_full_name"];
+			$directory_first_name = $row["directory_first_name"];
+			$directory_last_name = $row["directory_last_name"];
 			$directory_visible = $row["directory_visible"];
 			$directory_exten_visible = $row["directory_exten_visible"];
 			$limit_max = $row["limit_max"];
@@ -1235,7 +1234,8 @@
 	echo "    ".$text['label-directory_full_name']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "    <input class='formfld' type='text' name='directory_full_name' maxlength='255' value=\"$directory_full_name\">\n";
+	echo "    <input class='formfld' type='text' name='directory_first_name' maxlength='255' value=\"$directory_first_name\">\n";
+	echo "    <input class='formfld' type='text' name='directory_last_name' maxlength='255' value=\"$directory_last_name\">\n";
 	echo "<br />\n";
 	echo $text['description-directory_full_name']."\n";
 	echo "</td>\n";
@@ -1365,19 +1365,21 @@
 		echo "</td>\n";
 		echo "</tr>\n";
 
-		echo "<tr>\n";
-		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-		echo "    ".$text['label-voicemail_local_after_email']."\n";
-		echo "</td>\n";
-		echo "<td class='vtable' align='left'>\n";
-		echo "    <select class='formfld' name='voicemail_local_after_email' id='voicemail_local_after_email' onchange=\"if (this.selectedIndex == 1) { document.getElementById('voicemail_file').selectedIndex = 2; }\">\n";
-		echo "    	<option value='true' ".(($voicemail_local_after_email == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
-		echo "    	<option value='false' ".(($voicemail_local_after_email == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
-		echo "    </select>\n";
-		echo "<br />\n";
-		echo $text['description-voicemail_local_after_email']."\n";
-		echo "</td>\n";
-		echo "</tr>\n";
+		if (permission_exists('voicemail_local_after_email')) {
+			echo "<tr>\n";
+			echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+			echo "    ".$text['label-voicemail_local_after_email']."\n";
+			echo "</td>\n";
+			echo "<td class='vtable' align='left'>\n";
+			echo "    <select class='formfld' name='voicemail_local_after_email' id='voicemail_local_after_email' onchange=\"if (this.selectedIndex == 1) { document.getElementById('voicemail_file').selectedIndex = 2; }\">\n";
+			echo "    	<option value='true' ".(($voicemail_local_after_email == "true") ? "selected='selected'" : null).">".$text['label-true']."</option>\n";
+			echo "    	<option value='false' ".(($voicemail_local_after_email == "false") ? "selected='selected'" : null).">".$text['label-false']."</option>\n";
+			echo "    </select>\n";
+			echo "<br />\n";
+			echo $text['description-voicemail_local_after_email']."\n";
+			echo "</td>\n";
+			echo "</tr>\n";
+		}
 	}
 
 	if (permission_exists('extension_missed_call')) {
