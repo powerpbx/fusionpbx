@@ -861,6 +861,7 @@ $text['description-register_transport']['ru-ru'] = "Выберите предп�
 $text['description-register_transport']['sv-se'] = "Välj om registrera transport eller ej.";
 $text['description-register_transport']['uk-ua'] = "Choose whether to register-transport.";
 
+<<<<<<< HEAD
 $text['description-register_proxy']['en-us'] = "Enter the register proxy here.";
 $text['description-register_proxy']['ar-eg'] = "";
 $text['description-register_proxy']['de-at'] = "Geben Sie den Proxy für die Registrierung hier an.";
@@ -880,6 +881,27 @@ $text['description-register_proxy']['ro-ro'] = "Introduceți proxy- registru de 
 $text['description-register_proxy']['ru-ru'] = "Введите прокси для регистрации.";
 $text['description-register_proxy']['sv-se'] = "Ange 'register proxy' här.";
 $text['description-register_proxy']['uk-ua'] = "Введіть проксі для реєстрації";
+=======
+$text['description-register_proxy']['en-us'] = "Enter the hostname or IP address of the register proxy. host[:port]";
+$text['description-register_proxy']['ar-eg'] = "أدخل اسم المضيف أو عنوان إب الخاص بروكسي السجل. (وهذا يمكن أن تتخذ شكل المضيف: ميناء)"; //translation provided by google translate
+$text['description-register_proxy']['de-at'] = "Geben Sie den Hostnamen oder IP-Adresse des Register-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-register_proxy']['de-ch'] = "Geben Sie den Hostnamen oder IP-Adresse des Register-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-register_proxy']['de-de'] = "Geben Sie den Hostnamen oder IP-Adresse des Register-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-register_proxy']['es-cl'] = "Introduzca el nombre de host o la dirección IP del proxy de registro. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-register_proxy']['es-mx'] = "Introduzca el nombre de host o la dirección IP del proxy de registro. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-register_proxy']['fr-ca'] = "Entrez le nom d'hôte ou l'adresse IP du proxy de registre. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-register_proxy']['fr-fr'] = "Entrez le nom d'hôte ou l'adresse IP du proxy de registre. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-register_proxy']['he-il'] = "הזן את שם המארח או את כתובת ה- IP של ה- proxy של ה- Register. (זה יכול לקחת את הפורמט של המארח: יציאה)"; //translation provided by google translate
+$text['description-register_proxy']['it-it'] = "Immettere l'hostname o l'indirizzo IP del proxy di registro. (Questo può assumere il formato host:porta)"; //translation provided by google translate
+$text['description-register_proxy']['nl-nl'] = "Voer de hostnaam of het IP-adres van de registerproxy in. (Dit kan het formaat van host:port)"; //translation provided by google translate
+$text['description-register_proxy']['pl-pl'] = "Wpisz nazwę hosta lub adres IP serwera proxy rejestru. (Może to przyjmować format hosta:port)"; //translation provided by google translate
+$text['description-register_proxy']['pt-br'] = "Digite o nome do host ou o endereço IP do proxy do registro. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-register_proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy do registro. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-register_proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului de înregistrare. (Acest lucru poate lua forma gazdei:port)"; //translation provided by google translate
+$text['description-register_proxy']['ru-ru'] = "Введите IP-адрес или название хоста прокси-сервера для регистрации. (Возможно указать номер порта в формате host:port)";
+$text['description-register_proxy']['sv-se'] = "Ange värdprofilens värdnamn eller IP-adress. (Detta kan ta formatet för värd:port)"; //translation provided by google translate
+$text['description-register_proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу зареєстрованого проксі. (Це може мати формат host:port)"; //translation provided by google translate
+>>>>>>> upstream/master
 
 $text['description-register']['en-us'] = "Choose whether to register.";
 $text['description-register']['ar-eg'] = "";
@@ -921,6 +943,7 @@ $text['description-realm']['ru-ru'] = "Вставьте поле, использ
 $text['description-realm']['sv-se'] = "Ange 'realm' här.";
 $text['description-realm']['uk-ua'] = "Enter the realm here.";
 
+<<<<<<< HEAD
 $text['description-proxy']['en-us'] = "Enter the domain or IP address of the proxy.";
 $text['description-proxy']['ar-eg'] = "";
 $text['description-proxy']['de-at'] = "Geben Sie die Domäne oder die IP Adresse des Proxies an.";
@@ -940,6 +963,27 @@ $text['description-proxy']['ro-ro'] = "Introduceți adresa domeniului sau IP-ul 
 $text['description-proxy']['ru-ru'] = "Введите имя домена или IP-адрес прокси-сервера.";
 $text['description-proxy']['sv-se'] = "Ange domän eller IP adress för proxy:n här.";
 $text['description-proxy']['uk-ua'] = "Введіть назву домену або IP адресу проксі";
+=======
+$text['description-proxy']['en-us'] = "Enter the hostname or IP address of the proxy. host[:port]";
+$text['description-proxy']['ar-eg'] = "أدخل اسم المضيف أو عنوان إب الخاص بالوكيل. (وهذا يمكن أن تتخذ شكل المضيف: ميناء)"; //translation provided by google translate
+$text['description-proxy']['de-at'] = "Geben Sie des Hostnamen oder IP-Adresse des Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-proxy']['de-ch'] = "Geben Sie des Hostnamen oder IP-Adresse des Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-proxy']['de-de'] = "Geben Sie des Hostnamen oder IP-Adresse des Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-proxy']['es-cl'] = "Introduzca el nombre de host o la dirección IP del proxy. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-proxy']['es-mx'] = "Introduzca el nombre de host o la dirección IP del proxy. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-proxy']['fr-ca'] = "Entrez le hostnamee ou l'adresse IP du proxy. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-proxy']['fr-fr'] = "Entrez le nom d'hôte ou l'adresse IP du proxy. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-proxy']['he-il'] = "הזן את שם המארח או את כתובת ה- IP של ה- proxy. (זה יכול לקחת את הפורמט של המארח: יציאה)"; //translation provided by google translate
+$text['description-proxy']['it-it'] = "Immettere l'hostname o l'indirizzo IP del proxy. (Questo può assumere il formato host:porta)"; //translation provided by google translate
+$text['description-proxy']['nl-nl'] = "Voer de hostnaam of het IP-adres van de proxy in. (Dit kan het formaat van host:port)"; //translation provided by google translate
+$text['description-proxy']['pl-pl'] = "Wpisz nazwę hosta lub adres IP serwera proxy. (Może to przyjmować format hosta:port)"; //translation provided by google translate
+$text['description-proxy']['pt-br'] = "Digite o nome do host ou o endereço IP do proxy. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului. (Acest lucru poate lua forma gazdei:port)"; //translation provided by google translate
+$text['description-proxy']['ru-ru'] = "Введите IP-адрес или название хоста прокси-сервера. (Возможно указать номер порта в формате host:port)";
+$text['description-proxy']['sv-se'] = "Ange värdnamn eller IP-adress för proxyn. (Detta kan ta formatet för värd:port)"; //translation provided by google translate
+$text['description-proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу проксі-сервера. (Це може мати формат host:port)"; //translation provided by google translate
+>>>>>>> upstream/master
 
 $text['description-profile']['en-us'] = "Enter the profile here.";
 $text['description-profile']['ar-eg'] = "";
@@ -1001,6 +1045,7 @@ $text['description-password']['ru-ru'] = "Введите здесь пароль
 $text['description-password']['sv-se'] = "Fyll i lösenord.";
 $text['description-password']['uk-ua'] = "Введіть пароль";
 
+<<<<<<< HEAD
 $text['description-outbound_proxy']['en-us'] = "Enter the outbound proxy here.";
 $text['description-outbound_proxy']['ar-eg'] = "";
 $text['description-outbound_proxy']['de-at'] = "Geben Sie den Outbound Proxy ein.";
@@ -1020,6 +1065,27 @@ $text['description-outbound_proxy']['ro-ro'] = "Introdu o proxy de ieșire de ai
 $text['description-outbound_proxy']['ru-ru'] = "Здесь введите выходной прокси-сервер.";
 $text['description-outbound_proxy']['sv-se'] = "Fyll i utgående proxy.";
 $text['description-outbound_proxy']['uk-ua'] = "Введіть вихідний проксі";
+=======
+$text['description-outbound_proxy']['en-us'] = "Enter the hostname or IP address of the outbound proxy. host[:port]";
+$text['description-outbound_proxy']['ar-eg'] = "أدخل اسم المضيف أو عنوان إب الخاص بالوكيل الصادر. (وهذا يمكن أن تتخذ شكل المضيف: ميناء)"; //translation provided by google translate
+$text['description-outbound_proxy']['de-at'] = "Geben Sie des Hostnamen oder IP-Adresse des Outbound-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-outbound_proxy']['de-ch'] = "Geben Sie des Hostnamen oder IP-Adresse des Outbound-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-outbound_proxy']['de-de'] = "Geben Sie des Hostnamen oder IP-Adresse des Outbound-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)";
+$text['description-outbound_proxy']['es-cl'] = "Introduzca el nombre de host o la dirección IP del proxy de salida. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-outbound_proxy']['es-mx'] = "Introduzca el nombre de host o la dirección IP del proxy de salida. (Esto puede tomar el formato de host:puerto)"; //translation provided by google translate
+$text['description-outbound_proxy']['fr-ca'] = "Entrez le nom d'hôte ou l'adresse IP du proxy sortant. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['fr-fr'] = "Entrez le nom d'hôte ou l'adresse IP du proxy sortant. (Cela peut prendre le format d'hôte:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['he-il'] = "הזן את שם המארח או את כתובת ה- IP של ה- proxy היוצא. (זה יכול לקחת את הפורמט של המארח: יציאה)"; //translation provided by google translate
+$text['description-outbound_proxy']['it-it'] = "Immettere l'hostname o l'indirizzo IP del proxy in uscita. (Questo può assumere il formato host:porta)"; //translation provided by google translate
+$text['description-outbound_proxy']['nl-nl'] = "Voer de hostnaam of het IP-adres van de uitgaande proxy in. (Dit kan het formaat van host:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['pl-pl'] = "Wpisz nazwę hosta lub adres IP wychodzącego serwera proxy. (Może to przyjmować format hosta:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['pt-br'] = "Digite o nome do host ou o endereço IP do proxy de saída. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-outbound_proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy de saída. (Isso pode levar o formato de host:porta)"; //translation provided by google translate
+$text['description-outbound_proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului de ieșire. (Acest lucru poate lua forma gazdei:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['ru-ru'] = "Введите IP-адрес или название хоста исходящего прокси-сервера. (Возможно указать номер порта в формате host:port)";
+$text['description-outbound_proxy']['sv-se'] = "Ange värdnamn eller IP-adress för utgående proxy. (Detta kan ta formatet för värd:port)"; //translation provided by google translate
+$text['description-outbound_proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу вихідного проксі. (Це може мати формат host:port)"; //translation provided by google translate
+>>>>>>> upstream/master
 
 $text['description-gateway-name']['en-us'] = "Enter the gateway name here.";
 $text['description-gateway-name']['ar-eg'] = "";

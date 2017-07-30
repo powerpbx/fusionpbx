@@ -1,5 +1,5 @@
 --	Part of FusionPBX
---	Copyright (C) 2010-2016 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2010-2017 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,8 @@
 --	Mark J Crane <markjcrane@fusionpbx.com>
 --	Luis Daniel Lucio Qurioz <dlucio@okay.com.mx>
 
-local log = require "resources.functions.log".ring_group
+--include the log
+	local log = require "resources.functions.log".ring_group
 
 --connect to the database
 	local Database = require "resources.functions.database";
@@ -47,26 +48,58 @@ local log = require "resources.functions.log".ring_group
 	require "resources.functions.channel_utils"
 	require "resources.functions.format_ringback"
 
---get the variables
-	domain_name = session:getVariable("domain_name");
-	ring_group_uuid = session:getVariable("ring_group_uuid");
-	recordings_dir = session:getVariable("recordings_dir");
-	sounds_dir = session:getVariable("sounds_dir");
+--define the session hangup
+	function session_hangup_hook()
 
---variables that don't require ${} when used in the dialplan conditions
-	username = session:getVariable("username");
-	dialplan = session:getVariable("dialplan");
-	caller_id_name = session:getVariable("caller_id_name");
-	caller_id_number = session:getVariable("caller_id_number");
-	network_addr = session:getVariable("network_addr");
-	ani = session:getVariable("ani");
-	aniii = session:getVariable("aniii");
-	rdnis = session:getVariable("rdnis");
-	destination_number = session:getVariable("destination_number");
-	source = session:getVariable("source");
-	uuid = session:getVariable("uuid");
-	context = session:getVariable("context");
-	call_direction = session:getVariable("call_direction");
+		--send info to the log
+			--freeswitch.consoleLog("notice","[ring_groups] originate_disposition: " .. session:getVariable("originate_disposition") .. "\n");
+
+		--run the missed called function
+			if (
+				session:getVariable("originate_disposition")  == "ALLOTTED_TIMEOUT"
+				or session:getVariable("originate_disposition") == "NO_ANSWER"
+				or session:getVariable("originate_disposition") == "NO_USER_RESPONSE"
+				or session:getVariable("originate_disposition") == "USER_NOT_REGISTERED"
+				or session:getVariable("originate_disposition") == "NORMAL_TEMPORARY_FAILURE"
+				or session:getVariable("originate_disposition") == "NO_ROUTE_DESTINATION"
+				or session:getVariable("originate_disposition") == "USER_BUSY"
+				or session:getVariable("originate_disposition") == "RECOVERY_ON_TIMER_EXPIRE"
+				or session:getVariable("originate_disposition") == "failure"
+				or session:getVariable("originate_disposition") == "ORIGINATOR_CANCEL"
+			) then
+				--send missed call notification
+					missed();
+			end
+
+	end
+
+--set the hangup hook function
+	if (session:ready()) then
+		session:setHangupHook("session_hangup_hook");
+	end
+
+--get the variables
+	if (session:ready()) then
+		session:setAutoHangup(false);
+		domain_name = session:getVariable("domain_name");
+		domain_uuid = session:getVariable("domain_uuid");
+		ring_group_uuid = session:getVariable("ring_group_uuid");
+		recordings_dir = session:getVariable("recordings_dir");
+		sounds_dir = session:getVariable("sounds_dir");
+		username = session:getVariable("username");
+		dialplan = session:getVariable("dialplan");
+		caller_id_name = session:getVariable("caller_id_name");
+		caller_id_number = session:getVariable("caller_id_number");
+		network_addr = session:getVariable("network_addr");
+		ani = session:getVariable("ani");
+		aniii = session:getVariable("aniii");
+		rdnis = session:getVariable("rdnis");
+		destination_number = session:getVariable("destination_number");
+		source = session:getVariable("source");
+		uuid = session:getVariable("uuid");
+		context = session:getVariable("context");
+		call_direction = session:getVariable("call_direction");
+	end
 
 --default to local if nil
 	if (call_direction == nil) then
@@ -83,12 +116,14 @@ local log = require "resources.functions.log".ring_group
 	external = "false";
 
 --set the sounds path for the language, dialect and voice
-	default_language = session:getVariable("default_language");
-	default_dialect = session:getVariable("default_dialect");
-	default_voice = session:getVariable("default_voice");
-	if (not default_language) then default_language = 'en'; end
-	if (not default_dialect) then default_dialect = 'us'; end
-	if (not default_voice) then default_voice = 'callie'; end
+	if (session:ready()) then
+		default_language = session:getVariable("default_language");
+		default_dialect = session:getVariable("default_dialect");
+		default_voice = session:getVariable("default_voice");
+		if (not default_language) then default_language = 'en'; end
+		if (not default_dialect) then default_dialect = 'us'; end
+		if (not default_voice) then default_voice = 'callie'; end
+	end
 
 --get record_ext
 	record_ext = session:getVariable("record_ext");
@@ -114,11 +149,13 @@ local log = require "resources.functions.log".ring_group
 --get the ring group
 	ring_group_forward_enabled = "";
 	ring_group_forward_destination = "";
-	sql = "SELECT * FROM v_ring_groups ";
-	sql = sql .. "where ring_group_uuid = :ring_group_uuid ";
+	sql = "SELECT r.*, u.user_uuid FROM v_ring_groups as r, v_ring_group_users as u ";
+	sql = sql .. "where r.ring_group_uuid = :ring_group_uuid ";
+	sql = sql .. "and r.ring_group_uuid = u.ring_group_uuid ";
 	local params = {ring_group_uuid = ring_group_uuid};
 	status = dbh:query(sql, params, function(row)
-		domain_uuid = row["domain_uuid"];
+		--domain_uuid = row["domain_uuid"];
+		user_uuid = row["user_uuid"];
 		ring_group_name = row["ring_group_name"];
 		ring_group_extension = row["ring_group_extension"];
 		ring_group_forward_enabled = row["ring_group_forward_enabled"];
@@ -132,16 +169,31 @@ local log = require "resources.functions.log".ring_group
 
 --set the caller id
 	if (session:ready()) then
-		if (string.len(ring_group_cid_name_prefix) > 0) then
+		if (ring_group_cid_name_prefix ~= nil) then
 			session:execute("export", "effective_caller_id_name="..ring_group_cid_name_prefix.."#"..caller_id_name);
 		end
-		if (string.len(ring_group_cid_number_prefix) > 0) then
+		if (ring_group_cid_number_prefix ~= nil) then
 			session:execute("export", "effective_caller_id_number="..ring_group_cid_number_prefix..caller_id_number);
 		end
 	end
 
 --check the missed calls
 	function missed()
+
+		--send a missed call event
+			local event = freeswitch.Event("CUSTOM", "MISSED_CALLS");
+			event:addHeader("domain_uuid", domain_uuid);
+			event:addHeader("domain_name", domain_name);
+			event:addHeader("ring_group_uuid", ring_group_uuid);
+			event:addHeader("user_uuid", user_uuid);
+			event:addHeader("ring_group_name", ring_group_name);
+			event:addHeader("ring_group_extension", ring_group_extension);
+			event:addHeader("call_uuid", uuid);
+			event:addHeader("caller_id_name", caller_id_name);
+			event:addHeader("caller_id_number", caller_id_number);
+			event:fire();
+
+		--send missed call email
 		if (missed_call_app ~= nil and missed_call_data ~= nil) then
 			if (missed_call_app == "email") then
 				--set the sounds path for the language, dialect and voice
@@ -638,15 +690,11 @@ local log = require "resources.functions.log".ring_group
 								or session:getVariable("originate_disposition") == "RECOVERY_ON_TIMER_EXPIRE"
 								or session:getVariable("originate_disposition") == "failure"
 							) then
-								--send missed call notification
-									missed();
 								--execute the time out action
 									session:execute(ring_group_timeout_app, ring_group_timeout_data);
 							end
 						else
 							if (ring_group_timeout_app ~= nil) then
-								--send missed call notification
-									missed();
 								--execute the time out action
 									session:execute(ring_group_timeout_app, ring_group_timeout_data);
 							else
@@ -657,14 +705,13 @@ local log = require "resources.functions.log".ring_group
 									freeswitch.consoleLog("notice", "[ring group] SQL:" .. sql .. "; params:" .. json.encode(params) .. "\n");
 								end
 								dbh:query(sql, params, function(row)
-									--send missed call notification
-										missed();
 									--execute the time out action
 										session:execute(row.ring_group_timeout_app, row.ring_group_timeout_data);
 								end);
 							end
 						end
 				end
+		
 		end
 
 --actions
