@@ -115,14 +115,25 @@ include "root.php";
 					$row = $prep_statement->fetch();
 					$count = $row['count'];
 					if ($row['count'] > 0) {
-						return true;
+						$mac_exists = true;
 					}
 					else {
-						return false;
+						$mac_exists = false;
 					}
 				}
 				else {
-					return false;
+					$mac_exists = false;
+				}
+				if ($mac_exists) {
+					return true;
+				}
+				else {
+					//log the invalid mac address attempt to the syslog server
+						openlog("FusionPBX", LOG_PID | LOG_PERROR, LOG_LOCAL0);
+						syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] invalid mac address ".$mac);
+						closelog();
+					//invalid mac address return false
+						return false;
 				}
 		}
 
@@ -155,6 +166,21 @@ include "root.php";
 				$mac = substr($mac, 0,2).'-'.substr($mac, 2,2).'-'.substr($mac, 4,2).'-'.substr($mac, 6,2).'-'.substr($mac, 8,2).'-'.substr($mac, 10,2);
 			}
 			return $mac;
+		}
+
+		//send http error
+		private function http_error($error) {
+			if ($error === "404") {
+				header("HTTP/1.0 404 Not Found");
+				echo "<html>\n";
+				echo "<head><title>404 Not Found</title></head>\n";
+				echo "<body bgcolor=\"white\">\n";
+				echo "<center><h1>404 Not Found</h1></center>\n";
+				echo "<hr><center>nginx/1.12.1</center>\n";
+				echo "</body>\n";
+				echo "</html>\n";
+			}
+			exit();
 		}
 
 		//define a function to check if a contact exists in the contacts array
@@ -315,7 +341,9 @@ include "root.php";
 											if ($_SESSION['provision']['debug']['boolean'] == 'true'){
 												echo "<br/>device disabled<br/>";
 											}
-											echo "file not found";
+											else {
+												$this->http_error('404');
+											}
 											exit;
 										}
 
@@ -924,7 +952,7 @@ include "root.php";
 							$file = "{\$mac}.cfg";
 						}
 						else {
-							echo "file not found";
+							$this->http_error('404');
 							exit;
 						}
 					}
