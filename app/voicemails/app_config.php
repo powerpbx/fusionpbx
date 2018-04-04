@@ -40,7 +40,7 @@
 		$apps[$x]['destinations'][$y]['field']['description'] = "voicemail_description";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:*99\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer *99\${destination} XML \${context}";
-		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${description}";
+		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${description} &#9993";
 
 	//permission details
 		$y=0;
@@ -90,6 +90,7 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_local_after_email";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_option_add";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
@@ -175,7 +176,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = 'boolean';
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = 'false';
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = 'true';
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = 'Allow access to the voicemail menu with the correct voiemail password.';
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = 'Allow access to the voicemail menu with the correct voicemail password.';
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = 'd09e808d-bd28-400a-81db-8d41b6394527';
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = 'voicemail';
@@ -184,6 +185,38 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = 'asc';
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = 'true';
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = 'Set the message order to asc or desc.';
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = 'b31bcf2d-cb43-41c3-8fb3-36ef74d079b0';
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = 'voicemail';
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = 'password_complexity';
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = 'boolean';
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = 'true';
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = 'false';
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = 'Enforce voicemail password complexity.';
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = '95f9d770-0fb0-4e2c-93b1-d2a140568058';
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = 'voicemail';
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = 'password_min_length';
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = 'numeric';
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = '4';
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = 'false';
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = 'Minimum voicemail password length.';
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "22cf494d-d605-42bd-a667-cbe5b4121973";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "voicemail";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_from";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "b753197c-cb07-44d3-9074-8bf5bca391b8";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "voicemail";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_from_name";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 
 	//schema details
 		$y=0;

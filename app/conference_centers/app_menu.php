@@ -1,7 +1,7 @@
 <?php
 
 	$y=0;
-	$apps[$x]['menu'][$y]['title']['en-us'] = "Conference Center";
+	$apps[$x]['menu'][$y]['title']['en-us'] = "Conference Centers";
 	$apps[$x]['menu'][$y]['title']['ar-eg'] = "";
 	$apps[$x]['menu'][$y]['title']['de-at'] = "Konferenz Zentrale";
 	$apps[$x]['menu'][$y]['title']['de-ch'] = "";
@@ -11,7 +11,7 @@
 	$apps[$x]['menu'][$y]['title']['fr-ca'] = "";
 	$apps[$x]['menu'][$y]['title']['fr-fr'] = "Centre de Conférences";
 	$apps[$x]['menu'][$y]['title']['he-il'] = "";
-	$apps[$x]['menu'][$y]['title']['it-it'] = "";
+	$apps[$x]['menu'][$y]['title']['it-it'] = "Centro Conferenze";
 	$apps[$x]['menu'][$y]['title']['nl-nl'] = "";
 	$apps[$x]['menu'][$y]['title']['pl-pl'] = "Centrum Konferencyjne";
 	$apps[$x]['menu'][$y]['title']['pt-br'] = "Centro de Conferência";

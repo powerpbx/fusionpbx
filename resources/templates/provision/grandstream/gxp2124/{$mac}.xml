@@ -18,9 +18,13 @@
     <!-- Secondary SIP Server -->
     <!-- String -->
     <P2312></P2312>
-    <!-- Outbound Proxy -->
-    <!-- String -->
-    <P48></P48>
+    <!--  Outbound Proxy -->
+     <!--  String -->
+    <P48>{$outbound_proxy_1}</P48>
+
+    <!--  Backup Outbound Proxy -->
+    <!--  String -->
+    <P2333>{$outbound_proxy_secondary_1}</P2333>
     <!-- SIP User ID -->
     <!-- String -->
     <P35>{$user_id_1}</P35>
@@ -349,7 +353,7 @@
     <!-- Dial Plan. Default value is { x+ | *x+ | *xx*x+ } -->
     <!-- String -->
     <!-- Mandatory -->
-    <P290>{ x+ | *x+ | *xx*x+ }</P290>
+    <P290>{$grandstream_dial_plan}</P290>
     <!-- Delayed Call Forward Wait Time (in seconds). Default is 20-->
     <!-- Number: 1 - 120-->
     <!-- Mandatory-->
@@ -447,9 +451,13 @@
     <!-- Secondary SIP Server -->
     <!-- String -->
     <P2412></P2412>
-    <!-- Outbound Proxy -->
-    <!-- String -->
-    <P403></P403>
+    <!--  Outbound Proxy -->
+    <!--  String -->
+     <P403>{$outbound_proxy_2}</P403>
+
+    <!--  Backup Outbound Proxy -->
+    <!--  String -->
+    <P2433>{$outbound_proxy_secondary_2}</P2433>
     <!-- SIP User ID -->
     <!-- String -->
     <P404>{$user_id_2}</P404>
@@ -875,9 +883,13 @@
     <!-- Secondary SIP Server -->
     <!-- String -->
     <P2512></P2512>
-    <!-- Outbound Proxy -->
-    <!-- String -->
-    <P503></P503>
+    <!--  Outbound Proxy -->
+    <!--  String -->
+    <P503>{$outbound_proxy_3}</P503>
+
+    <!--  Backup Outbound Proxy -->
+    <!--  String -->
+    <P2533>{$outbound_proxy_secondary_3}</P2533>
     <!-- SIP User ID -->
     <!-- String -->
     <P504>{$user_id_3}</P504>
@@ -1302,9 +1314,13 @@
     <!-- Secondary SIP Server -->
     <!-- String -->
     <P2612></P2612>
-    <!-- Outbound Proxy -->
-    <!-- String -->
-    <P603></P603>
+    <!--  Outbound Proxy -->
+    <!--  String -->
+    <P603>{$outbound_proxy_4}</P603>
+
+    <!--  Backup Outbound Proxy -->
+    <!--  String -->
+    <P2633>{$outbound_proxy_secondary_4}</P2633>
     <!-- SIP User ID -->
     <!-- String -->
     <P604>{$user_id_4}</P604>
@@ -1871,21 +1887,30 @@
     <!-- Mandatory -->
     <P238>0</P238>
     <!-- XML Config File Password -->
-    <!-- String -->
-    <P1359></P1359>
-    <!-- HTT/PHTTPS User Name -->
-    <!-- String -->
-    <P1359></P1359>
-    <!-- HTT/PHTTPS Password -->
-    <!-- String -->
-    <P1361></P1361>
+    <!-- String; between ascii values 33 and 126 -->
+    <!-- Mandatory -->
+    <P1359>{$http_auth_password}</P1359>
+
+    <!--  HTTP/HTTPS User Name -->
+    <!--  String; between ascii values 33 and 126 -->
+    <P1360>{$http_auth_username}</P1360>
+
+    <!--  HTTP/HTTPS Password -->
+    <!--  String; between ascii values 33 and 126 -->
+    <P1361>{$http_auth_password}</P1361>
     <!-- Firmware Upgrade Via. 0 - TFTP Upgrade,  1 - HTTP Upgrade, 2 - HTTPS Upgrade. Default is 1 -->
     <!-- Number: 0, 1, 2 -->
     <!-- Mandatory -->
     <P212>2</P212>
     <!-- Firmware Server Path -->
     <!-- String -->
-    <P192>fm.grandstream.com/gs</P192>
+    
+    {if isset($grandstream_firmware_path)}
+    <P192>{$grandstream_firmware_path}</P192>
+    {else}
+    <P192>{$domain_name}{$project_path}/app/provision</P192>
+    {/if}
+    
     <!-- Config Server Path -->
     <!-- String -->
     <P237>{$domain_name}{$project_path}/app/provision</P237>

@@ -85,6 +85,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "cee8b1af-8b02-47e4-aa8e-267b18b69b67";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "domain";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "cidr";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "cb55e6ac-9bb0-4714-b68f-82b39a3b9ec2";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "domain";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "country";
@@ -115,7 +123,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "10";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the required/default length for user/system generated passwords.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the required length for the generated passwords.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "0fa21a56-7515-4c65-b5f8-270cc24ea375";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -123,7 +131,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one number in user passwords.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one number in passwords.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "d5f9acbd-857c-42eb-9e9a-92a850fcb734";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -131,7 +139,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one lowecase letter in user passwords.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one lowecase letter in passwords.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "256b0d87-a43e-4618-b96b-541e191879c7";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -139,7 +147,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one uppercase letter in user passwords.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one uppercase letter in passwords.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "4209ff1f-6ea8-4b77-81be-bd75e8670785";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -147,7 +155,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one special character in user passwords.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set whether to require at least one special character in passwords.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "718b1641-fa3c-4861-b1f3-40635c951888";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -155,7 +163,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "4";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the default strength for system generated passwords.  Valid Options: 1 - Numeric Only, 2 - Include Lower Apha, 3 - Include Upper Alpha, 4 - Include Special Characters.";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the default strength for generated passwords. Valid Options: 1 - Numeric Only, 2 - Include Lower Apha, 3 - Include Upper Alpha, 4 - Include Special Characters.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "33914c55-9081-4b95-b62e-f1a500088d78";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "security";
@@ -168,7 +176,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "97a2410b-cfc8-4194-9172-dd5b0acfa9f3";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_auth";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -192,7 +200,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "16f40b7b-293d-4308-81f4-772e0ea4c536";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_from";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -200,7 +208,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "2976da3a-d8e5-4e25-9f16-463dfa256f4d";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_from_name";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -208,7 +216,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "0bd788c1-3262-4336-92f4-ef7869062380";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_host";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -216,7 +224,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "49e778a6-22a7-418f-84b9-bfa27e38f2e5";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_username";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -224,7 +232,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "8a5ae059-9bf3-4d6d-ae92-b6cb39766d0a";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_password";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -232,7 +240,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "fd7441d5-d348-4660-8c0b-6413220c680d";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "email";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_secure";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "var";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "tls";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
@@ -330,7 +338,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "admin";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "caller_id";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Enable changing Caller ID name and number.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "610cfc85-7a17-4c96-a7c7-a83054710bc1";
@@ -394,7 +402,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "superadmin";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "caller_id";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Enable changing Caller ID name and number.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "78bb45d5-8108-4bed-aced-d764575531dc";
@@ -450,7 +458,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "user";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "caller_id";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Enable changing Caller ID name and number.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "98be8c07-eb3a-45c5-9565-341e60f0d82b";

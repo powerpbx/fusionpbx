@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2016 All Rights Reserved.
+	Copyright (C) 2008-2018 All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
@@ -72,6 +72,7 @@
 
 //get the http values and set them as php variables
 	if (count($_POST) > 0) {
+
 		//get the values from the HTTP POST and save them as PHP variables
 			$extension = str_replace(' ','-',$_POST["extension"]);
 			$number_alias = $_POST["number_alias"];
@@ -140,8 +141,7 @@
 			$user_uuid = $_REQUEST["delete_uuid"];
 		//delete the group from the users
 			$sql = "delete from v_extension_users ";
-			$sql .= "where domain_uuid = '".check_str($_SESSION['domain_uuid'])."' ";
-			$sql .= "and extension_uuid = '".check_str($extension_uuid)."' ";
+			$sql .= "where extension_uuid = '".check_str($extension_uuid)."' ";
 			$sql .= "and user_uuid = '".check_str($user_uuid)."' ";
 			$db->exec(check_sql($sql));
 	}
@@ -150,12 +150,10 @@
 	if (is_dir($_SERVER["DOCUMENT_ROOT"].PROJECT_PATH.'/app/devices')) {
 		if ($_REQUEST["delete_type"] == "device_line" && strlen($_REQUEST["delete_uuid"]) > 0 && permission_exists("extension_delete")) {
 			//set the variables
-				$extension_uuid = $_REQUEST["id"];
 				$device_line_uuid = $_REQUEST["delete_uuid"];
 			//delete device_line
 				$sql = "delete from v_device_lines ";
-				$sql .= "where domain_uuid = '".check_str($_SESSION['domain_uuid'])."' ";
-				$sql .= "and device_line_uuid = '".check_str($device_line_uuid)."' ";
+				$sql .= "where device_line_uuid = '".check_str($device_line_uuid)."' ";
 				$db->exec(check_sql($sql));
 				unset($sql);
 		}
@@ -278,6 +276,7 @@
 								//extension does not exist add it
 									if ($action == "add" || $range > 1) {
 										$extension_uuid = uuid();
+										$voicemail_uuid = uuid();
 										$password = generate_password();
 									}
 
@@ -312,7 +311,7 @@
 										$array["extensions"][$i]["number_alias"] = $number_alias;
 									}
 									$array["extensions"][$i]["password"] = $password;
-									if (if_group("superadmin") || if_group("admin")) {
+									if (permission_exists('extension_accountcode')) {
 										$array["extensions"][$i]["accountcode"] = $accountcode;
 									}
 									$array["extensions"][$i]["effective_caller_id_name"] = $effective_caller_id_name;
@@ -345,10 +344,8 @@
 									$array["extensions"][$i]["auth_acl"] = $auth_acl;
 									$array["extensions"][$i]["cidr"] = $cidr;
 									$array["extensions"][$i]["sip_force_contact"] = $sip_force_contact;
-									if (strlen($sip_force_expires) > 0) {
-										$array["extensions"][$i]["sip_force_expires"] = $sip_force_expires;
-									}
-									if (if_group("superadmin")) {
+									$array["extensions"][$i]["sip_force_expires"] = $sip_force_expires;
+									if (permission_exists('extension_nibble_account')) {
 										if (strlen($nibble_account) > 0) {
 											$array["extensions"][$i]["nibble_account"] = $nibble_account;
 										}
@@ -383,7 +380,7 @@
 										//get the voicemail_uuid
 											$sql = "select voicemail_uuid from v_voicemails ";
 											$sql .= "where voicemail_id = '".check_str($voicemail_id)."' ";
-											$sql .= "and domain_uuid = '".check_str($_SESSION["domain_uuid"])."' ";
+											$sql .= "and domain_uuid = '".check_str($domain_uuid)."' ";
 											$prep_statement = $db->prepare(check_sql($sql));
 											$prep_statement->execute();
 											$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
@@ -423,9 +420,11 @@
 						//increment the extension number
 							if ($action != "update") {
 								$extension++;
+								$voicemail_id = $extension;
 
 								if (strlen($number_alias) > 0) {
 									$number_alias++;
+									$voicemail_id = $number_alias;
 								}
 
 								if (strlen($mwi_account) > 0) {
@@ -498,7 +497,12 @@
 							$array["devices"][0]["device_lines"][0]["device_line_uuid"] = $device_line_uuid;
 							$array["devices"][0]["device_lines"][0]["domain_uuid"] = $_SESSION['domain_uuid'];
 							$array["devices"][0]["device_lines"][0]["server_address"] = $_SESSION['domain_name'];
-							$array["devices"][0]["device_lines"][0]["display_name"] = $extension;
+							if (strlen($effective_caller_id_name) > 0) {
+								$array["devices"][0]["device_lines"][0]["display_name"] = $effective_caller_id_name;
+							}
+							else {
+								$array["devices"][0]["device_lines"][0]["display_name"] = $extension;
+							}
 							$array["devices"][0]["device_lines"][0]["user_id"] = $extension;
 							$array["devices"][0]["device_lines"][0]["auth_id"] = $extension;
 							$array["devices"][0]["device_lines"][0]["password"] = $password;
@@ -600,11 +604,11 @@
 		$extension_uuid = $_GET["id"];
 		$sql = "select * from v_extensions ";
 		$sql .= "where extension_uuid = '".check_str($extension_uuid)."' ";
-		$sql .= "and domain_uuid = '".check_str($domain_uuid)."' ";
 		$prep_statement = $db->prepare(check_sql($sql));
 		$prep_statement->execute();
 		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 		foreach ($result as &$row) {
+			$domain_uuid = $row["domain_uuid"];
 			$extension = $row["extension"];
 			$number_alias = $row["number_alias"];
 			$password = $row["password"];
@@ -739,6 +743,7 @@
 	unset ($sql, $prep_statement);
 
 //set the defaults
+	if (strlen($user_context) == 0) { $user_context = $_SESSION['domain_name']; }
 	if (strlen($limit_max) == 0) { $limit_max = '5'; }
 	if (strlen($limit_destination) == 0) { $limit_destination = 'error/user_busy'; }
 	if (strlen($call_timeout) == 0) { $call_timeout = '30'; }
@@ -837,7 +842,7 @@
 		echo "    ".$text['label-password']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "    <input class='formfld' type='password' name='password' id='password' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='50' value=\"$password\">\n";
+		echo "    <input class='formfld' type='password' name='password' id='password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" maxlength='50' value=\"$password\">\n";
 		echo "    <br />\n";
 		echo "    ".$text['description-password']."\n";
 		echo "</td>\n";
@@ -935,7 +940,7 @@
 		echo "</tr>\n";
 	}
 
-	if (if_group("superadmin") || if_group("admin")) {
+	if (permission_exists('extension_accountcode')) {
 			echo "<tr>\n";
 			echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 			echo "    ".$text['label-accountcode']."\n";
@@ -1409,10 +1414,10 @@
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
 		if (is_array($_SESSION['toll allow']['name'])) {
-			echo "	<select class='formfld' name='toll_allow'>\n";
+			echo "	<select class='formfld' name='toll_allow' id='toll_allow'>\n";
 			echo "		<option value=''></option>\n";
 			foreach ($_SESSION['toll allow']['name'] as $name) {
-				if ($_SESSION['call group']['name'] == $call_group) {
+				if ($name == $toll_allow) {
 					echo "		<option value='$name' selected='selected'>$name</option>\n";
 				}
 				else {
@@ -1450,7 +1455,7 @@
 		echo "	<select class='formfld' name='call_group'>\n";
 		echo "		<option value=''></option>\n";
 		foreach ($_SESSION['call group']['name'] as $name) {
-			if ($_SESSION['call group']['name'] == $call_group) {
+			if ($name == $call_group) {
 				echo "		<option value='$name' selected='selected'>$name</option>\n";
 			}
 			else {
@@ -1547,10 +1552,7 @@
 		echo "</tr>\n";
 	}
 
-	if (if_group("superadmin")) {
-		if (strlen($user_context) == 0) {
-			$user_context = $_SESSION['domain_name'];
-		}
+	if (permission_exists("extension_user_context")) {
 		echo "<tr>\n";
 		echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-user_context']."\n";
@@ -1637,7 +1639,7 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if (if_group("superadmin")) {
+	if (permission_exists('extension_nibble_account')) {
 		echo "<tr>\n";
 		echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "    ".$text['label-nibble_account']."\n";

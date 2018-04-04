@@ -50,7 +50,30 @@ include "root.php";
 			public $result;
 			public $app_name;
 			public $app_uuid;
+			public $domain_uuid;
 
+			/**
+			 * Called when the object is created
+			 */
+			public function __construct() {
+				if (!isset($this->domain_uuid)) {
+					$this->domain_uuid = $_SESSION['domain_uuid'];
+				}
+			}
+		
+			/**
+			 * Called when there are no references to a particular object
+			 * unset the variables used in the class
+			 */
+			public function __destruct() {
+				foreach ($this as $key => $value) {
+					unset($this->$key);
+				}
+			}
+		
+			/**
+			 * Connect to the database
+			 */
 			public function connect() {
 
 				if (strlen($this->db_name) == 0) {
@@ -1008,9 +1031,21 @@ include "root.php";
 				//commit the atomic transaction
 					//$this->db->commit();
 
+				//set the action if not set
+					if (strlen($action) == 0) {
+						if (is_array($old_array)) {
+							$transaction_type = 'update';
+						}
+						else {
+							$transaction_type = 'add';
+						}
+					}
+					else {
+						$transaction_type = $action;
+					}
+
 				//get the UUIDs
 					$user_uuid = $_SESSION['user_uuid'];
-					$domain_uuid = $_SESSION['domain_uuid'];
 
 				//log the transaction results
 					if (file_exists($_SERVER["PROJECT_ROOT"]."/app/database_transactions/app_config.php")) {
@@ -1027,7 +1062,7 @@ include "root.php";
 						$sql .= "app_name, ";
 						$sql .= "transaction_code, ";
 						$sql .= "transaction_address, ";
-						//$sql .= "transaction_type, ";
+						$sql .= "transaction_type, ";
 						$sql .= "transaction_date, ";
 						$sql .= "transaction_old, ";
 						$sql .= "transaction_new, ";
@@ -1036,7 +1071,7 @@ include "root.php";
 						$sql .= "values ";
 						$sql .= "(";
 						$sql .= "'".uuid()."', ";
-						$sql .= "'".$domain_uuid."', ";
+						$sql .= "'".$this->domain_uuid."', ";
 						if (strlen($user_uuid) > 0) {
 							$sql .= "'".$user_uuid."', ";
 						}
@@ -1046,10 +1081,20 @@ include "root.php";
 						$sql .= "'".$this->app_name."', ";
 						$sql .= "'".$message["code"]."', ";
 						$sql .= "'".$_SERVER['REMOTE_ADDR']."', ";
-						//$sql .= "'$transaction_type', ";
+						$sql .= "'".$transaction_type."', ";
 						$sql .= "now(), ";
-						$sql .= "'".check_str(json_encode($old_array, JSON_PRETTY_PRINT))."', ";
-						$sql .= "'".check_str(json_encode($new_array, JSON_PRETTY_PRINT))."', ";
+						if (is_array($old_array)) {
+							$sql .= "'".check_str(json_encode($old_array, JSON_PRETTY_PRINT))."', ";
+						}
+						else {
+							$sql .= "null, ";
+						}
+						if (is_array($new_array)) {
+							$sql .= "'".check_str(json_encode($new_array, JSON_PRETTY_PRINT))."', ";
+						}
+						else {
+							$sql .= "null, ";
+						}
 						$sql .= "'".check_str(json_encode($this->message, JSON_PRETTY_PRINT))."' ";
 						$sql .= ")";
 						$this->db->exec(check_sql($sql));
@@ -1687,7 +1732,7 @@ include "root.php";
 															$sql = str_replace(", WHERE", " WHERE", $sql);
 															$this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-															//$prep_statement->bindParam(':domain_uuid', $_SESSION["domain_uuid"] );
+															//$prep_statement->bindParam(':domain_uuid', $this->domain_uuid );
 
 															try {
 																//$this->db->query(check_sql($sql));
@@ -1882,9 +1927,21 @@ include "root.php";
 				//commit the atomic transaction
 					$this->db->commit();
 
+				//set the action if not set
+					if (strlen($action) == 0) {
+						if (is_array($old_array)) {
+							$transaction_type = 'update';
+						}
+						else {
+							$transaction_type = 'add';
+						}
+					}
+					else {
+						$transaction_type = $action;
+					}
+
 				//get the UUIDs
 					$user_uuid = $_SESSION['user_uuid'];
-					$domain_uuid = $_SESSION['domain_uuid'];
 
 				//log the transaction results
 					if (file_exists($_SERVER["PROJECT_ROOT"]."/app/database_transactions/app_config.php")) {
@@ -1901,7 +1958,7 @@ include "root.php";
 						$sql .= "app_name, ";
 						$sql .= "transaction_code, ";
 						$sql .= "transaction_address, ";
-						//$sql .= "transaction_type, ";
+						$sql .= "transaction_type, ";
 						$sql .= "transaction_date, ";
 						$sql .= "transaction_old, ";
 						$sql .= "transaction_new, ";
@@ -1910,7 +1967,7 @@ include "root.php";
 						$sql .= "values ";
 						$sql .= "(";
 						$sql .= "'".uuid()."', ";
-						$sql .= "'".$domain_uuid."', ";
+						$sql .= "'".$this->domain_uuid."', ";
 						if (strlen($user_uuid) > 0) {
 							$sql .= "'".$user_uuid."', ";
 						}
@@ -1920,10 +1977,20 @@ include "root.php";
 						$sql .= "'".$this->app_name."', ";
 						$sql .= "'".$message["code"]."', ";
 						$sql .= "'".$_SERVER['REMOTE_ADDR']."', ";
-						//$sql .= "'$transaction_type', ";
+						$sql .= "'".$transaction_type."', ";
 						$sql .= "now(), ";
-						$sql .= "'".check_str(json_encode($old_array, JSON_PRETTY_PRINT))."', ";
-						$sql .= "'".check_str(json_encode($new_array, JSON_PRETTY_PRINT))."', ";
+						if (is_array($old_array)) {
+							$sql .= "'".check_str(json_encode($old_array, JSON_PRETTY_PRINT))."', ";
+						}
+						else {
+							$sql .= "null, ";
+						}
+						if (is_array($new_array)) {
+							$sql .= "'".check_str(json_encode($new_array, JSON_PRETTY_PRINT))."', ";
+						}
+						else {
+							$sql .= "null, ";
+						}
 						$sql .= "'".check_str(json_encode($this->message, JSON_PRETTY_PRINT))."' ";
 						$sql .= ")";
 						$this->db->exec(check_sql($sql));

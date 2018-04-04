@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2016 All Rights Reserved.
+	Copyright (C) 2008-2018 All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
@@ -30,7 +30,7 @@
 	require_once "resources/functions/device_by.php";
 
 //logging
-	openlog("fusion-provisioning", LOG_PID | LOG_PERROR, LOG_LOCAL0);
+	openlog("FusionPBX", LOG_PID | LOG_PERROR, LOG_LOCAL0);
 
 //set default variables
 	$dir_count = 0;
@@ -67,14 +67,34 @@
 		}
 	}
 
+//send http error
+	function http_error($error) {
+		if ($error === "404") {
+			header("HTTP/1.0 404 Not Found");
+			echo "<html>\n";
+			echo "<head><title>404 Not Found</title></head>\n";
+			echo "<body bgcolor=\"white\">\n";
+			echo "<center><h1>404 Not Found</h1></center>\n";
+			echo "<hr><center>nginx/1.12.1</center>\n";
+			echo "</body>\n";
+			echo "</html>\n";
+		}
+		exit();
+	}
+
 //check alternate MAC source
 	if (empty($mac)){
 		//set the http user agent
 			//$_SERVER['HTTP_USER_AGENT'] = "Yealink SIP-T38G  38.70.0.125 00:15:65:00:00:00";
+			//$_SERVER['HTTP_USER_AGENT'] = "Yealink SIP-T56A  58.80.0.25 001565f429a4"; 
 		//Yealink: 17 digit mac appended to the user agent, so check for a space exactly 17 digits before the end.
 			if (strtolower(substr($_SERVER['HTTP_USER_AGENT'],0,7)) == "yealink" || strtolower(substr($_SERVER['HTTP_USER_AGENT'],0,5)) == "vp530") {
-				$mac = substr($_SERVER['HTTP_USER_AGENT'],-17);
-				$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
+				if (strstr(substr($_SERVER['HTTP_USER_AGENT'],-4), ':')) { //remove colons if they exist
+					$mac = substr($_SERVER['HTTP_USER_AGENT'],-17);
+					$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
+				} else { //take mac as is - fixes T5X series
+					$mac = substr($_SERVER['HTTP_USER_AGENT'],-12);
+				}
 			}
 		//Panasonic: $_SERVER['HTTP_USER_AGENT'] = "Panasonic_KX-UT670/01.022 (0080f000000)"
 			if (substr($_SERVER['HTTP_USER_AGENT'],0,9) == "Panasonic") {
@@ -89,6 +109,12 @@
 		//Audiocodes: $_SERVER['HTTP_USER_AGENT'] = "AUDC-IPPhone/2.2.8.61 (440HDG-Rev0; 00908F602AAC)"
 			if (substr($_SERVER['HTTP_USER_AGENT'],0,12) == "AUDC-IPPhone") {
 				$mac = substr($_SERVER['HTTP_USER_AGENT'],-13);
+				$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
+			}
+		//Aastra: $_SERVER['HTTP_USER_AGENT'] = "Aastra6731i MAC:00-08-5D-29-4C-6B V:3.3.1.4365-SIP"
+			if (substr($_SERVER['HTTP_USER_AGENT'],0,6) == "Aastra") {
+				preg_match("/MAC:([A-F0-9-]{17})/", $_SERVER['HTTP_USER_AGENT'], $matches);
+				$mac = $matches[1];
 				$mac = preg_replace("#[^a-fA-F0-9./]#", "", $mac);
 			}
 	}
@@ -242,8 +268,7 @@
 //check if provisioning has been enabled
 	if ($provision["enabled"] != "true") {
 		syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] provision attempt but provisioning is not enabled for ".check_str($_REQUEST['mac']));
-		echo "access denied";
-		exit;
+		http_error('404');
 	}
 
 //send a request to a remote server to validate the MAC address and secret
@@ -251,8 +276,7 @@
 		$result = send_http_request($_SERVER['auth_server'], 'mac='.check_str($_REQUEST['mac']).'&secret='.check_str($_REQUEST['secret']));
 		if ($result == "false") {
 			syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] provision attempt but the remote auth server said no for ".check_str($_REQUEST['mac']));
-			echo "access denied";
-			exit;
+			http_error('404');
 		}
 	}
 
@@ -275,14 +299,13 @@
 		}
 		if (!$found) {
 			syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] provision attempt but failed CIDR check for ".check_str($_REQUEST['mac']));
-			echo "access denied";
-			exit;
+			http_error('404');
 		}
 	}
 
 //http authentication - digest
 	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_type"]) == 0) { $provision["http_auth_type"] = "digest"; }
-	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] === "digest" && $provision["http_auth_disable"] !== "true") {
+	if (strlen($provision["http_auth_username"]) > 0 && $provision["http_auth_type"] === "digest" && $provision["http_auth_disable"] !== "true") {
 		//function to parse the http auth header
 			function http_digest_parse($txt) {
 				//protect against missing data
@@ -317,20 +340,32 @@
 			}
 
 		//check for valid digest authentication details
-			if (!($data = http_digest_parse($_SERVER['PHP_AUTH_DIGEST'])) || ($data['username'] != $provision["http_auth_username"])) {
-				header('HTTP/1.1 401 Unauthorized');
-				header("Content-Type: text/html");
-				$content = 'Unauthorized '.$__line__;
-				header("Content-Length: ".strval(strlen($content)));
-				echo $content;
-				exit;
+			if (isset($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_username"])) {
+				if (!($data = http_digest_parse($_SERVER['PHP_AUTH_DIGEST'])) || ($data['username'] != $provision["http_auth_username"])) {
+					header('HTTP/1.1 401 Unauthorized');
+					header("Content-Type: text/html");
+					$content = 'Unauthorized '.$__line__;
+					header("Content-Length: ".strval(strlen($content)));
+					echo $content;
+					exit;
+				}
 			}
 
 		//generate the valid response
-			$A1 = md5($provision["http_auth_username"] . ':' . $realm . ':' . $provision["http_auth_password"]);
-			$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
-			$valid_response = md5($A1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$A2);
-			if ($data['response'] != $valid_response) {
+			$authorized = false;
+			if (!$authorized && is_array($_SESSION['provision']["http_auth_password"])) {
+				foreach ($_SESSION['provision']["http_auth_password"] as $password) {
+					$A1 = md5($provision["http_auth_username"] . ':' . $realm . ':' . $password);
+					$A2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
+					$valid_response = md5($A1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$A2);
+					if ($data['response'] == $valid_response) {
+						$authorized = true;
+						break;
+					}
+				}
+				unset($password);
+			}
+			if (!$authorized) {
 				header('HTTP/1.0 401 Unauthorized');
 				header("Content-Type: text/html");
 				$content = 'Unauthorized '.$__line__;
@@ -341,7 +376,7 @@
 	}
 
 //http authentication - basic
-	if (strlen($provision["http_auth_username"]) > 0 && strlen($provision["http_auth_password"]) > 0 && $provision["http_auth_type"] === "basic" && $provision["http_auth_disable"] !== "true") {
+	if (strlen($provision["http_auth_username"]) > 0 && $provision["http_auth_type"] === "basic" && $provision["http_auth_disable"] !== "true") {
 		if (!isset($_SERVER['PHP_AUTH_USER'])) {
 			header('WWW-Authenticate: Basic realm="'.$_SESSION['domain_name'].'"');
 			header('HTTP/1.0 401 Authorization Required');
@@ -351,10 +386,17 @@
 			echo $content;
 			exit;
 		} else {
-			if ($_SERVER['PHP_AUTH_USER'] == $provision["http_auth_username"] && $_SERVER['PHP_AUTH_PW'] == $provision["http_auth_password"]) {
-				//authorized
+			$authorized = false;
+			if (is_array($_SESSION['provision']["http_auth_password"])) {
+				foreach ($_SESSION['provision']["http_auth_password"] as $password) {
+					if ($_SERVER['PHP_AUTH_PW'] == $password) {
+						$authorized = true;
+						break;
+					}
+				}
+				unset($password);
 			}
-			else {
+			if (!$authorized) {
 				//access denied
 				syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] provision attempt but failed http basic authentication for ".check_str($_REQUEST['mac']));
 				header('HTTP/1.0 401 Unauthorized');
@@ -380,22 +422,6 @@
 			echo "access denied";
 			return;
 		}
-	}
-
-//register that we have seen the device
-	$sql = "UPDATE v_devices "; 
-	$sql .= "SET device_provisioned_date=:date, device_provisioned_method=:method, device_provisioned_ip=:ip ";
-	$sql .= "WHERE domain_uuid=:domain_uuid AND device_mac_address=:mac ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	if ($prep_statement) {
-		//use the prepared statement
-			$prep_statement->bindValue(':domain_uuid', $domain_uuid);
-			$prep_statement->bindValue(':mac', strtolower($mac));
-			$prep_statement->bindValue(':date', date("Y-m-d H:i:s"));
-			$prep_statement->bindValue(':method', (isset($_SERVER["HTTPS"]) ? 'https' : 'http'));
-			$prep_statement->bindValue(':ip', $_SERVER['REMOTE_ADDR']);
-			$prep_statement->execute();
-			unset($prep_statement);
 	}
 	
 //output template to string for header processing
@@ -437,8 +463,14 @@
 			header("Content-Type: text/plain; charset=iso-8859-1");
 			header("Content-Length: ".strlen($file_contents));
 		} else {
-			header("Content-Type: text/xml; charset=utf-8");
-			header("Content-Length: ".strlen($file_contents));
+			$result = simplexml_load_string ($file_contents, 'SimpleXmlElement', LIBXML_NOERROR+LIBXML_ERR_FATAL+LIBXML_ERR_NONE);
+			if (false == $result){
+				header("Content-Type: text/plain");
+				header("Content-Length: ".strval(strlen($file_contents)));
+			} else {
+				header("Content-Type: text/xml; charset=utf-8");
+				header("Content-Length: ".strlen($file_contents));
+			}
 		}
 	}
 	echo $file_contents;

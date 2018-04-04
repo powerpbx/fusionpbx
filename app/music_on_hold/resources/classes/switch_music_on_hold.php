@@ -61,6 +61,7 @@ include "root.php";
 			//music on hold
 				$music_list = $this->get();
 				if (count($music_list) > 0) {
+					$select .= "	<option value=''>\n";
 					$select .= "	<optgroup label='".$text['label-music_on_hold']."'>\n";
 					$previous_name = '';
 					foreach($music_list as $row) {
@@ -85,6 +86,23 @@ include "root.php";
 						$select .= "	<optgroup label='".$text['label-recordings']."'>";
 						foreach($recordings as $recording_value => $recording_name){
 							$select .= "		<option value='".$recording_value."' ".(($selected == $recording_value) ? 'selected="selected"' : null).">".$recording_name."</option>\n";
+						}
+						$select .= "	</optgroup>\n";
+					}
+				}
+			//streams
+				if (is_dir($_SERVER["PROJECT_ROOT"].'/app/streams')) {
+					$sql = "select * from v_streams ";
+					$sql .= "where (domain_uuid = '".$this->domain_uuid."' or domain_uuid is null) ";
+					$sql .= "and stream_enabled = 'true' ";
+					$sql .= "order by stream_name asc ";
+					$prep_statement = $this->db->prepare(check_sql($sql));
+					$prep_statement->execute();
+					$streams = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+					if (sizeof($streams) > 0) {
+						$select .= "	<optgroup label='".$text['label-streams']."'>";
+						foreach($streams as $row){
+							$select .= "		<option value='".$row['stream_location']."' ".(($selected == $row['stream_location']) ? 'selected="selected"' : null).">".$row['stream_name']."</option>\n";
 						}
 						$select .= "	</optgroup>\n";
 					}

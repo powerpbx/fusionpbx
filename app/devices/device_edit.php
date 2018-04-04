@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2016 All Rights Reserved.
+	Copyright (C) 2008-2018 All Rights Reserved.
 
 */
 
@@ -404,6 +404,7 @@
 	$device_lines[$x]['user_id'] = '';
 	$device_lines[$x]['auth_id'] = '';
 	$device_lines[$x]['password'] = '';
+	$device_lines[$x]['shared_line'] = '';
 	$device_lines[$x]['enabled'] = '';
 	$device_lines[$x]['sip_port'] = $_SESSION['provision']['line_sip_port']['numeric'];
 	$device_lines[$x]['sip_transport'] = $_SESSION['provision']['line_sip_transport']['text'];
@@ -419,6 +420,8 @@
 	$sql .= "WHEN 'memory' THEN 2 ";
 	$sql .= "WHEN 'programmable' THEN 3 ";
 	$sql .= "WHEN 'expansion' THEN 4 ";
+	$sql .= "WHEN 'expansion-1' THEN 5 ";
+	$sql .= "WHEN 'expansion-2' THEN 6 ";
 	$sql .= "ELSE 100 END, ";
 	if ($db_type == "mysql") {
 		$sql .= "device_key_id asc ";
@@ -463,6 +466,7 @@
 //get the users
 	$sql = "SELECT * FROM v_users ";
 	$sql .= "WHERE domain_uuid = '".$domain_uuid."' ";
+	$sql .= "AND user_enabled = 'true' ";
 	$sql .= "ORDER by username asc ";
 	$prep_statement = $db->prepare(check_sql($sql));
 	$prep_statement->execute();
@@ -473,7 +477,6 @@
 		$device_vendor = device::get_vendor($device_mac_address);
 	}
 
-
 //get the device line info for provision button
 	foreach($device_lines as $row) {
 		if (strlen($row['user_id']) > 0) {
@@ -483,7 +486,20 @@
 			$server_address = $row['server_address'];
 		}
 	}
-	$sip_profile_name = 'internal';
+
+//get the sip profile name
+	$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+	if ($fp) {
+		$command = "sofia_contact */".$user_id."@".$server_address;
+		$contact_string = event_socket_request($fp, "api ".$command);
+		if (substr($contact_string, 0, 5) == "sofia") {
+			$contact_array = explode("/", $contact_string);
+			$sip_profile_name = $contact_array[1];
+		}
+		else {
+			$sip_profile_name = 'internal';
+		}
+	}
 
 //show the header
 	require_once "resources/header.php";
@@ -586,6 +602,96 @@
 		echo "</script>";
 	}
 
+//add the QR code
+	if (permission_exists("device_line_password") && $device_template == "grandstream/wave") {
+		//set the mode
+		if (isset($_SESSION['theme']['qr_image'])) {
+			if (strlen($_SESSION['theme']['qr_image']) > 0) {
+				$mode = '4';
+			}
+			else {
+				$mode = '0';
+			}
+		}
+		else {
+			$mode = '4';
+		}
+
+		//build the xml
+		$row = $device_lines[0];
+		$xml =  "<?xml version='1.0' encoding='utf-8'?>";
+		$xml .= "<AccountConfig version='1'>";
+		$xml .= "<Account>";
+		$xml .= "<RegisterServer>".$row['server_address']."</RegisterServer>";
+		$xml .= "<OutboundServer>".$row['outbound_proxy_primary']."</OutboundServer>";
+		$xml .= "<SecOutboundServer>".$row['outbound_proxy_secondary']."</SecOutboundServer>";
+		$xml .= "<UserID>".$row['user_id']."</UserID>";
+		$xml .= "<AuthID>".$row['auth_id']."</AuthID>";
+		$xml .= "<AuthPass>".$row['password']."</AuthPass>";
+		$xml .= "<AccountName>".$row['user_id']."</AccountName>";
+		$xml .= "<DisplayName>".$row['display_name']."</DisplayName>";
+		$xml .= "<Dialplan>{x+|*x+|*++}</Dialplan>";
+		$xml .= "<RandomPort>0</RandomPort>";
+		$xml .= "<Voicemail>*97</Voicemail>";
+		$xml .= "</Account>";
+		$xml .= "</AccountConfig>";
+
+		//qr code generation
+		$_GET['type'] = "text";
+		$qr_vcard = true;
+		include "contacts_vcard.php";
+		echo "<input type='hidden' id='qr_vcard' value=\"".$xml."\">";
+		echo "<style>";
+		echo "	#qr_code_container {";
+		echo "		z-index: 999999; ";
+		echo "		position: absolute; ";
+		echo "		left: 0px; ";
+		echo "		top: 0px; ";
+		echo "		right: 0px; ";
+		echo "		bottom: 0px; ";
+		echo "		text-align: center; ";
+		echo "		vertical-align: middle;";
+		echo "	}";
+		echo "	#qr_code {";
+		echo "		display: block; ";
+		echo "		width: 650px; ";
+		echo "		height: 650px; ";
+		echo "		-webkit-box-shadow: 0px 1px 20px #888; ";
+		echo "		-moz-box-shadow: 0px 1px 20px #888; ";
+		echo "		box-shadow: 0px 1px 20px #888;";
+		echo "	}";
+		echo "</style>";
+		echo "<script src='".PROJECT_PATH."/resources/jquery/jquery.qrcode-0.8.0.min.js'></script>";
+		echo "<script language='JavaScript' type='text/javascript'>";
+		echo "	$(document).ready(function() {";
+		echo "		$(window).load(function() {";
+		echo "			$('#qr_code').qrcode({ ";
+		echo "				render: 'canvas', ";
+		echo "				minVersion: 6, ";
+		echo "				maxVersion: 40, ";
+		echo "				ecLevel: 'H', ";
+		echo "				size: 650, ";
+		echo "				radius: 0.2, ";
+		echo "				quiet: 6, ";
+		echo "				background: '#fff', ";
+		echo "				mode: ".$mode.", ";
+		echo "				mSize: 0.2, ";
+		echo "				mPosX: 0.5, ";
+		echo "				mPosY: 0.5, ";
+		echo "				image: $('#img-buffer')[0], ";
+		echo "				text: document.getElementById('qr_vcard').value ";
+		echo "			});";
+		echo "		});";
+		echo "	});";
+		echo "</script>";
+		if (isset($_SESSION['theme']['qr_image'])) {
+			echo "<img id='img-buffer' src='".$_SESSION["theme"]["qr_image"]["text"]."' style='display: none;'>";
+		}
+		else {
+			echo "<img id='img-buffer' src='".PROJECT_PATH."/themes/".$_SESSION["domain"]["template"]["name"]."/images/qr_code.png' style='display: none;'>";
+		}
+	}
+
 //show the content
 	echo "<form name='frm' id='frm' method='post' action=''>\n";
 	echo "<input type='hidden' name='file_action' id='file_action' value='' />\n";
@@ -596,7 +702,10 @@
 	echo "</td>\n";
 	echo "<td align='right' valign='top'>\n";
 	echo "	<input type='button' class='btn' id='button_back_location' name='' alt='".$text['button-back']."' onclick=\"window.location='devices.php'\" value='".$text['button-back']."'/>\n";
-	echo "	<input type='button' class='btn' value='".$text['button-apply']."' onclick=\"document.location.href='".PROJECT_PATH."/app/devices/cmd.php?cmd=check_sync&profile=".$sip_profile_name."&user=".$user_id."@".$server_address."&domain=".$server_address."&agent=".$device_vendor."';\">&nbsp;\n";
+	if (permission_exists("device_line_password") && $device_template == "grandstream/wave") {
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-qr_code']."' onclick=\"$('#qr_code_container').fadeIn(400);\" value='".$text['button-qr_code']."'>\n";
+	}
+	echo "	<input type='button' class='btn' value='".$text['button-provision']."' onclick=\"document.location.href='".PROJECT_PATH."/app/devices/cmd.php?cmd=check_sync&profile=".$sip_profile_name."&user=".$user_id."@".$server_address."&domain=".$server_address."&agent=".$device_vendor."';\">&nbsp;\n";
 	if (permission_exists("device_files")) {
 		//get the template directory
 			$prov = new provision;
@@ -654,7 +763,6 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-device_label']."\n";
@@ -668,7 +776,6 @@
 	else {
 		echo $device_label;
 	}
-
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -694,7 +801,7 @@
 							if(is_dir($dh_sub)) {
 								$templates_sub = scandir($dh_sub);
 								foreach($templates_sub as $dir_sub) {
-									if($file_sub != '.' && $dir_sub != '..' && $dir_sub[0] != '.') {
+									if($file_sub != '.' && $dir_sub != '..' && $dir_sub[0] != '.' && $dir_sub[0] != 'include') {
 										if(is_dir($template_dir . '/' . $dir .'/'. $dir_sub)) {
 											if ($device_template == $dir."/".$dir_sub) {
 												echo "<option value='".$dir."/".$dir_sub."' selected='selected'>".$dir."/".$dir_sub."</option>\n";
@@ -749,6 +856,9 @@
 		if (permission_exists('device_line_register_expires')) {
 			echo "				<td class='vtable'>".$text['label-register_expires']."</td>\n";
 		}
+		if (permission_exists('device_line_shared')) {
+			echo "				<td class='vtable'>".$text['label-shared_line']."</td>\n";
+		}
 		echo "				<td class='vtable'>".$text['label-enabled']."</td>\n";
 		echo "				<td>&nbsp;</td>\n";
 		echo "			</tr>\n";
@@ -795,6 +905,26 @@
 				echo "				<option value='10' ".($row['line_number'] == "10" ? $selected:"").">10</option>\n";
 				echo "				<option value='11' ".($row['line_number'] == "11" ? $selected:"").">11</option>\n";
 				echo "				<option value='12' ".($row['line_number'] == "12" ? $selected:"").">12</option>\n";
+				echo "				<option value='13' ".($row['line_number'] == "13" ? $selected:"").">13</option>\n";
+				echo "				<option value='14' ".($row['line_number'] == "14" ? $selected:"").">14</option>\n";
+				echo "				<option value='15' ".($row['line_number'] == "15" ? $selected:"").">15</option>\n";
+				echo "				<option value='16' ".($row['line_number'] == "16" ? $selected:"").">16</option>\n";
+				echo "				<option value='17' ".($row['line_number'] == "17" ? $selected:"").">17</option>\n";
+				echo "				<option value='18' ".($row['line_number'] == "18" ? $selected:"").">18</option>\n";
+				echo "				<option value='19' ".($row['line_number'] == "19" ? $selected:"").">19</option>\n";
+				echo "				<option value='20' ".($row['line_number'] == "20" ? $selected:"").">20</option>\n";
+				echo "				<option value='21' ".($row['line_number'] == "21" ? $selected:"").">21</option>\n";
+				echo "				<option value='22' ".($row['line_number'] == "22" ? $selected:"").">22</option>\n";
+				echo "				<option value='23' ".($row['line_number'] == "23" ? $selected:"").">23</option>\n";
+				echo "				<option value='24' ".($row['line_number'] == "24" ? $selected:"").">24</option>\n";
+				echo "				<option value='25' ".($row['line_number'] == "25" ? $selected:"").">25</option>\n";
+				echo "				<option value='26' ".($row['line_number'] == "26" ? $selected:"").">26</option>\n";
+				echo "				<option value='27' ".($row['line_number'] == "27" ? $selected:"").">27</option>\n";
+				echo "				<option value='28' ".($row['line_number'] == "28" ? $selected:"").">28</option>\n";
+				echo "				<option value='29' ".($row['line_number'] == "29" ? $selected:"").">29</option>\n";
+				echo "				<option value='30' ".($row['line_number'] == "30" ? $selected:"").">30</option>\n";
+				echo "				<option value='31' ".($row['line_number'] == "31" ? $selected:"").">31</option>\n";
+				echo "				<option value='32' ".($row['line_number'] == "32" ? $selected:"").">32</option>\n";
 				echo "				</select>\n";
 				echo "			</td>\n";
 				if (permission_exists('device_line_server_address')) {
@@ -827,12 +957,12 @@
 				echo "			</td>\n";
 
 				echo "			<td align='left'>\n";
-				echo "				<input class='formfld' style='width: 50px;' type='text' name='device_lines[".$x."][user_id]' maxlength='255' value=\"".$row['user_id']."\"/>\n";
+				echo "				<input class='formfld' style='width: 50px;' type='text' name='device_lines[".$x."][user_id]' maxlength='255' autocomplete=\"off\" value=\"".$row['user_id']."\"/>\n";
 				echo "			</td>\n";
 
 				if (permission_exists('device_line_auth_id')) {
 					echo "			<td align='left'>\n";
-					echo "				<input class='formfld' style='width: 50px;' type='text' name='device_lines[".$x."][auth_id]' maxlength='255' value=\"".$row['auth_id']."\"/>\n";
+					echo "				<input class='formfld' style='width: 50px;' type='text' name='device_lines[".$x."][auth_id]' maxlength='255' autocomplete=\"off\" value=\"".$row['auth_id']."\"/>\n";
 					echo "			</td>\n";
 				}
 
@@ -867,6 +997,15 @@
 				}
 				else {
 					echo "				<input type='hidden' name='device_lines[".$x."][register_expires]' value=\"".$row['register_expires']."\"/>\n";
+				}
+
+				if (permission_exists('device_line_shared')) {
+					echo "			<td align='left'>\n";
+					echo "				<input class='formfld' style='width: 50px;' type='text' name='device_lines[".$x."][shared_line]' maxlength='255' value=\"".$row['shared_line']."\"/>\n";
+					echo "			</td>\n";
+				}
+				else {
+					echo "				<input type='hidden' name='device_lines[".$x."][shared_line]' value=\"".$row['shared_line']."\"/>\n";
 				}
 
 				echo "			<td align='left'>\n";
@@ -995,11 +1134,13 @@
 				else {
 					echo "	<option value='line'>".$text['label-line']."</option>\n";
 				}
-				if ($row['device_key_category'] == "memory") {
-					echo "	<option value='memory' selected='selected'>".$text['label-memory']."</option>\n";
-				}
-				else {
-					echo "	<option value='memory'>".$text['label-memory']."</option>\n";
+				if ($row['device_key_vendor'] !== "polycom") {
+					if ($row['device_key_category'] == "memory") {
+						echo "	<option value='memory' selected='selected'>".$text['label-memory']."</option>\n";
+					}
+					else {
+						echo "	<option value='memory'>".$text['label-memory']."</option>\n";
+					}
 				}
 				if ($row['device_key_category'] == "programmable") {
 					echo "	<option value='programmable' selected='selected'>".$text['label-programmable']."</option>\n";
@@ -1007,21 +1148,13 @@
 				else {
 					echo "	<option value='programmable'>".$text['label-programmable']."</option>\n";
 				}
-				if (strlen($device_vendor) == 0) {
-					if ($row['device_key_category'] == "expansion") {
-						echo "	<option value='expansion' selected='selected'>".$text['label-expansion']."</option>\n";
-					}
-					else {
-						echo "	<option value='expansion'>".$text['label-expansion']."</option>\n";
-					}
-				}
-				else {
-					if (strtolower($device_vendor) == "cisco") {
-						if ($row['device_key_category'] == "expansion-1" || $row['device_key_category'] == "expansion") {
-							echo "	<option value='expansion-1' selected='selected'>".$text['label-expansion']." 1</option>\n";
+				if ($row['device_key_vendor'] !== "polycom") {
+					if (strlen($device_vendor) == 0) {
+						if ($row['device_key_category'] == "expansion") {
+							echo "	<option value='expansion' selected='selected'>".$text['label-expansion']."</option>\n";
 						}
 						else {
-							echo "	<option value='expansion-1'>".$text['label-expansion']." 1</option>\n";
+							echo "	<option value='expansion'>".$text['label-expansion']."</option>\n";
 						}
 						if ($row['device_key_category'] == "expansion-2") {
 							echo "	<option value='expansion-2' selected='selected'>".$text['label-expansion']." 2</option>\n";
@@ -1031,14 +1164,29 @@
 						}
 					}
 					else {
-						if ($row['device_key_category'] == "expansion") {
-							echo "	<option value='expansion' selected='selected'>".$text['label-expansion']."</option>\n";
+						if (strtolower($device_vendor) == "cisco" or strtolower($row['device_key_vendor']) == "yealink") {
+							if ($row['device_key_category'] == "expansion-1" || $row['device_key_category'] == "expansion") {
+								echo "	<option value='expansion-1' selected='selected'>".$text['label-expansion']." 1</option>\n";
+							}
+							else {
+								echo "	<option value='expansion-1'>".$text['label-expansion']." 1</option>\n";
+							}
+							if ($row['device_key_category'] == "expansion-2") {
+								echo "	<option value='expansion-2' selected='selected'>".$text['label-expansion']." 2</option>\n";
+							}
+							else {
+								echo "	<option value='expansion-2'>".$text['label-expansion']." 2</option>\n";
+							}
 						}
 						else {
-							echo "	<option value='expansion'>".$text['label-expansion']."</option>\n";
+							if ($row['device_key_category'] == "expansion") {
+								echo "	<option value='expansion' selected='selected'>".$text['label-expansion']."</option>\n";
+							}
+							else {
+								echo "	<option value='expansion'>".$text['label-expansion']."</option>\n";
+							}
 						}
 					}
-
 				}
 				echo "	</select>\n";
 				echo "</td>\n";
@@ -1351,7 +1499,8 @@
 		echo $text['description-domain_name']."\n";
 		echo "</td>\n";
 		echo "</tr>\n";
-	} else {
+	}
+	else {
 		echo "	<input type='hidden' name='domain_uuid' id='domain_uuid' value=\"".$_SESSION['domain_uuid']."\"/>\n";
 	}
 

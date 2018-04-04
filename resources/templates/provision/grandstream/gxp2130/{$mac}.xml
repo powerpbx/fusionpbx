@@ -42,7 +42,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2333></P2333>
+<P2333>{$outbound_proxy_secondary_1}</P2333>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -617,7 +617,7 @@
 <!--  Dial Plan. Default value is { x+ | \+x+ | *x+ | *xx*x+ } -->
 <!--  String -->
 <!--  Mandatory -->
-<P290>{ x+ | *x+ | *xx | *xxx | *xxxx | *xxxxx | *xxxxxx | **xx | **xxx | **xxxx | **xxxxx | **xxxxxx | **xxxxxxx | **xxxxxxxx | *xx*x+ | \+x+ | \p\a\r\k\+*x+ }</P290>
+<P290>{$grandstream_dial_plan}</P290>
 
 <!--  Call Log. 0 - Log All Calls, 1 - Log Incoming/Outgoing only (missed calls NOT recorded), 2 - Disable Call Log. Default is 0 -->
 <!--  Number: 0, 1, 2 -->
@@ -851,7 +851,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2433></P2433>
+<P2433>{$outbound_proxy_secondary_2}</P2433>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -1615,7 +1615,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2533></P2533>
+<P2533>{$outbound_proxy_secondary_3}</P2533>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -2378,7 +2378,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2633></P2633>
+<P2633>{$outbound_proxy_secondary_4}</P2633>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -3143,7 +3143,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2733></P2733>
+<P2733>{$outbound_proxy_secondary_5}</P2733>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -3906,7 +3906,7 @@
 
 <!--  Backup Outbound Proxy -->
 <!--  String -->
-<P2833></P2833>
+<P2833>{$outbound_proxy_secondary_6}</P2833>
 
 <!--  BLF Server -->
 <!--  String -->
@@ -4948,7 +4948,7 @@
 
 <!--  XML Config File Password -->
 <!--  String -->
-<P1359></P1359>
+<P1359>{$http_auth_password}</P1359>
 
 <!--  HTTP/HTTPS User Name -->
 <!--  String -->

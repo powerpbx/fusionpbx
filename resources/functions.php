@@ -27,7 +27,7 @@
 
 	if (!function_exists('software_version')) {
 		function software_version() {
-			return '4.3.2';
+			return '4.3.5';
 		}
 	}
 
@@ -1058,8 +1058,8 @@ function format_string ($format, $data) {
 	if(!function_exists('csv_to_named_array')) {
 		function csv_to_named_array($tmp_str, $tmp_delimiter) {
 			$tmp_array = explode ("\n", $tmp_str);
-			$result = '';
-			if (trim(strtoupper($tmp_array[0])) != "+OK") {
+			$result = array();
+			if (trim(strtoupper($tmp_array[0])) !== "+OK") {
 				$tmp_field_name_array = explode ($tmp_delimiter, $tmp_array[0]);
 				$x = 0;
 				foreach ($tmp_array as $row) {
@@ -1068,7 +1068,7 @@ function format_string ($format, $data) {
 						$y = 0;
 						foreach ($tmp_field_value_array as $tmp_value) {
 							$tmp_name = $tmp_field_name_array[$y];
-							if (trim(strtoupper($tmp_value)) != "+OK") {
+							if (trim(strtoupper($tmp_value)) !== "+OK") {
 								$result[$x][$tmp_name] = $tmp_value;
 							}
 							$y++;
@@ -1416,25 +1416,25 @@ function number_pad($number,$n) {
 
 			$mail = new PHPMailer();
 			$mail -> IsSMTP();
-			$mail -> Host = $_SESSION['email']['smtp_host']['var'];
-			if ($_SESSION['email']['smtp_port']['var'] != '') {
-				$mail -> Port = $_SESSION['email']['smtp_port']['var'];
+			$mail -> Host = $_SESSION['email']['smtp_host']['text'];
+			if ($_SESSION['email']['smtp_port']['text'] != '') {
+				$mail -> Port = $_SESSION['email']['smtp_port']['text'];
 			}
-			if ($_SESSION['email']['smtp_auth']['var'] == "true") {
-				$mail -> SMTPAuth = $_SESSION['email']['smtp_auth']['var'];
+			if ($_SESSION['email']['smtp_auth']['text'] == "true") {
+				$mail -> SMTPAuth = $_SESSION['email']['smtp_auth']['text'];
 			}
-			if ($_SESSION['email']['smtp_username']['var']) {
-				$mail -> Username = $_SESSION['email']['smtp_username']['var'];
-				$mail -> Password = $_SESSION['email']['smtp_password']['var'];
+			if ($_SESSION['email']['smtp_username']['text']) {
+				$mail -> Username = $_SESSION['email']['smtp_username']['text'];
+				$mail -> Password = $_SESSION['email']['smtp_password']['text'];
 			}
-			if ($_SESSION['email']['smtp_secure']['var'] == "none") {
-				$_SESSION['email']['smtp_secure']['var'] = '';
+			if ($_SESSION['email']['smtp_secure']['text'] == "none") {
+				$_SESSION['email']['smtp_secure']['text'] = '';
 			}
-			if ($_SESSION['email']['smtp_secure']['var'] != '') {
-				$mail -> SMTPSecure = $_SESSION['email']['smtp_secure']['var'];
+			if ($_SESSION['email']['smtp_secure']['text'] != '') {
+				$mail -> SMTPSecure = $_SESSION['email']['smtp_secure']['text'];
 			}
-			$eml_from_address = ($eml_from_address != '') ? $eml_from_address : $_SESSION['email']['smtp_from']['var'];
-			$eml_from_name = ($eml_from_name != '') ? $eml_from_name : $_SESSION['email']['smtp_from_name']['var'];
+			$eml_from_address = ($eml_from_address != '') ? $eml_from_address : $_SESSION['email']['smtp_from']['text'];
+			$eml_from_name = ($eml_from_name != '') ? $eml_from_name : $_SESSION['email']['smtp_from_name']['text'];
 			$mail -> SetFrom($eml_from_address, $eml_from_name);
 			$mail -> AddReplyTo($eml_from_address, $eml_from_name);
 			$mail -> Subject = $eml_subject;
@@ -1894,6 +1894,7 @@ function number_pad($number,$n) {
 		}
 	}
 
+//make directory with event socket
 	function event_socket_mkdir($dir) {
 		//connect to fs
 			$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
@@ -1913,6 +1914,12 @@ function number_pad($number,$n) {
 			}
 		//can not create directory
 			return false;
+	}
+
+//escape user data
+	function escape($string) {
+		return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+		//return htmlentities($string, ENT_QUOTES, 'UTF-8');
 	}
 
 ?>
