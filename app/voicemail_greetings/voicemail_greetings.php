@@ -153,35 +153,9 @@
 
 			//find the next available
 				for ($i = 1; $i < 10; $i++) {
-<<<<<<< HEAD
-					$file_name = 'greeting_'.$i.'.wav';
-					//check the database
-					$sql = "select voicemail_greeting_uuid from v_voicemail_greetings ";
-					$sql .= "where domain_uuid = '".$domain_uuid."' ";
-					$sql .= "and voicemail_id = '".$voicemail_id."' ";
-					$sql .= "and greeting_filename = '".$file_name."' ";
-					$prep_statement = $db->prepare(check_sql($sql));
-					$prep_statement->execute();
-					$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-					if (count($result) == 0 && !file_exists($v_greeting_dir.'/'.$file_name)) {
-						//move the uploaded greeting
-							event_socket_mkdir($v_greeting_dir);
-							move_uploaded_file($_FILES['file']['tmp_name'], $v_greeting_dir.'/'.$file_name);
-						//set newly uploaded greeting as active greeting for voicemail box
-							$sql = "update v_voicemails ";
-							$sql .= "set greeting_id = '".$i."' ";
-							$sql .= "where domain_uuid = '".$domain_uuid."' ";
-							$sql .= "and voicemail_id = '".$voicemail_id."' ";
-							$prep_statement = $db->prepare(check_sql($sql));
-							$prep_statement->execute();
-							unset($prep_statement);
-
-						messages::add($text['message-uploaded'].": ".$_FILES['file']['name']);
-=======
 					
 					//exit the loop if the file extension is invalid
 					if ($file_ext != '.wav' && $file_ext != '.mp3') {
->>>>>>> upstream/master
 						break;
 					}
 

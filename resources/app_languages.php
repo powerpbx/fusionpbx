@@ -1656,16 +1656,6 @@ $text['label-time']['ro-ro'] = "";
 $text['label-time']['ru-ru'] = "Время";
 $text['label-time']['sv-se'] = "Tid";
 $text['label-time']['uk-ua'] = "Час";
-
-$text['label-name']['de-ch'] = "Name"; //copied from de-de
-$text['label-name']['de-de'] = "Name";
-$text['label-name']['es-cl'] = "Nombre";
-$text['label-name']['es-mx'] = "Nombre"; //copied from es-cl
-$text['label-name']['fr-ca'] = "Nom"; //copied from fr-fr
-$text['label-name']['fr-fr'] = "Nom";
-$text['label-name']['he-il'] = "";
-$text['label-name']['it-it'] = "Nome";
-
 $text['label-time']['tr-tr'] = "Zaman";
 
 $text['label-name']['en-us'] = "Name";
@@ -1683,7 +1673,6 @@ $text['label-name']['nl-nl'] = "";
 $text['label-name']['pl-pl'] = "Nazwa";
 $text['label-name']['pt-br'] = "Nome"; //copied from pt-pt
 $text['label-name']['pt-pt'] = "Nome";
-
 $text['label-name']['ro-ro'] = "";
 $text['label-name']['ru-ru'] = "Имя";
 $text['label-name']['sv-se'] = "Namn";
@@ -1709,7 +1698,6 @@ $text['label-username']['ro-ro'] = "";
 $text['label-username']['ru-ru'] = "Имя пользователя";
 $text['label-username']['sv-se'] = "Användarnamn";
 $text['label-username']['uk-ua'] = "Ім’я користувача";
-
 $text['label-username']['tr-tr'] = "Soyisim";
 
 $text['label-description']['en-us'] = "Description";

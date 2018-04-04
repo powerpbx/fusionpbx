@@ -69,9 +69,7 @@ We ask that you sign the Contributor License Agreement for the following reasons
 
 How to Install FusionPBX
 ----------------------------
-* [Click here for PowerPBX install guide on CentOS v7 using MySQL.](http://www.powerpbx.org/content/fusionpbx-v4-freeswitch-v16-centos-v7-install-guide-v1.1)
-
-* Alternatively, as root do the following:
+* As root do the following:
 
 ```bash
 apt-get update && apt-get upgrade && apt-get install -y git

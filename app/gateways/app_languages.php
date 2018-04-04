@@ -878,7 +878,6 @@ $text['description-register_proxy']['pt-br'] = "Digite o nome do host ou o ender
 $text['description-register_proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy do registro. (Isso pode levar o formato de host:porta)";
 $text['description-register_proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului de înregistrare. (Acest lucru poate lua forma gazdei:port)";
 $text['description-register_proxy']['ru-ru'] = "Введите IP-адрес или название хоста прокси-сервера для регистрации. (Возможно указать номер порта в формате host:port)";
-
 $text['description-register_proxy']['sv-se'] = "Ange värdprofilens värdnamn eller IP-adress. (Detta kan ta formatet för värd:port)";
 $text['description-register_proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу зареєстрованого проксі. (Це може мати формат host:port)";
 
@@ -939,7 +938,6 @@ $text['description-proxy']['pt-br'] = "Digite o nome do host ou o endereço IP d
 $text['description-proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy. (Isso pode levar o formato de host:porta)";
 $text['description-proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului. (Acest lucru poate lua forma gazdei:port)";
 $text['description-proxy']['ru-ru'] = "Введите IP-адрес или название хоста прокси-сервера. (Возможно указать номер порта в формате host:port)";
-
 $text['description-proxy']['sv-se'] = "Ange värdnamn eller IP-adress för proxyn. (Detta kan ta formatet för värd:port)";
 $text['description-proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу проксі-сервера. (Це може мати формат host:port)";
 
@@ -1003,7 +1001,6 @@ $text['description-password']['ru-ru'] = "Введите здесь пароль
 $text['description-password']['sv-se'] = "Fyll i lösenord.";
 $text['description-password']['uk-ua'] = "Введіть пароль";
 
-
 $text['description-outbound_proxy']['en-us'] = "Enter the hostname or IP address of the outbound proxy. host[:port]";
 $text['description-outbound_proxy']['ar-eg'] = "أدخل اسم المضيف أو عنوان إب الخاص بالوكيل الصادر. (وهذا يمكن أن تتخذ شكل المضيف: ميناء)";
 $text['description-outbound_proxy']['de-at'] = "Geben Sie des Hostnamen oder IP-Adresse des Outbound-Proxy ein. (Der Zielport kann mittels Hostname:port oder IP-Adresse:port spezifiziert werden)"; //copied from de-de
@@ -1021,7 +1018,6 @@ $text['description-outbound_proxy']['pt-br'] = "Digite o nome do host ou o ender
 $text['description-outbound_proxy']['pt-pt'] = "Digite o nome do host ou o endereço IP do proxy de saída. (Isso pode levar o formato de host:porta)";
 $text['description-outbound_proxy']['ro-ro'] = "Introduceți numele gazdei sau adresa IP a proxy-ului de ieșire. (Acest lucru poate lua forma gazdei:port)";
 $text['description-outbound_proxy']['ru-ru'] = "Введите IP-адрес или название хоста исходящего прокси-сервера. (Возможно указать номер порта в формате host:port)";
-
 $text['description-outbound_proxy']['sv-se'] = "Ange värdnamn eller IP-adress för utgående proxy. (Detta kan ta formatet för värd:port)";
 $text['description-outbound_proxy']['uk-ua'] = "Введіть ім'я хоста або IP-адресу вихідного проксі. (Це може мати формат host:port)";
 

@@ -7,7 +7,6 @@ I've added symlinks so you can download both files for upload to the phone if au
  - auto provision requires
 	nginx rewrite rules
 	provision enabled text true
-
 	provision granstream_config_server_path text mydomain.com/app/provision
 	# to enable phonebook contacts see below...
 
@@ -29,7 +28,6 @@ This provisions the phonebook button and the phone's display for incoming/outgoi
 	provision enabled text true
 	provision contact_extensions boolean false
 	provision contact_grandstream text true
-
 	provision granstream_phonebook_xml_server_path text mydomain.com/app/provision/pb/  # note provision template adds {$mac} on the end
 		 handled by nginx (above).
 	provision granstream_config_server_path text mydomain.com/app/provision
@@ -75,4 +73,3 @@ This provisions the phonebook button and the phone's display for incoming/outgoi
 		- Type "Customer"
 		- Fill in Organiation, First Name, Last Name, Category, Roll, Users, Groups
 		- Numbers - Add "Work" "Voice" number
-

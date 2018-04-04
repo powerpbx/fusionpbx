@@ -594,61 +594,6 @@ include "root.php";
 					}
 					else {
 						//use the user_agent to pre-assign a template for 1-hit provisioning. Enter the a unique string to match in the user agent, and the template it should match.
-<<<<<<< HEAD
-							$template_list=array(
-								"Linksys/SPA-2102"=>"linksys/spa2102",
-								"Linksys/SPA-3102"=>"linksys/spa3102",
-								"Linksys/SPA-9212"=>"linksys/spa921",
-								"Cisco/SPA301"=>"cisco/spa301",
-								"Cisco/SPA301D"=>"cisco/spa302d",
-								"Cisco/SPA303"=>"cisco/spa303",
-								"Cisco/SPA501G"=>"cisco/spa501g",
-								"Cisco/SPA502G"=>"cisco/spa502g",
-								"Cisco/SPA504G"=>"cisco/spa504g",
-								"Cisco/SPA508G"=>"cisco/spa508g",
-								"Cisco/SPA509G"=>"cisco/spa509g",
-								"Cisco/SPA512G"=>"cisco/spa512g",
-								"Cisco/SPA514G"=>"cisco/spa514g",
-								"Cisco/SPA525G2"=>"cisco/spa525g2",
-								"snom300-SIP"=>"snom/300",
-								"snom320-SIP"=>"snom/320",
-								"snom360-SIP"=>"snom/360",
-								"snom370-SIP"=>"snom/370",
-								"snom820-SIP"=>"snom/820",
-								"snom-m3-SIP"=>"snom/m3",
-								"yealink SIP-T20"=>"yealink/t20",
-								"yealink SIP-T22"=>"yealink/t22",
-								"yealink SIP-T26"=>"yealink/t26",
-								"Yealink SIP-T32"=>"yealink/t32",
-								"HW DP750"=>"grandstream/dp750",
-								"HW GXP1450"=>"grandstream/gxp1450",
-								"HW GXP1628"=>"grandstream/gxp16xx",
-								"HW GXP1610"=>"grandstream/gxp16xx",
-								"HW GXP1620"=>"grandstream/gxp16xx",
-								"HW GXP1625"=>"grandstream/gxp16xx",
-								"HW GXP1628"=>"grandstream/gxp16xx",
-								"HW GXP1630"=>"grandstream/gxp16xx",
-								"HW GXP2124"=>"grandstream/gxp2124",
-								"HW GXP2130"=>"grandstream/gxp2130",
-								"HW GXP2135"=>"grandstream/gxp2135",
-								"HW GXP2140"=>"grandstream/gxp2140",
-								"HW GXP2160"=>"grandstream/gxp2160",
-								"HW GXP2170"=>"grandstream/gxp2170",
-								"HW GXV3140"=>"grandstream/gxv3140",
-								"HW GXV3240"=>"grandstream/gxv3240",
-								"HW GXV3175"=>"grandstream/gxv3175",
-								"Vesa VCS754"=>"vtech/vcs754",
-								"Wget/1.11.3"=>"konftel/kt300ip"
-								);
-
-							foreach ($template_list as $key=>$val){
-								if(stripos($_SERVER['HTTP_USER_AGENT'],$key)!== false) {
-									$device_template = $val;
-									break;
-								}
-							}
-							unset($template_list);
-=======
 							$templates['Linksys/SPA-2102'] = 'linksys/spa2102';
 							$templates['Linksys/SPA-3102'] = 'linksys/spa3102';
 							$templates['Linksys/SPA-9212'] = 'linksys/spa921';
@@ -755,7 +700,6 @@ include "root.php";
 								}
 							}
 							unset($templates);
->>>>>>> upstream/master
 
 						//mac address does not exist in the table so add it
 							if ($_SESSION['provision']['auto_insert_enabled']['boolean'] == "true" and strlen($domain_uuid) > 0) {
