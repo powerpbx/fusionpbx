@@ -28,7 +28,6 @@
 		$apps[$x]['description']['sv-se'] = "";
 		$apps[$x]['description']['uk-ua'] = "";
 
-
 	//destination details
 		$y=0;
 		$apps[$x]['destinations'][$y]['type'] = "sql";
@@ -215,6 +214,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "smtp_from_name";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "77620475-258a-4988-bec5-f74f2603666e";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "voicemail";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "not_found_message";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 

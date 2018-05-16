@@ -463,28 +463,6 @@
 							--add the row to the destinations array
 							destinations[x] = row;
 						end
-					--determine if the user is registered if not registered then lookup 
-						cmd = "sofia_contact */".. destination_number .."@" ..leg_domain_name;
-						if (api:executeString(cmd) == "error/user_not_registered") then
-							cmd = "user_data ".. destination_number .."@" ..leg_domain_name.." var forward_user_not_registered_enabled";
-							if (api:executeString(cmd) == "true") then
-								--get the new destination number
-								cmd = "user_data ".. destination_number .."@" ..leg_domain_name.." var forward_user_not_registered_destination";
-								not_registered_destination_number = api:executeString(cmd);
-								--if (not_registered_destination_number ~= nil) then
-								--	destination_number = not_registered_destination_number;	
-								--end
-
-								--check the new destination number for user_exists
-								cmd = "user_exists id ".. destination_number .." "..leg_domain_name;
-								user_exists = api:executeString(cmd);
-								if (user_exists == "true") then
-									row['user_exists'] = "true";
-								else
-									row['user_exists'] = "false";
-								end
-							end
-						end
 				else
 					--set the values
 						external = "true";
@@ -499,7 +477,7 @@
 			--freeswitch.consoleLog("NOTICE", "[ring_group] external "..external.."\n");
 
 		--get the dialplan data and save it to a table
-			if (external) then
+			if (external == "true") then
 				dialplans = route_to_bridge.preload_dialplan(
 					dbh, domain_uuid, {hostname = hostname, context = context}
 				)
@@ -525,6 +503,33 @@
 					destination_prompt = row.destination_prompt;
 					domain_name = row.domain_name;
 					toll_allow = row.toll_allow;
+
+				--determine if the user is registered if not registered then lookup 
+					cmd = "sofia_contact */".. destination_number .."@" ..domain_name;
+					if (api:executeString(cmd) == "error/user_not_registered") then
+freeswitch.consoleLog("NOTICE", "[ring_group] "..cmd.."\n");
+						cmd = "user_data ".. destination_number .."@" ..domain_name.." var forward_user_not_registered_enabled";
+freeswitch.consoleLog("NOTICE", "[ring_group] "..cmd.."\n");
+						if (api:executeString(cmd) == "true") then
+							--get the new destination number
+							cmd = "user_data ".. destination_number .."@" ..domain_name.." var forward_user_not_registered_destination";
+freeswitch.consoleLog("NOTICE", "[ring_group] "..cmd.."\n");
+							not_registered_destination_number = api:executeString(cmd);
+freeswitch.consoleLog("NOTICE", "[ring_group] "..not_registered_destination_number.."\n");
+							if (not_registered_destination_number ~= nil) then
+								destination_number = not_registered_destination_number;	
+							end
+
+							--check the new destination number for user_exists
+							cmd = "user_exists id ".. destination_number .." "..domain_name;
+							user_exists = api:executeString(cmd);
+							if (user_exists == "true") then
+								row['user_exists'] = "true";
+							else
+								row['user_exists'] = "false";
+							end
+						end
+					end
 
 				--follow the forwards
 					count, destination_number = get_forward_all(0, destination_number, leg_domain_name);
@@ -785,6 +790,7 @@
 					--if the user is busy rollover to the next destination
 						if (ring_group_strategy == "rollover") then
 							x = 0;
+							app_data = '{ignore_early_media=true}';
 							for key, row in pairs(destinations) do
 								--set the values from the database as variables
 									user_exists = row.user_exists;
@@ -797,9 +803,6 @@
 										extension_uuid = trim(api:executeString(cmd));
 									end
 
-								--set the timeout
-									session:execute("set", "call_timeout="..row.destination_timeout);
-
 								--if the timeout was reached go to the timeout action
 									if (x > 0) then
 										if (session:getVariable("originate_disposition") == "ALLOTTED_TIMEOUT"
@@ -811,15 +814,18 @@
 
 								--send the call to the destination
 									if (user_exists == "true") then
-										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",call_direction="..call_direction..",dialed_extension=" .. destination_number .. ",extension_uuid="..extension_uuid..",domain_name="..domain_name..",domain_uuid="..domain_uuid..row.record_session.."]user/" .. destination_number .. "@" .. domain_name;
-										session:execute("bridge", dial_string);
+										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",leg_timeout="..destination_timeout..",call_direction="..call_direction..",dialed_extension=" .. destination_number .. ",extension_uuid="..extension_uuid..",domain_name="..domain_name..",domain_uuid="..domain_uuid..row.record_session.."]user/" .. destination_number .. "@" .. domain_name;
 									elseif (tonumber(destination_number) == nil) then
-										--sip uri
-										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",call_direction=outbound,domain_name="..domain_name..",domain_uuid="..domain_uuid.."]" .. destination_number;
-										session:execute("bridge", dial_string);
+										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",call_timeout="..destination_timeout..",call_direction=outbound,domain_name="..domain_name..",domain_uuid="..domain_uuid.."]" .. destination_number;
 									else
-										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction=outbound]loopback/" .. destination_number;
-										session:execute("bridge", dial_string);
+										dial_string = "["..group_confirm.."sip_invite_domain="..domain_name..",call_timeout="..destination_timeout..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction=outbound]loopback/" .. destination_number;
+									end
+
+								--add the delimiter
+									if (x == 0) then
+										app_data = app_data .. dial_string;
+									else
+										app_data = app_data .. delimiter .. dial_string;
 									end
 
 								--increment the value of x
