@@ -116,7 +116,7 @@ include "root.php";
 				}
 
 				//sanitize the database name
-				$this->db_name = preg_replace('#[^a-zA-Z0-9_\-]#', '', $this->db_name);
+				$this->db_name = preg_replace('#[^a-zA-Z0-9_\-\.]#', '', $this->db_name);
 
 				if ($this->driver == "sqlite") {
 					if (strlen($this->db_name) == 0) {
@@ -132,8 +132,9 @@ include "root.php";
 					if (file_exists($this->path.'/'.$this->db_name)) {
 						//connect to the database
 							$this->db = new PDO('sqlite:'.$this->path.'/'.$this->db_name); //sqlite 3
-						//enable foreign key constraints
+						//PRAGMA commands
 							$this->db->query('PRAGMA foreign_keys = ON;');
+							$this->db->query('PRAGMA journal_mode = wal;');
 						//add additional functions to SQLite so that they are accessible inside SQL
 							//bool PDO::sqliteCreateFunction ( string function_name, callback callback [, int num_args] )
 							$this->db->sqliteCreateFunction('md5', 'php_md5', 1);
@@ -1967,7 +1968,12 @@ include "root.php";
 						$sql .= "values ";
 						$sql .= "(";
 						$sql .= "'".uuid()."', ";
-						$sql .= "'".$this->domain_uuid."', ";
+						if (is_null($this->domain_uuid)) {
+							$sql .= "null, ";
+						}
+						else {
+							$sql .= "'".$this->domain_uuid."', ";
+						}
 						if (strlen($user_uuid) > 0) {
 							$sql .= "'".$user_uuid."', ";
 						}
