@@ -67,7 +67,7 @@
 		$billsec = check_str($_REQUEST["billsec"]);
 		$hangup_cause = check_str($_REQUEST["hangup_cause"]);
 		$call_result = check_str($_REQUEST["call_result"]);
-		$uuid = check_str($_REQUEST["uuid"]);
+		$xml_cdr_uuid = check_str($_REQUEST["xml_cdr_uuid"]);
 		$bleg_uuid = check_str($_REQUEST["bleg_uuid"]);
 		$accountcode = check_str($_REQUEST["accountcode"]);
 		$read_codec = check_str($_REQUEST["read_codec"]);
@@ -206,7 +206,7 @@
 				$sql_where_ands[] = "(answer_stamp is null and bridge_uuid is null and billsec = 0 and sip_hangup_disposition = 'send_refuse')";
 		}
 	}
-	if (strlen($uuid) > 0) { $sql_where_ands[] = "uuid = '".$uuid."'"; }
+	if (strlen($xml_cdr_uuid) > 0) { $sql_where_ands[] = "xml_cdr_uuid = '".$xml_cdr_uuid."'"; }
 	if (strlen($bleg_uuid) > 0) { $sql_where_ands[] = "bleg_uuid = '".$bleg_uuid."'"; }
 	if (strlen($accountcode) > 0) { $sql_where_ands[] = "accountcode = '".$accountcode."'"; }
 	if (strlen($read_codec) > 0) { $sql_where_ands[] = "read_codec like '%".$read_codec."%'"; }
@@ -284,7 +284,7 @@
 	$param .= "&billsec=".escape($billsec);
 	$param .= "&hangup_cause=".escape($hangup_cause);
 	$param .= "&call_result=".escape($call_result);
-	$param .= "&uuid=".escape($uuid);
+	$param .= "&xml_cdr_uuid=".escape($xml_cdr_uuid);
 	$param .= "&bleg_uuid=".escape($bleg_uuid);
 	$param .= "&accountcode=".escape($accountcode);
 	$param .= "&read_codec=".escape($read_codec);
@@ -321,113 +321,130 @@
 	if ($_REQUEST['export_format'] == "csv") { $rows_per_page = 0; }
 	if ($_REQUEST['export_format'] == "pdf") { $rows_per_page = 0; }
 
-//page results if rows_per_page is greater than zero
-	if ($rows_per_page > 0) {
-
-		//get the number of rows in the v_xml_cdr
-			$sql = "select count(uuid) as num_rows from v_xml_cdr ";
-			$sql .= "where domain_uuid = '".$domain_uuid."' ".$sql_where;
-			$prep_statement = $db->prepare(check_sql($sql));
-			if ($prep_statement) {
-				$prep_statement->execute();
-				$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-				if ($row['num_rows'] > 0) {
-					$num_rows = $row['num_rows'];
-				}
-				else {
-					$num_rows = '0';
-				}
+//count the records in the database
+	/*
+	if ($_SESSION['cdr']['limit']['numeric'] == 0) {
+		$sql = "select count(xml_cdr_uuid) as num_rows from v_xml_cdr ";
+		$sql .= "where domain_uuid = '".$domain_uuid."' ".$sql_where;
+		$prep_statement = $db->prepare(check_sql($sql));
+		if ($prep_statement) {
+			$prep_statement->execute();
+			$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
+			if ($row['num_rows'] > 0) {
+				$num_rows = $row['num_rows'];
 			}
-			unset($prep_statement, $result);
-
-		//limit the number of results
-			if ($_SESSION['cdr']['limit']['numeric'] > 0) {
-				$num_rows = $_SESSION['cdr']['limit']['numeric'];
+			else {
+				$num_rows = '0';
 			}
+		}
+		unset($prep_statement, $result);
+	}
+	*/
 
-		//set the default paging
-			$rows_per_page = $_SESSION['domain']['paging']['numeric'];
-
-		//prepare to page the results
-			//$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50; //set on the page that includes this page
-			$page = $_GET['page'];
-			if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
-			list($paging_controls_mini, $rows_per_page, $var_3) = paging($num_rows, $param, $rows_per_page, true); //top
-			list($paging_controls, $rows_per_page, $var_3) = paging($num_rows, $param, $rows_per_page); //bottom
-			$offset = $rows_per_page * $page;
+//limit the number of results
+	if ($_SESSION['cdr']['limit']['numeric'] > 0) {
+		$num_rows = $_SESSION['cdr']['limit']['numeric'];
 	}
 
+//set the default paging
+	$rows_per_page = $_SESSION['domain']['paging']['numeric'];
+
+//prepare to page the results
+	//$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50; //set on the page that includes this page
+	if (is_numeric($_GET['page'])) { $page = $_GET['page']; }
+	if (!isset($_GET['page'])) { $page = 0; $_GET['page'] = 0; }
+	$offset = $rows_per_page * $page;
+
 //get the results from the db
-	$sql = "select ";
-	$sql .= "domain_uuid, ";
-	$sql .= "start_stamp, ";
-	$sql .= "start_epoch, ";
-	$sql .= "hangup_cause, ";
-	$sql .= "duration, ";
-	$sql .= "billmsec, ";
-	$sql .= "record_path, ";
-	$sql .= "record_name, ";
-	$sql .= "uuid, ";
-	$sql .= "bridge_uuid, ";
-	$sql .= "direction, ";
-	$sql .= "billsec, ";
-	$sql .= "caller_id_name, ";
-	$sql .= "caller_id_number, ";
-	$sql .= "caller_destination, ";
-	$sql .= "source_number, ";
-	$sql .= "destination_number, ";
-	$sql .= "leg, ";
-	$sql .= "(xml IS NOT NULL OR json IS NOT NULL) AS raw_data_exists, ";
+	$sql = "select \n";
+	$sql .= "c.domain_uuid, \n";
+	$sql .= "e.extension, \n";
+	$sql .= "c.start_stamp, \n";
+	$sql .= "c.end_stamp, \n";
+	$sql .= "c.start_epoch, \n";
+	$sql .= "c.hangup_cause, \n";
+	$sql .= "c.duration, \n";
+	$sql .= "c.billmsec, \n";
+	$sql .= "c.record_path, \n";
+	$sql .= "c.record_name, \n";
+	$sql .= "c.xml_cdr_uuid, \n";
+	$sql .= "c.bridge_uuid, \n";
+	$sql .= "c.direction, \n";
+	$sql .= "c.billsec, \n";
+	$sql .= "c.caller_id_name, \n";
+	$sql .= "c.caller_id_number, \n";
+	$sql .= "c.caller_destination, \n";
+	$sql .= "c.source_number, \n";
+	$sql .= "c.destination_number, \n";
+	$sql .= "c.leg, \n";
+	$sql .= "(c.xml IS NOT NULL OR c.json IS NOT NULL) AS raw_data_exists, \n";
 	if (is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
 			$array = explode(",", $field);
 			$field_name = end($array);
-			$sql .= $field_name.", ";
+			$sql .= $field_name.", \n";
 		}
 	}
 	if (is_array($_SESSION['cdr']['export'])) {
 		foreach ($_SESSION['cdr']['export'] as $field) {
-			$sql .= $field.", ";
+			$sql .= $field.", \n";
 		}
 	}
-	$sql .= "accountcode, ";
-	$sql .= "answer_stamp, ";
-	$sql .= "sip_hangup_disposition, ";
+	$sql .= "c.accountcode, \n";
+	$sql .= "c.answer_stamp, \n";
+	$sql .= "c.sip_hangup_disposition, \n";
 	if (permission_exists("xml_cdr_pdd")) {
-		$sql .= "pdd_ms, ";
+		$sql .= "c.pdd_ms, \n";
 	}
 	if (permission_exists("xml_cdr_mos")) {
-		$sql .= "rtp_audio_in_mos, ";
+		$sql .= "c.rtp_audio_in_mos, \n";
 	}
-	$sql .= "(answer_epoch - start_epoch) as tta ";
+	$sql .= "(c.answer_epoch - c.start_epoch) as tta ";
 	if ($_REQUEST['show'] == "all" && permission_exists('xml_cdr_all')) {
-		$sql .= ", domain_name ";
+		$sql .= ", c.domain_name \n";
 	}
-	$sql .= "from v_xml_cdr ";
+	$sql .= "from v_xml_cdr as c \n";
+	$sql .= "left join v_extensions as e on e.extension_uuid = c.extension_uuid ";
+	$sql .= "inner join v_domains as d on d.domain_uuid = c.domain_uuid ";
 	if ($_REQUEST['show'] == "all" && permission_exists('xml_cdr_all')) {
 		if ($sql_where) { $sql .= "where "; }
 	} else {
-		$sql .= "where domain_uuid = '".$domain_uuid."' ";
+		$sql .= "where c.domain_uuid = '".$domain_uuid."' \n";
 	}
-
 	$sql .= $sql_where;
 	if (strlen($order_by)> 0) { $sql .= " order by ".$order_by." ".$order." "; }
 	if ($_REQUEST['export_format'] != "csv" && $_REQUEST['export_format'] != "pdf") {
 		if ($rows_per_page == 0) {
-			$sql .= " limit ".$_SESSION['cdr']['limit']['numeric']." offset 0 ";
+			$sql .= " limit ".$_SESSION['cdr']['limit']['numeric']." offset 0 \n";
 		}
 		else {
-			$sql .= " limit ".$rows_per_page." offset ".$offset." ";
+			$sql .= " limit ".$rows_per_page." offset ".$offset." \n";
 		}
 	}
 	$sql= str_replace("  ", " ", $sql);
 	$sql= str_replace("where and", "where", $sql);
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_ASSOC);
+	$database = new database;
+	if ($archive_request == 'true') {
+		if ($_SESSION['cdr']['archive_database']['boolean'] == 'true') {
+			$database->driver = $_SESSION['cdr']['archive_database_driver']['text'];
+			$database->host = $_SESSION['cdr']['archive_database_host']['text'];
+			$database->type = $_SESSION['cdr']['archive_database_type']['text'];
+			$database->port = $_SESSION['cdr']['archive_database_port']['text'];
+			$database->db_name = $_SESSION['cdr']['archive_database_name']['text'];
+			$database->username = $_SESSION['cdr']['archive_database_username']['text'];
+			$database->password = $_SESSION['cdr']['archive_database_password']['text'];
+		}
+	}
+	$database->select($sql);
+	$result = $database->result;
 	$result_count = count($result);
-	unset ($prep_statement, $sql);
+	unset($database);
 
+//return the paging
+	list($paging_controls_mini, $rows_per_page, $offset) = paging($num_rows, $param, $rows_per_page, true, $result_count); //top
+	list($paging_controls, $rows_per_page, $offset) = paging($num_rows, $param, $rows_per_page, false, $result_count); //bottom
+
+//set the row style
 	$c = 0;
 	$row_style["0"] = "row_style0";
 	$row_style["1"] = "row_style1";
