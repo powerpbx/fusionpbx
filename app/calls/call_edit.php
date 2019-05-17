@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2017
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -113,10 +113,10 @@
 	unset ($prep_statement);
 
 //process post vars
-	if (count($_POST)>0 && strlen($_POST["persistformvar"]) == 0) {
+	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 		//get http post variables and set them to php variables
-			if (count($_POST)>0) {
+			if (count($_POST) > 0) {
 				$forward_all_enabled = check_str($_POST["forward_all_enabled"]);
 				$forward_all_destination = check_str($_POST["forward_all_destination"]);
 				$forward_busy_enabled = check_str($_POST["forward_busy_enabled"]);
@@ -246,12 +246,19 @@
 				$array['follow_me'][] = $follow_me;
 			}
 
+		//add the dialplan permission
+			$p = new permissions;
+			$p->add("extension_edit", "temp");
+
 		//save the data
 			$database = new database;
 			$database->app_name = 'call_routing';
 			$database->app_uuid = '19806921-e8ed-dcff-b325-dd3e5da4959d';
 			$database->save($array);
 			//$message = $database->message;
+
+		//remove the temporary permission
+			$p->delete("extension_edit", "temp");
 
 		//delete empty destination records
 			if (is_array($follow_me_delete_uuids) && sizeof($follow_me_delete_uuids) > 0) {
@@ -375,11 +382,8 @@
 				$cache->delete("directory:".$number_alias."@".$_SESSION['domain_name']);
 			}
 
-		//redirect the user
-			messages::add($text['confirm-update']);
-			header("Location: ".$_REQUEST['return_url']);
-			return;
-
+		//add the message
+			message::add($text['confirm-update']);
 	}
 
 //show the header
@@ -439,10 +443,10 @@
 	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 	foreach ($result as &$row) {
 		if (strlen($number_alias) == 0) {
-			echo "		\"".$row["extension"]."\",\n";
+			echo "		\"".escape($row["extension"])."\",\n";
 		}
 		else {
-			echo "		\"".$row["number_alias"]."\",\n";
+			echo "		\"".escape($row["number_alias"])."\",\n";
 		}
 	}
 	echo "	];\n";
@@ -456,7 +460,6 @@
 
 //show the content
 	echo "<form method='post' name='frm' action=''>\n";
-	echo "<input type='hidden' name='return_url' value='".$_SERVER["HTTP_REFERER"]."'>\n";
 
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
@@ -464,7 +467,7 @@
 	echo "	<b>".$text['title']."</b>\n";
 	echo "</td>\n";
 	echo "<td width='70%' align='right' valign='top'>\n";
-	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='".$_SERVER["HTTP_REFERER"]."'\" value='".$text['button-back']."'>\n";
+	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='/'\" value='".$text['button-back']."'>\n";
 	echo "	<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -484,7 +487,7 @@
 	$on_click .= "document.getElementById('dnd_disabled').checked=true; ";
 	$on_click .= "document.getElementById('forward_all_destination').focus(); ";
 	echo "	<label for='forward_all_disabled'><input type='radio' name='forward_all_enabled' id='forward_all_disabled' onclick=\"\" value='false' ".(($forward_all_enabled == "false" || $forward_all_enabled == "") ? "checked='checked'" : null)." /> ".$text['label-disabled']."</label> \n";
-	echo "	<label for='forward_all_enabled'><input type='radio' name='forward_all_enabled' id='forward_all_enabled' onclick=\"".$on_click."\" value='true' ".(($forward_all_enabled == "true") ? "checked='checked'" : null)." /> ".$text['label-enabled']."</label> \n";
+	echo "	<label for='forward_all_enabled'><input type='radio' name='forward_all_enabled' id='forward_all_enabled' onclick=\"$on_click\" value='true' ".(($forward_all_enabled == "true") ? "checked='checked'" : null)." /> ".$text['label-enabled']."</label> \n";
 	unset($on_click);
 	echo "&nbsp;&nbsp;&nbsp;";
 	echo "	<input class='formfld' type='text' name='forward_all_destination' id='forward_all_destination' maxlength='255' placeholder=\"".$text['label-destination']."\" value=\"".escape($forward_all_destination)."\">\n";
@@ -540,7 +543,7 @@
 	echo "</tr>\n";
 
 	if (permission_exists('call_forward_caller_id')) {
-		$sql_forward = "select destination_uuid, destination_number, destination_description, destination_caller_id_number, destination_caller_id_name from v_destinations where domain_uuid = '$domain_uuid' and destination_type = 'inbound' order by destination_number asc ";
+		$sql_forward = "select destination_uuid, destination_number, destination_description, destination_caller_id_number, destination_caller_id_name from v_destinations where domain_uuid = '".escape($domain_uuid)."' and destination_type = 'inbound' order by destination_number asc ";
 		$prep_statement_forward = $db->prepare(check_sql($sql_forward));
 		$prep_statement_forward->execute();
 		$result_forward = $prep_statement_forward->fetchAll(PDO::FETCH_ASSOC);
@@ -562,7 +565,7 @@
 				if(strlen($caller_id_name) == 0){
 					$caller_id_name = $row_forward['destination_description'];
 				}
-				echo "		<option value='".$row_forward["destination_uuid"]."' ".$selected.">".format_phone($caller_id_number)." : ".$caller_id_name."</option>\n";
+				echo "		<option value='".escape($row_forward["destination_uuid"])."' ".escape($selected).">".escape(format_phone($caller_id_number))." : ".$caller_id_name."</option>\n";
 			}
 			echo "	</select><br />\n";
 			echo $text['description-cid-number']."\n";
@@ -585,7 +588,7 @@
 		$on_click .= "document.getElementById('follow_me_caller_id_uuid').focus(); ";
 	}
 	echo "	<label for='follow_me_disabled'><input type='radio' name='follow_me_enabled' id='follow_me_disabled' onclick=\"$('#tr_follow_me_settings').slideUp('fast');\" value='false' ".(($follow_me_enabled == "false" || $follow_me_enabled == "") ? "checked='checked'" : null)." /> ".$text['label-disabled']."</label> \n";
-	echo "	<label for='follow_me_enabled'><input type='radio' name='follow_me_enabled' id='follow_me_enabled' onclick=\"$('#tr_follow_me_settings').slideDown('fast'); ".$on_click."\" value='true' ".(($follow_me_enabled == "true") ? "checked='checked'" : null)."/> ".$text['label-enabled']."</label> \n";
+	echo "	<label for='follow_me_enabled'><input type='radio' name='follow_me_enabled' id='follow_me_enabled' onclick=\"$('#tr_follow_me_settings').slideDown('fast'); $on_click\" value='true' ".(($follow_me_enabled == "true") ? "checked='checked'" : null)."/> ".$text['label-enabled']."</label> \n";
 	unset($on_click);
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -653,7 +656,7 @@
 	}
 
 	if (permission_exists('follow_me_caller_id')) {
-		$sql_follow_me = "select destination_uuid, destination_number, destination_description, destination_caller_id_number, destination_caller_id_name from v_destinations where domain_uuid = '$domain_uuid' and destination_type = 'inbound' order by destination_number asc ";
+		$sql_follow_me = "select destination_uuid, destination_number, destination_description, destination_caller_id_number, destination_caller_id_name from v_destinations where domain_uuid = '".escape($domain_uuid)."' and destination_type = 'inbound' order by destination_number asc ";
 		$prep_statement_follow_me = $db->prepare(check_sql($sql_follow_me));
 		$prep_statement_follow_me->execute();
 		$result_follow_me = $prep_statement_follow_me->fetchAll(PDO::FETCH_ASSOC);
@@ -677,7 +680,7 @@
 					$caller_id_name = $row_follow_me['destination_description'];
 				}
 
-				echo "		<option value='".$row_follow_me["destination_uuid"]."' ".$selected.">".format_phone($caller_id_number)." : ".$caller_id_name."</option>\n";
+				echo "		<option value='".escape($row_follow_me["destination_uuid"])."' ".escape($selected).">".format_phone(escape($caller_id_number))." : ".escape($caller_id_name)."</option>\n";
 			}
 			echo "	</select><br />\n";
 			echo $text['description-cid-number']."\n";
@@ -693,7 +696,7 @@
 		echo "	".$text['label-cid-name-prefix']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "  <input class='formfld' type='text' name='cid_name_prefix' maxlength='255' value='$cid_name_prefix'>\n";
+		echo "  <input class='formfld' type='text' name='cid_name_prefix' maxlength='255' value='".escape($cid_name_prefix)."'>\n";
 		echo "<br />\n";
 		echo $text['description-cid-name-prefix']."\n";
 		echo "</td>\n";
@@ -706,7 +709,7 @@
 		echo "	".$text['label-cid-number-prefix']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "  <input class='formfld' type='text' name='cid_number_prefix' maxlength='255' value='$cid_number_prefix'>\n";
+		echo "  <input class='formfld' type='text' name='cid_number_prefix' maxlength='255' value='".escape($cid_number_prefix)."'>\n";
 		echo "<br />\n";
 		echo $text['description-cid-number-prefix']."\n";
 		echo "</td>\n";
@@ -735,7 +738,7 @@
 	echo "	<tr>\n";
 	echo "		<td colspan='2' align='right'>\n";
 	if ($action == "update") {
-		echo "		<input type='hidden' name='id' value='".$extension_uuid."'>\n";
+		echo "		<input type='hidden' name='id' value='".escape($extension_uuid)."'>\n";
 	}
 	echo "			<br />";
 	echo "			<input type='submit' class='btn' value='".$text['button-save']."'>\n";

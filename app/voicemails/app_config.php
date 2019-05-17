@@ -28,7 +28,6 @@
 		$apps[$x]['description']['sv-se'] = "";
 		$apps[$x]['description']['uk-ua'] = "";
 
-
 	//destination details
 		$y=0;
 		$apps[$x]['destinations'][$y]['type'] = "sql";
@@ -57,21 +56,27 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_delete";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "voicemail_import";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_message_view";
 		$apps[$x]['permissions'][$y]['menu']['uuid'] = "0347f82a-62a0-49d0-bacd-511d080c46d5";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_message_add";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_message_edit";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
@@ -81,6 +86,7 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_sms_edit";
 		$y++;
@@ -96,21 +102,25 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_option_edit";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_option_view";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "voicemail_option_delete";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 
 	//default settings
 		$y=0;
@@ -217,6 +227,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "77620475-258a-4988-bec5-f74f2603666e";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "voicemail";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "not_found_message";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 
 	//schema details
 		$y=0;
@@ -316,6 +334,8 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_voicemails";
+		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "voicemail_uuid";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "created_epoch";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";

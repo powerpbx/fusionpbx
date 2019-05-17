@@ -43,8 +43,25 @@
 	$language = new text;
 	$text = $language->get();
 
-//get the queue_name and set it as a variable
-	$queue_name = $_GET['queue_name'];
+//get the queue uuid and set it as a variable
+	$queue_uuid = $_GET['queue_name'];
+
+//get the queues from the database
+	if (!is_array($_SESSION['queues'])) {
+		$sql = "select * from v_call_center_queues ";
+		$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
+		$sql .= "order by queue_name ASC ";
+		$prep_statement = $db->prepare(check_sql($sql));
+		$prep_statement->execute();
+		$_SESSION['queues'] = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+	}
+
+//get the queue name
+	foreach ($_SESSION['queues'] as $row) {
+		if ($row['call_center_queue_uuid'] == $queue_uuid) {
+			$queue_name = $row['queue_name'];
+		}
+	}
 
 //convert the string to a named array
 	function str_to_named_array($tmp_str, $tmp_delimiter) {
@@ -104,7 +121,7 @@
 
 			//send the event socket command and get the response
 				//callcenter_config queue list tiers [queue_name] |
-				$switch_cmd = 'callcenter_config queue list tiers '.$queue_name;
+				$switch_cmd = 'callcenter_config queue list tiers '.$queue_uuid;
 				$event_socket_str = trim(event_socket_request($fp, 'api '.$switch_cmd));
 				$result = str_to_named_array($event_socket_str, '|');
 
@@ -126,7 +143,7 @@
 
 			//send the event socket command and get the response
 				//callcenter_config queue list agents [queue_name] [status] |
-				$switch_cmd = 'callcenter_config queue list agents '.$queue_name;
+				$switch_cmd = 'callcenter_config queue list agents '.$queue_uuid;
 				$event_socket_str = trim(event_socket_request($fp, 'api '.$switch_cmd));
 				$agent_result = str_to_named_array($event_socket_str, '|');
 
@@ -173,7 +190,7 @@
 							//get the agent name
 							$agent_name = '';
 							if (is_array($_SESSION['agents'])) foreach ($_SESSION['agents'] as $agent) {
-								if ($agent['call_center_agent_uuid'] = $agent_uuid) {
+								if ($agent['call_center_agent_uuid'] == $agent_uuid) {
 									$agent_name = $agent['agent_name'];
 								}
 							}
@@ -269,7 +286,7 @@
 		//get the queue list
 			//send the event socket command and get the response
 				//callcenter_config queue list members [queue_name]
-				$switch_cmd = 'callcenter_config queue list members '.$queue_name;
+				$switch_cmd = 'callcenter_config queue list members '.$queue_uuid;
 				$event_socket_str = trim(event_socket_request($fp, 'api '.$switch_cmd));
 				$result = str_to_named_array($event_socket_str, '|');
 				if (!is_array($result)) { unset($result); }
@@ -281,7 +298,7 @@
 
 				echo "<table width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\">\n";
 				echo "  <tr>\n";
-				echo "	<td align='left'><b>".$text['label-queue'].": ".ucfirst($_GET['name'])."</b><br />\n";
+				echo "	<td align='left'><b>".$text['label-queue'].": ".ucfirst($queue_name)."</b><br />\n";
 				echo "		".$text['description-queue']."<br />\n";
 				echo "	</td>\n";
 				echo "	<td align='right' valign='top'>";
@@ -340,7 +357,7 @@
 				//get the serving agent name
 				$serving_agent_name = '';
 				if (is_array($_SESSION['agents'])) foreach ($_SESSION['agents'] as $agent) {
-					if ($agent['call_center_agent_uuid'] = $serving_agent) {
+					if ($agent['call_center_agent_uuid'] == $serving_agent) {
 						$serving_agent_name = $agent['agent_name'];
 					}
 				}

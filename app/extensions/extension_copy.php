@@ -31,7 +31,7 @@
 	require_once "resources/paging.php";
 
 //check permissions
-	if (permission_exists('extension_add')) {
+	if (permission_exists('extension_copy')) {
 		//access granted
 	}
 	else {
@@ -55,7 +55,7 @@
 // skip the copy if the domain extension already exists
 	$extension = new extension;
 	if ($extension->exists($_SESSION['domain_uuid'], $extension_new)) {
-		messages::add($text['message-duplicate'], 'negative');
+		message::add($text['message-duplicate'], 'negative');
 		header("Location: extensions.php");
 		return;
 	}
@@ -236,7 +236,7 @@
 	}
 
 //redirect the user
-	messages::add($text['message-copy']);
+	message::add($text['message-copy']);
 	header("Location: extensions.php");
 	return;
 

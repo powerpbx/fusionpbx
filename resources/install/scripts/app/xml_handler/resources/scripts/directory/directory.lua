@@ -1,6 +1,6 @@
 --	xml_handler.lua
 --	Part of FusionPBX
---	Copyright (C) 2013 - 2016 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2013 - 2019 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -87,7 +87,7 @@
 		-- Make sance only for extensions with number_alias
 		--  false - you should register with AuthID=UserID=Extension (default)
 		--  true  - you should register with AuthID=Extension and UserID=Number Alias
-		-- 	also in this case you need 2 records in memcache for one extension
+		-- 	also in this case you need 2 records in cache for one extension
 			local DIAL_STRING_BASED_ON_USERID = xml_handler and xml_handler["reg_as_number_alias"]
 
 		-- Use number as presence_id
@@ -150,15 +150,15 @@
 		-- get the cache. We can use cache only if we do not use `fs_path`
 		-- or we do not need dial-string. In other way we have to use database.
 			if (continue) and (not USE_FS_PATH) then
-				if cache.support() and domain_name then
+				if (cache.support() and domain_name) then
 					local key, err = "directory:" .. (from_user or user) .. "@" .. domain_name
 					XML_STRING, err = cache.get(key);
 
 					if debug['cache'] then
 						if not XML_STRING then
-							freeswitch.consoleLog("notice", "[xml_handler-directory][memcache] get key: " .. key .. " fail: " .. tostring(err) .. "\n")
+							freeswitch.consoleLog("notice", "[xml_handler-directory][cache] get key: " .. key .. " fail: " .. tostring(err) .. "\n")
 						else
-							freeswitch.consoleLog("notice", "[xml_handler-directory][memcache] get key: " .. key .. " pass!" .. "\n")
+							freeswitch.consoleLog("notice", "[xml_handler-directory][cache] get key: " .. key .. " pass!" .. "\n")
 						end
 					end
 				end
@@ -295,6 +295,19 @@
 									number_alias = row.number_alias;
 									number_alias_string = [[ number-alias="]] .. row.number_alias .. [["]];
 								end
+
+							--get the user_uuid
+								local sql = "SELECT user_uuid FROM v_extension_users WHERE domain_uuid = :domain_uuid and extension_uuid = :extension_uuid "
+								local params = {domain_uuid=domain_uuid, extension_uuid=extension_uuid};
+								user_uuid = dbh:first_value(sql, params);
+
+							--get the contact_uuid
+								if (user_uuid ~= nil) and (string.len(user_uuid) > 0) then
+									local sql = "SELECT contact_uuid FROM v_users WHERE domain_uuid = :domain_uuid and user_uuid = :user_uuid "
+									local params = {domain_uuid=domain_uuid, user_uuid=user_uuid};
+									contact_uuid = dbh:first_value(sql, params);
+								end
+
 							--params
 								password = row.password;
 								mwi_account = row.mwi_account;
@@ -338,8 +351,14 @@
 								forward_no_answer_destination = row.forward_no_answer_destination;
 								forward_user_not_registered_enabled = row.forward_user_not_registered_enabled;
 								forward_user_not_registered_destination = row.forward_user_not_registered_destination;
-
 								do_not_disturb = row.do_not_disturb;
+
+							-- get the follow me information
+								if (row.follow_me_uuid ~= nil and string.len(row.follow_me_uuid) > 0) then
+									follow_me_uuid = row.follow_me_uuid;
+									follow_me_enabled = row.follow_me_enabled;
+									--follow_me_destinations= row.follow_me_destinations;
+								end
 
 							-- check matching UserID and AuthName
 								if sip_auth_method then
@@ -349,7 +368,6 @@
 									else
 										continue = (sip_from_user == user) and ((not check_from_number) or (from_user == user))
 									end
-
 									if not continue then
 										XML_STRING = nil;
 										return 1;
@@ -494,119 +512,131 @@
 							table.insert(xml, [[								<variable name="domain_uuid" value="]] .. domain_uuid .. [["/>]]);
 							table.insert(xml, [[								<variable name="domain_name" value="]] .. domain_name .. [["/>]]);
 							table.insert(xml, [[								<variable name="extension_uuid" value="]] .. extension_uuid .. [["/>]]);
+							if (user_uuid ~= nil) and (string.len(user_uuid) > 0) then
+								table.insert(xml, [[								<variable name="user_uuid" value="]] .. user_uuid .. [["/>]]);
+							end
+							if (contact_uuid ~= nil) and (string.len(contact_uuid) > 0) then
+								table.insert(xml, [[								<variable name="contact_uuid" value="]] .. contact_uuid .. [["/>]]);
+							end
 							table.insert(xml, [[								<variable name="call_timeout" value="]] .. call_timeout .. [["/>]]);
 							table.insert(xml, [[								<variable name="caller_id_name" value="]] .. sip_from_user .. [["/>]]);
 							table.insert(xml, [[								<variable name="caller_id_number" value="]] .. sip_from_number .. [["/>]]);
 							table.insert(xml, [[								<variable name="presence_id" value="]] .. presence_id .. [["/>]]);
-							if (string.len(call_group) > 0) then
+							if (call_group ~= nil) and (string.len(call_group) > 0) then
 								table.insert(xml, [[								<variable name="call_group" value="]] .. call_group .. [["/>]]);
 							end
-							if (string.len(call_screen_enabled) > 0) then
+							if (call_screen_enabled ~= nil) and (string.len(call_screen_enabled) > 0) then
 								table.insert(xml, [[								<variable name="call_screen_enabled" value="]] .. call_screen_enabled .. [["/>]]);
 							end
-							if (string.len(user_record) > 0) then
+							if (user_record ~= nil) and (string.len(user_record) > 0) then
 								table.insert(xml, [[								<variable name="user_record" value="]] .. user_record .. [["/>]]);
 							end
-							if (string.len(hold_music) > 0) then
+							if (hold_music ~= nil) and (string.len(hold_music) > 0) then
 								table.insert(xml, [[								<variable name="hold_music" value="]] .. hold_music .. [["/>]]);
 							end
-							if (string.len(toll_allow) > 0) then
+							if (toll_allow ~= nil) and (string.len(toll_allow) > 0) then
 								table.insert(xml, [[								<variable name="toll_allow" value="]] .. toll_allow .. [["/>]]);
 							end
-							if (string.len(accountcode) > 0) then
+							if (accountcode ~= nil) and (string.len(accountcode) > 0) then
 								table.insert(xml, [[								<variable name="accountcode" value="]] .. accountcode .. [["/>]]);
 							end
 							table.insert(xml, [[								<variable name="user_context" value="]] .. user_context .. [["/>]]);
-							if (string.len(effective_caller_id_name) > 0) then
+							if (effective_caller_id_name ~= nil) and (string.len(effective_caller_id_name) > 0) then
 								table.insert(xml, [[								<variable name="effective_caller_id_name" value="]] .. effective_caller_id_name.. [["/>]]);
 							end
-							if (string.len(effective_caller_id_number) > 0) then
+							if (effective_caller_id_number ~= nil) and (string.len(effective_caller_id_number) > 0) then
 								table.insert(xml, [[								<variable name="effective_caller_id_number" value="]] .. effective_caller_id_number.. [["/>]]);
 							end
-							if (string.len(outbound_caller_id_name) > 0) then
+							if (outbound_caller_id_name ~= nil) and (string.len(outbound_caller_id_name) > 0) then
 								table.insert(xml, [[								<variable name="outbound_caller_id_name" value="]] .. outbound_caller_id_name .. [["/>]]);
 							end
-							if (string.len(outbound_caller_id_number) > 0) then
+							if (outbound_caller_id_number ~= nil) and (string.len(outbound_caller_id_number) > 0) then
 								table.insert(xml, [[								<variable name="outbound_caller_id_number" value="]] .. outbound_caller_id_number .. [["/>]]);
 							end
-							if (string.len(emergency_caller_id_name) > 0) then
+							if (emergency_caller_id_name ~= nil) and (string.len(emergency_caller_id_name) > 0) then
 								table.insert(xml, [[								<variable name="emergency_caller_id_name" value="]] .. emergency_caller_id_name .. [["/>]]);
 							end
-							if (string.len(emergency_caller_id_number) > 0) then
+							if (emergency_caller_id_number ~= nil) and (string.len(emergency_caller_id_number) > 0) then
 								table.insert(xml, [[								<variable name="emergency_caller_id_number" value="]] .. emergency_caller_id_number .. [["/>]]);
 							end
-							if (string.len(missed_call_app) > 0) then
+							if (missed_call_app ~= nil) and (string.len(missed_call_app) > 0) then
 								table.insert(xml, [[								<variable name="missed_call_app" value="]] .. missed_call_app .. [["/>]]);
 							end
-							if (string.len(missed_call_data) > 0) then
+							if (missed_call_data ~= nil) and (string.len(missed_call_data) > 0) then
 								table.insert(xml, [[								<variable name="missed_call_data" value="]] .. missed_call_data .. [["/>]]);
 							end
-							if (string.len(directory_full_name) > 0) then
+							if (directory_full_name ~= nil) and (string.len(directory_full_name) > 0) then
 								table.insert(xml, [[								<variable name="directory_full_name" value="]] .. directory_full_name .. [["/>]]);
 							end
-							if (string.len(directory_visible) > 0) then
+							if (directory_visible ~= nil) and (string.len(directory_visible) > 0) then
 								table.insert(xml, [[								<variable name="directory-visible" value="]] .. directory_visible .. [["/>]]);
 							end
-							if (string.len(directory_exten_visible) > 0) then
+							if (directory_exten_visible ~= nil) and (string.len(directory_exten_visible) > 0) then
 								table.insert(xml, [[								<variable name="directory-exten-visible" value="]] .. directory_exten_visible .. [["/>]]);
 							end
-							if (string.len(limit_max) > 0) then
+							if (limit_max ~= nil) and (string.len(limit_max) > 0) then
 								table.insert(xml, [[								<variable name="limit_max" value="]] .. limit_max .. [["/>]]);
 							else
 								table.insert(xml, [[								<variable name="limit_max" value="5"/>]]);
 							end
-							if (string.len(limit_destination) > 0) then
+							if (limit_destination ~= nil) and (string.len(limit_destination) > 0) then
 								table.insert(xml, [[								<variable name="limit_destination" value="]] .. limit_destination .. [["/>]]);
 							end
-							if (string.len(sip_force_contact) > 0) then
+							if (sip_force_contact ~= nil) and (string.len(sip_force_contact) > 0) then
 								table.insert(xml, [[								<variable name="sip-force-contact" value="]] .. sip_force_contact .. [["/>]]);
 							end
-							if (string.len(sip_force_expires) > 0) then
+							if (sip_force_expires ~= nil) and (string.len(sip_force_expires) > 0) then
 								table.insert(xml, [[								<variable name="sip-force-expires" value="]] .. sip_force_expires .. [["/>]]);
 							end
-							if (string.len(nibble_account) > 0) then
+							if (nibble_account ~= nil) and (string.len(nibble_account) > 0) then
 								table.insert(xml, [[								<variable name="nibble_account" value="]] .. nibble_account .. [["/>]]);
 							end
-							if (string.len(absolute_codec_string) > 0) then
+							if (absolute_codec_string ~= nil) and (string.len(absolute_codec_string) > 0) then
 								table.insert(xml, [[								<variable name="absolute_codec_string" value="]] .. absolute_codec_string .. [["/>]]);
 							end
-							if (string.len(force_ping) > 0) then
+							if (force_ping ~= nil) and (string.len(force_ping) > 0) then
 								table.insert(xml, [[								<variable name="force_ping" value="]] .. force_ping .. [["/>]]);
 							end
-							if (sip_bypass_media == "bypass-media") then
+							if (sip_bypass_media ~= nil) and (sip_bypass_media == "bypass-media") then
 								table.insert(xml, [[								<variable name="bypass_media" value="true"/>]]);
 							end
-							if (sip_bypass_media == "bypass-media-after-bridge") then
+							if (sip_bypass_media ~= nil) and (sip_bypass_media == "bypass-media-after-bridge") then
 								table.insert(xml, [[								<variable name="bypass_media_after_bridge" value="true"/>]]);
 							end
-							if (sip_bypass_media == "proxy-media") then
+							if (sip_bypass_media ~= nil) and (sip_bypass_media == "proxy-media") then
 								table.insert(xml, [[								<variable name="proxy_media" value="true"/>]]);
 							end
-							if (string.len(forward_all_enabled) > 0) then
+							if (forward_all_enabled ~= nil) and (string.len(forward_all_enabled) > 0) then
 								table.insert(xml, [[								<variable name="forward_all_enabled" value="]] .. forward_all_enabled .. [["/>]]);
 							end
-							if (string.len(forward_all_destination) > 0) then
+							if (forward_all_destination ~= nil) and (string.len(forward_all_destination) > 0) then
 								table.insert(xml, [[								<variable name="forward_all_destination" value="]] .. forward_all_destination .. [["/>]]);
 							end
-							if (string.len(forward_busy_enabled) > 0) then
+							if (forward_busy_enabled ~= nil) and (string.len(forward_busy_enabled) > 0) then
 								table.insert(xml, [[								<variable name="forward_busy_enabled" value="]] .. forward_busy_enabled .. [["/>]]);
 							end
-							if (string.len(forward_busy_destination) > 0) then
+							if (forward_busy_destination ~= nil) and (string.len(forward_busy_destination) > 0) then
 								table.insert(xml, [[								<variable name="forward_busy_destination" value="]] .. forward_busy_destination .. [["/>]]);
 							end
-							if (string.len(forward_no_answer_enabled) > 0) then
+							if (forward_no_answer_enabled ~= nil) and (string.len(forward_no_answer_enabled) > 0) then
 								table.insert(xml, [[								<variable name="forward_no_answer_enabled" value="]] .. forward_no_answer_enabled .. [["/>]]);
 							end
-							if (string.len(forward_no_answer_destination) > 0) then
+							if (forward_no_answer_destination ~= nil) and (string.len(forward_no_answer_destination) > 0) then
 								table.insert(xml, [[								<variable name="forward_no_answer_destination" value="]] .. forward_no_answer_destination .. [["/>]]);
 							end
-							if (string.len(forward_user_not_registered_enabled) > 0) then
+							if (forward_user_not_registered_enabled ~= nil) and (string.len(forward_user_not_registered_enabled) > 0) then
 								table.insert(xml, [[								<variable name="forward_user_not_registered_enabled" value="]] .. forward_user_not_registered_enabled .. [["/>]]);
 							end
-							if (string.len(forward_user_not_registered_destination) > 0) then
+							if (forward_user_not_registered_destination ~= nil) and (string.len(forward_user_not_registered_destination) > 0) then
 								table.insert(xml, [[								<variable name="forward_user_not_registered_destination" value="]] .. forward_user_not_registered_destination .. [["/>]]);
 							end
-							if (string.len(do_not_disturb) > 0) then
+							if (follow_me_enabled ~= nil) and (string.len(follow_me_enabled) > 0) then
+								table.insert(xml, [[								<variable name="follow_me_enabled" value="]] .. follow_me_enabled .. [["/>]]);
+							end
+							--if (follow_me_destinations ~= nil) and (string.len(follow_me_destinations) > 0) then
+							--	table.insert(xml, [[								<variable name="follow_me_destinations" value="]] .. follow_me_destinations .. [["/>]]);
+							--end
+							if (do_not_disturb ~= nil) and (string.len(do_not_disturb) > 0) then
 								table.insert(xml, [[								<variable name="do_not_disturb" value="]] .. do_not_disturb .. [["/>]]);
 							end
 							table.insert(xml, [[								<variable name="record_stereo" value="true"/>]]);

@@ -1,5 +1,5 @@
 --	Part of FusionPBX
---	Copyright (C) 2013-2017 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2013-2019 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -204,9 +204,17 @@
 						password_min_length = settings['voicemail']['password_min_length']['numeric'];
 					end
 				end
+
+				not_found_message = 'false';
+				if (settings['voicemail']['not_found_message'] ~= nil) then
+					if (settings['voicemail']['not_found_message']['boolean'] ~= nil) then
+						not_found_message = settings['voicemail']['not_found_message']['boolean'];
+					end
+				end
+
 			end
 
-			if settings['voicemail'] then
+			if (settings['voicemail']) then
 				if settings['voicemail']['voicemail_to_sms'] then
 					voicemail_to_sms = (settings['voicemail']['voicemail_to_sms']['boolean'] == 'true');
 				end
@@ -258,23 +266,25 @@
 						end
 
 					--valid voicemail
-						if (voicemail_uuid ~= nil) then
+						if (voicemail_uuid ~= nil and string.len(voicemail_uuid) > 0) then
 						--answer the session
 							if (session:ready()) then
 								session:answer();
+								session:execute("sleep", "1000");
 							end
 
 						--unset bind meta app
 							session:execute("unbind_meta_app", "");
 
-						--set the callback function
-							if (session:ready()) then
-								session:setVariable("playback_terminators", "#");
-								session:setInputCallback("on_dtmf", "");
-							end
 						end
 				end
 			end
+	end
+
+--set the callback function
+	if (session:ready()) then
+		session:setVariable("playback_terminators", "#");
+		session:setInputCallback("on_dtmf", "");
 	end
 
 --general functions
@@ -373,6 +383,13 @@
 
 --leave a message
 	if (voicemail_action == "save") then
+
+		--set the variables
+			if (session:ready()) then
+				session:setVariable("missed_call", "true");
+				session:setVariable("voicemail_answer_stamp", api:execute("strftime"));
+				session:setVariable("voicemail_answer_epoch", api:execute("strepoch"));
+			end
 
 		--check the voicemail quota
 			if (voicemail_uuid ~= nil and vm_disk_quota ~= nil) then
@@ -591,8 +608,12 @@
 							referred_by = referred_by:match('[%d]+');
 							session:transfer(referred_by, "XML", context);
 						else
-							session:execute("playback", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/voicemail/vm-no_answer_no_vm.wav");
-							session:hangup("NO_ANSWER");
+							if (not_found_message == "true") then
+								session:answer();
+								session:execute("sleep", "1000");
+								session:execute("playback", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/voicemail/vm-no_answer_no_vm.wav");
+								session:hangup();
+							end
 						end
 					end
 			end

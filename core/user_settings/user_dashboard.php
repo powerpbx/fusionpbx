@@ -62,9 +62,8 @@
 	$language = new text;
 	$text = $language->get();
 
-//load header and set the title
+//load the header
 	require_once "resources/header.php";
-	$document['title'] = $text['title-user_dashboard'];
 
 //start the content
 	echo "<table cellpadding='0' cellspacing='0' border='0' width='100%'>\n";
@@ -73,7 +72,9 @@
 	echo "			<b>".$text['header-user_dashboard']."</b><br />";
 	echo "		</td>\n";
 	echo "		<td valign='top' style='text-align: right; white-space: nowrap;'>\n";
-	echo "			".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$_SESSION["username"]."</a>";
+	if ($_SESSION['theme']['menu_style']['text'] != 'side') {
+		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$_SESSION["username"]."</a>";
+	}
 	echo "		</td>\n";
 	echo "	</tr>\n";
 	echo "	<tr>\n";
@@ -429,7 +430,7 @@
 						direction = 'inbound'
 						or direction = 'local'
 					)
-					and bridge_uuid is null
+					and (missed_call = true or bridge_uuid is null)
 					and destination_number in ('".implode("','",$assigned_extensions)."')
 					and (";
 					$x = 0;
@@ -930,7 +931,6 @@
 			$n++;
 		}
 
-
 	//system status
 		if (is_array($selected_blocks) && in_array('system', $selected_blocks)) {
 			$c = 0;
@@ -941,12 +941,7 @@
 
 			//disk usage
 			if (PHP_OS == 'FreeBSD' || PHP_OS == 'Linux') {
-				$df = shell_exec("/usr/bin/which df");
-				if($df){
-					$tmp = shell_exec($df." /home 2>&1");
-				} else {
-					$tmp = shell_exec("df /home 2>&1");
-				}
+				$tmp = shell_exec("df /home 2>&1");
 				$tmp = explode("\n", $tmp);
 				$tmp = preg_replace('!\s+!', ' ', $tmp[1]); // multiple > single space
 				$tmp = explode(' ', $tmp);
@@ -1262,6 +1257,13 @@
 		}
 		echo "</div>\n";
 	}
+
+//add multi-lingual support
+	$language = new text;
+	$text = $language->get();
+
+//set the title
+	$document['title'] = $text['title-user_dashboard'];
 
 //show the footer
 	require_once "resources/footer.php";

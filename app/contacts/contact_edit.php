@@ -17,22 +17,26 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('contact_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('contact_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
@@ -150,7 +154,7 @@ else {
 						$db->exec(check_sql($sql));
 						unset($sql);
 
-						messages::add($text['message-add']);
+						message::add($text['message-add']);
 						$location = "contact_edit.php?id=".$contact_uuid;
 					} //if ($action == "add")
 
@@ -177,8 +181,8 @@ else {
 						$db->exec(check_sql($sql));
 						unset($sql);
 
-						messages::add($text['message-update']);
-						$location = "contact_edit.php?id=".$contact_uuid;
+						message::add($text['message-update']);
+						$location = "contact_edit.php?id=".escape($contact_uuid);
 					} //if ($action == "update")
 
 				//assign the contact to the user that added the contact
@@ -235,7 +239,7 @@ else {
 
 				//handle redirect
 					if ($_POST['submit'] == $text['button-add']) {
-						$location = "contact_edit.php?id=".$contact_uuid;
+						$location = "contact_edit.php?id=".escape($contact_uuid);
 					}
 
 				//redirect the browser
@@ -281,6 +285,16 @@ else {
 	$users = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 	unset($prep_statement, $sql);
 
+//determine if contact assigned to a user
+	if (is_array($users) && sizeof($users) != 0) {
+		foreach($users as $user) {
+			if ($user['contact_uuid'] == $contact_uuid) {
+				$contact_user_uuid = $user['user_uuid'];
+				break;
+			}
+		}
+	}
+
 //get the users assigned to this contact
 	$sql = "SELECT u.username, u.user_uuid, a.contact_user_uuid FROM v_contacts as c, v_users as u, v_contact_users as a ";
 	$sql .= "where c.contact_uuid = '".$contact_uuid."' ";
@@ -303,8 +317,8 @@ else {
 	}
 
 //set the mode
-	if (isset($_SESSION['theme']['qr_image'])) {
-		if (strlen($_SESSION['theme']['qr_image']) > 0) {
+	if (isset($_SESSION['theme']['qr_image']['text'])) {
+		if (strlen($_SESSION['theme']['qr_image']['text']) == 0) {
 			$mode = '4';
 		}
 		else {
@@ -401,16 +415,19 @@ else {
 				$btn_mod = "style='background-color: #3693df; background-image: none;'";
 			}
 			unset ($sql, $prep_statement, $result);
-			echo "	<input type='button' class='btn' ".$btn_mod." alt='".$text['button-timer']."' ".(($time_start != '') ? "title='".$time_start."'" : null)." onclick=\"window.open('contact_timer.php?domain_uuid=".$domain_uuid."&contact_uuid=".$contact_uuid."','contact_time_".$contact_uuid."','width=300, height=375, top=30, left='+(screen.width - 350)+', menubar=no, scrollbars=no, status=no, toolbar=no, resizable=no');\" value='".$text['button-timer']."'>\n";
+			echo "	<input type='button' class='btn' ".$btn_mod." alt='".$text['button-timer']."' ".(($time_start != '') ? "title='".escape($time_start)."'" : null)." onclick=\"window.open('contact_timer.php?domain_uuid=".escape($domain_uuid)."&contact_uuid=".escape($contact_uuid)."','contact_time_".escape($contact_uuid)."','width=300, height=375, top=30, left='+(screen.width - 350)+', menubar=no, scrollbars=no, status=no, toolbar=no, resizable=no');\" value='".$text['button-timer']."'>\n";
 		}
 		echo "	<input type='button' class='btn' name='' alt='".$text['button-qr_code']."' onclick=\"$('#qr_code_container').fadeIn(400);\" value='".$text['button-qr_code']."'>\n";
-		echo "	<input type='button' class='btn' name='' alt='".$text['button-vcard']."' onclick=\"window.location='contacts_vcard.php?id=".$contact_uuid."&type=download'\" value='".$text['button-vcard']."'>\n";
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-vcard']."' onclick=\"window.location='contacts_vcard.php?id=".escape($contact_uuid)."&type=download'\" value='".$text['button-vcard']."'>\n";
 	}
 	if ($action == "update" && is_dir($_SERVER["DOCUMENT_ROOT"].PROJECT_PATH.'/app/invoices')) {
-		echo "	<input type='button' class='btn' name='' alt='".$text['button-invoices']."' onclick=\"window.location='".PROJECT_PATH."/app/invoices/invoices.php?id=$contact_uuid'\" value='".$text['button-invoices']."'>\n";
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-invoices']."' onclick=\"window.location='".PROJECT_PATH."/app/invoices/invoices.php?id=".escape($contact_uuid)."'\" value='".$text['button-invoices']."'>\n";
 	}
 	if ($action == "update" && is_dir($_SERVER["DOCUMENT_ROOT"].PROJECT_PATH.'/app/certificates')) {
-		echo "	<input type='button' class='btn' name='' alt='".$text['button-certificate']."' onclick=\"window.location='".PROJECT_PATH."/app/certificates/index.php?name=".urlencode($contact_name_given." ".$contact_name_family)."'\" value='".$text['button-certificate']."'>\n";
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-certificate']."' onclick=\"window.location='".PROJECT_PATH."/app/certificates/index.php?name=".urlencode(escape($contact_name_given)." ".escape($contact_name_family))."'\" value='".$text['button-certificate']."'>\n";
+	}
+	if ($action == "update" && permission_exists('user_edit') && is_uuid($contact_user_uuid)) {
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-user']."' onclick=\"window.location='".PROJECT_PATH."/core/users/user_edit.php?id=".$contact_user_uuid."'\" value='".$text['button-user']."'>\n";
 	}
 	echo "	<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
 	echo "</td>\n";
@@ -441,7 +458,7 @@ else {
 			echo "	<select class='formfld' name='contact_type'>\n";
 			echo "		<option value=''></option>\n";
 			foreach($_SESSION["contact"]["type"] as $row) {
-				echo "	<option value='".$row."' ".(($row == $contact_type) ? "selected='selected'" : null).">".$row."</option>\n";
+				echo "	<option value='".escape($row)."' ".(($row == $contact_type) ? "selected='selected'" : null).">".escape($row)."</option>\n";
 			}
 			echo "	</select>\n";
 		}
@@ -471,7 +488,7 @@ else {
 		echo "	".$text['label-contact_organization']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_organization' maxlength='255' value=\"$contact_organization\">\n";
+		echo "	<input class='formfld' type='text' name='contact_organization' maxlength='255' value=\"".escape($contact_organization)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_organization']."\n";
 		echo "</td>\n";
@@ -482,7 +499,7 @@ else {
 		echo "	".$text['label-contact_name_prefix']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_name_prefix' maxlength='255' value=\"$contact_name_prefix\">\n";
+		echo "	<input class='formfld' type='text' name='contact_name_prefix' maxlength='255' value=\"".escape($contact_name_prefix)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_name_prefix']."\n";
 		echo "</td>\n";
@@ -493,7 +510,7 @@ else {
 		echo "	".$text['label-contact_name_given']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_name_given' maxlength='255' value=\"$contact_name_given\">\n";
+		echo "	<input class='formfld' type='text' name='contact_name_given' maxlength='255' value=\"".escape($contact_name_given)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_name_given']."\n";
 		echo "</td>\n";
@@ -504,7 +521,7 @@ else {
 		echo "	".$text['label-contact_name_middle']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_name_middle' maxlength='255' value=\"$contact_name_middle\">\n";
+		echo "	<input class='formfld' type='text' name='contact_name_middle' maxlength='255' value=\"".escape($contact_name_middle)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_name_middle']."\n";
 		echo "</td>\n";
@@ -515,7 +532,7 @@ else {
 		echo "	".$text['label-contact_name_family']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_name_family' maxlength='255' value=\"$contact_name_family\">\n";
+		echo "	<input class='formfld' type='text' name='contact_name_family' maxlength='255' value=\"".escape($contact_name_family)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_name_family']."\n";
 		echo "</td>\n";
@@ -526,7 +543,7 @@ else {
 		echo "	".$text['label-contact_name_suffix']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_name_suffix' maxlength='255' value=\"$contact_name_suffix\">\n";
+		echo "	<input class='formfld' type='text' name='contact_name_suffix' maxlength='255' value=\"".escape($contact_name_suffix)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_name_suffix']."\n";
 		echo "</td>\n";
@@ -537,7 +554,7 @@ else {
 		echo "	".$text['label-contact_nickname']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_nickname' maxlength='255' value=\"$contact_nickname\">\n";
+		echo "	<input class='formfld' type='text' name='contact_nickname' maxlength='255' value=\"".escape($contact_nickname)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_nickname']."\n";
 		echo "</td>\n";
@@ -553,12 +570,12 @@ else {
 			echo "	<select class='formfld' name='contact_title'>\n";
 			echo "	<option value=''></option>\n";
 			foreach($_SESSION["contact"]["title"] as $row) {
-				echo "	<option value='".$row."' ".(($row == $contact_title) ? "selected='selected'" : null).">".$row."</option>\n";
+				echo "	<option value='".escape($row)."' ".(($row == $contact_title) ? "selected='selected'" : null).">".escape($row)."</option>\n";
 			}
 			echo "	</select>\n";
 		}
 		else {
-			echo "	<input class='formfld' type='text' name='contact_title' maxlength='255' value=\"$contact_title\">\n";
+			echo "	<input class='formfld' type='text' name='contact_title' maxlength='255' value=\"".escape($contact_title)."\">\n";
 		}
 // 		echo "<br />\n";
 // 		echo $text['description-contact_title']."\n";
@@ -575,12 +592,12 @@ else {
 			echo "	<select class='formfld' name='contact_category'>\n";
 			echo "	<option value=''></option>\n";
 			foreach($_SESSION["contact"]["category"] as $row) {
-				echo "	<option value='".$row."' ".(($row == $contact_category) ? "selected='selected'" : null).">".$row."</option>\n";
+				echo "	<option value='".escape($row)."' ".(($row == $contact_category) ? "selected='selected'" : null).">".escape($row)."</option>\n";
 			}
 			echo "	</select>\n";
 		}
 		else {
-			echo "	<input class='formfld' type='text' name='contact_category' maxlength='255' value=\"$contact_category\">\n";
+			echo "	<input class='formfld' type='text' name='contact_category' maxlength='255' value=\"".escape($contact_category)."\">\n";
 		}
 // 		echo "<br />\n";
 // 		echo $text['description-contact_category']."\n";
@@ -597,12 +614,12 @@ else {
 			echo "	<select class='formfld' name='contact_role'>\n";
 			echo "	<option value=''></option>\n";
 			foreach($_SESSION["contact"]["role"] as $row) {
-				echo "	<option value='".$row."' ".(($row == $contact_role) ? "selected='selected'" : null).">".$row."</option>\n";
+				echo "	<option value='".escape($row)."' ".(($row == $contact_role) ? "selected='selected'" : null).">".escape($row)."</option>\n";
 			}
 			echo "	</select>\n";
 		}
 		else {
-			echo "	<input class='formfld' type='text' name='contact_role' maxlength='255' value=\"$contact_role\">\n";
+			echo "	<input class='formfld' type='text' name='contact_role' maxlength='255' value=\"".escape($contact_role)."\">\n";
 		}
 // 		echo "<br />\n";
 // 		echo $text['description-contact_role']."\n";
@@ -614,7 +631,7 @@ else {
 		echo "	".$text['label-contact_time_zone']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='contact_time_zone' maxlength='255' value=\"$contact_time_zone\">\n";
+		echo "	<input class='formfld' type='text' name='contact_time_zone' maxlength='255' value=\"".escape($contact_time_zone)."\">\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_time_zone']."\n";
 		echo "</td>\n";
@@ -628,10 +645,10 @@ else {
 				echo "			<table border='0' style='width : 235px;'>\n";
 				foreach($contact_users as $field) {
 					echo "			<tr>\n";
-					echo "				<td class='vtable'>".$field['username']."</td>\n";
+					echo "				<td class='vtable'>".escape($field['username'])."</td>\n";
 					echo "				<td style='width: 25px;' align='right'>\n";
 					if (permission_exists('contact_user_delete')) {
-						echo "					<a href='contact_user_delete.php?id=".$field['contact_user_uuid']."&contact_uuid=".$contact_uuid."' alt='delete' onclick=\"return confirm(".$text['confirm-delete'].")\">$v_link_label_delete</a>\n";
+						echo "					<a href='contact_user_delete.php?id=".escape($field['contact_user_uuid'])."&contact_uuid=".escape($contact_uuid)."' alt='delete' onclick=\"return confirm(".$text['confirm-delete'].")\">$v_link_label_delete</a>\n";
 					}
 					echo "				</td>\n";
 					echo "			</tr>\n";
@@ -643,7 +660,7 @@ else {
 				echo "			<select name=\"user_uuid\" class='formfld' style='width: auto;'>\n";
 				echo "			<option value=\"\"></option>\n";
 				foreach($users as $field) {
-					echo "			<option value='".$field['user_uuid']."'>".$field['username']."</option>\n";
+					echo "			<option value='".escape($field['user_uuid'])."'>".escape($field['username'])."</option>\n";
 				}
 				echo "			</select>";
 				if ($action == "update") {
@@ -656,12 +673,8 @@ else {
 			echo "		</td>";
 			echo "	</tr>";
 		}
-		echo "</table>";
 
 		if (permission_exists('contact_group_view')) {
-			$contact_shared = 'true';
-			echo "<div id='div_groups' ".(($contact_shared != 'true') ? "style='display: none;'" : null).">\n";
-			echo "<table border='0' cellpadding='0' cellspacing='0' width='100%'>\n";
 			echo "<tr>";
 			echo "	<td width='30%' class='vncell' valign='top'>".$text['label-groups']."</td>";
 			echo "	<td width='70%' class='vtable'>";
@@ -689,7 +702,7 @@ else {
 						echo "	<td class='vtable'>".$field['group_name']."</td>\n";
 						echo "	<td>\n";
 						if (permission_exists('contact_group_delete') || if_group("superadmin")) {
-							echo "	<a href='contact_group_delete.php?id=".$field['contact_group_uuid']."&contact_uuid=".$contact_uuid."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>\n";
+							echo "	<a href='contact_group_delete.php?id=".escape($field['contact_group_uuid'])."&contact_uuid=".escape($contact_uuid)."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>\n";
 						}
 						echo "	</td>\n";
 						echo "</tr>\n";
@@ -719,7 +732,7 @@ else {
 					foreach($result as $field) {
 						if ($field['group_name'] == "superadmin" && !if_group("superadmin")) { continue; }	//only show superadmin group to superadmins
 						if ($field['group_name'] == "admin" && (!if_group("superadmin") && !if_group("admin"))) { continue; }	//only show admin group to admins
-						echo "<option value='".$field['group_uuid']."'>".$field['group_name']."</option>\n";
+						echo "<option value='".escape($field['group_uuid'])."'>".escape($field['group_name'])."</option>\n";
 					}
 					echo "	</select>";
 
@@ -735,17 +748,14 @@ else {
 
 			echo "	</td>";
 			echo "</tr>";
-			echo "</table>\n";
-			echo "</div>";
 		}
 
-		echo "<table border='0' cellpadding='0' cellspacing='0' width='100%'>\n";
 		echo "<tr>\n";
 		echo "<td width='30%' class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
 		echo "	".$text['label-contact_note']."\n";
 		echo "</td>\n";
 		echo "<td width='70%' class='vtable' align='left'>\n";
-		echo "  <textarea class='formfld' style='width: 100%; height: 80px;' name='contact_note'>".$contact_note."</textarea>\n";
+		echo "  <textarea class='formfld' style='width: 100%; height: 80px;' name='contact_note'>".escape($contact_note)."</textarea>\n";
 // 		echo "<br />\n";
 // 		echo $text['description-contact_note']."\n";
 		echo "</td>\n";
@@ -753,19 +763,20 @@ else {
 		echo "	<tr>\n";
 		echo "		<td colspan='2' align='right'>\n";
 		if ($action == "update") {
-			echo "				<input type='hidden' name='contact_uuid' value='$contact_uuid'>\n";
+			echo "				<input type='hidden' name='contact_uuid' value='".escape($contact_uuid)."'>\n";
 		}
 		echo "			<br>";
 		echo "			<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
 		echo "		</td>\n";
 		echo "	</tr>";
+
 		echo "</table>";
 
 	echo "</td>\n";
 
 	if ($action == "update") {
 		echo "<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>";
-		echo "<td width='60%' class='' valign='top' align='center'>\n";
+		echo "<td width='60%' valign='top'>\n";
 		//echo "	<img src='contacts_vcard.php?id=$contact_uuid&type=image' width='90%'><br /><br />\n";
 		if (permission_exists('contact_phone_view')) { require "contact_phones.php"; }
 		if (permission_exists('contact_address_view')) { require "contact_addresses.php"; }
@@ -776,6 +787,7 @@ else {
 		if (permission_exists('contact_note_view')) { require "contact_notes.php"; }
 		if (permission_exists('contact_time_view')) { require "contact_times.php"; }
 		if (permission_exists('contact_setting_view')) { require "contact_settings.php"; }
+		if (permission_exists('contact_attachment_view')) { require "contact_attachments.php"; }
 		echo "</td>\n";
 	}
 

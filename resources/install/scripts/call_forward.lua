@@ -24,9 +24,9 @@
 
 --set default variables
 	min_digits = "1";
-	max_digits = "11";
+	max_digits = "17";
 	max_tries = "3";
-	digit_timeout = "3000";
+	digit_timeout = "5000";
 
 --define the trim function
 	require "resources.functions.trim"
@@ -34,16 +34,13 @@
 --create the api object
 	api = freeswitch.API();
 
---include config.lua
+--includes
 	require "resources.functions.config";
-
 	require "resources.functions.channel_utils";
-
 	local log = require "resources.functions.log".call_forward
 	local cache = require "resources.functions.cache"
 	local Database = require "resources.functions.database"
 	local Settings = require "resources.functions.lazy_settings"
-	local route_to_bridge = require "resources.functions.route_to_bridge"
 	local blf = require "resources.functions.blf"
 	local notify = require "app.feature_event.resources.functions.feature_event_notify"	
 
@@ -169,8 +166,15 @@
 
 	if not session:ready() then return end
 
---get the forward destination
-	if enabled == "true" and empty(forward_all_destination) then
+--get the destination by argument and set the forwarding destination 
+	destination_by_arg = argv[1];
+	
+	if enabled == "true" and destination_by_arg then
+		forward_all_destination = destination_by_arg;
+	end
+	
+--get the forward destination by IVR if destination has not been passed by argument
+	if enabled == "true" and empty(forward_all_destination) and not destination_by_arg then
 		forward_all_destination = session:playAndGetDigits(min_digits, max_digits, max_tries, digit_timeout, "#", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/ivr/ivr-enter_destination_telephone_number.wav", "", "\\d+");
 		if empty(forward_all_destination) then return end
 	end
@@ -294,8 +298,8 @@
 --send notify to phone if feature sync is enabled
 	if settings:get('device', 'feature_sync', 'boolean') == 'true' then
 		-- Get values from the database
-			do_not_disturb, forward_all_enabled, forward_all_destination, forward_busy_enabled, forward_busy_destination, forward_no_answer_enabled, forward_no_answer_destination, call_timeout = notify.get_db_values(extension, domain_name)
-		
+			do_not_disturb, forward_all_enabled, forward_all_destination, forward_busy_enabled, forward_busy_destination, forward_no_answer_enabled, forward_no_answer_destination, call_timeout = notify.get_db_values(extension, domain_name);
+
 		-- Get the sip_profile
 			if (extension ~= nil and domain_name ~= nil) then
 				sip_profile = notify.get_profile(extension, domain_name);
@@ -303,28 +307,28 @@
 
 		if (sip_profile ~= nil) then 
 				freeswitch.consoleLog("NOTICE", "[feature_event] SIP NOTIFY: CFWD set to "..forward_all_enabled.."\n");
-			
+
 			--Do Not Disturb
 				notify.dnd(extension, domain_name, sip_profile, do_not_disturb);
 
 			--Forward all
 				forward_immediate_enabled = forward_all_enabled;
 				forward_immediate_destination = forward_all_destination;
-				
+
 				--workaround for freeswitch not sending NOTIFY when destination values are nil. Send 0.
 					if (string.len(forward_immediate_destination) < 1) then 
 						forward_immediate_destination = '0';
 					end
-				
+
 				freeswitch.consoleLog("NOTICE", "[feature_event] forward_immediate_destination "..forward_immediate_destination.."\n");
 				notify.forward_immediate(extension, domain_name, sip_profile, forward_immediate_enabled, forward_immediate_destination);
-				
+
 			--Forward busy
 				--workaround for freeswitch not sending NOTIFY when destination values are nil. Send 0.
-					if (string.len(forward_busy_destination) < 1) then 
+					if (string.len(forward_busy_destination) < 1) then
 						forward_busy_destination = '0';
 					end
-				
+
 				freeswitch.consoleLog("NOTICE", "[feature_event] forward_busy_destination "..forward_busy_destination.."\n");
 				notify.forward_busy(extension, domain_name, sip_profile, forward_busy_enabled, forward_busy_destination);
 
@@ -334,14 +338,14 @@
 					if (string.len(forward_no_answer_destination) < 1) then 
 						forward_no_answer_destination = '0';
 					end
-					
+
 				freeswitch.consoleLog("NOTICE", "[feature_event] forward_no_answer_destination "..forward_no_answer_destination.."\n");
 				notify.forward_no_answer(extension, domain_name, sip_profile, forward_no_answer_enabled, forward_no_answer_destination, ring_count);
 		end
 	end
-	
+
 --disconnect from database
-	dbh:release()
+	dbh:release();
 
 --clear the cache
 	if extension and #extension > 0 and cache.support() then
@@ -361,9 +365,9 @@
 
 -- BLF for display CF status
 	blf.forward(enabled == 'true', extension, number_alias, 
-		last_forward_all_destination, forward_all_destination, domain_name)
+		last_forward_all_destination, forward_all_destination, domain_name);
 
 -- turn off DND BLF
-	if enabled == 'true' then
-		blf.dnd(false, extension, number_alias, domain_name)
+	if (enabled == 'true') then
+		blf.dnd(false, extension, number_alias, domain_name);
 	end

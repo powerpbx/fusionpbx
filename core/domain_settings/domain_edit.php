@@ -145,9 +145,24 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 					// update dialplans
 						if (file_exists($_SERVER["PROJECT_ROOT"]."/app/dialplans/app_config.php")){
-							$sql = "update v_dialplans set ";
-							$sql .= "dialplan_context = '".$domain_name."' ";
+							$sql = "update v_dialplans ";
+							$sql .= "set dialplan_context = '".$domain_name."' ";
 							$sql .= "where dialplan_context = '".$original_domain_name."' ";
+							$sql .= "and domain_uuid = '".$domain_uuid."' ";
+							$db->exec(check_sql($sql));
+							unset($sql);
+
+							$sql = "update v_dialplans ";
+							$sql .= "set dialplan_xml = replace(dialplan_xml, $original_domain_name, $domain_name); ";
+							$sql .= "and domain_uuid = '".$domain_uuid."' ";
+							$db->exec(check_sql($sql));
+							unset($sql);
+						}
+
+					// update destinations
+						if (file_exists($_SERVER["PROJECT_ROOT"]."/app/destinations/app_config.php")){
+							$sql = "update v_destinations ";
+							$sql .= "set destination_data = replace(destination_data, $original_domain_name, $domain_name); ";
 							$sql .= "and domain_uuid = '".$domain_uuid."' ";
 							$db->exec(check_sql($sql));
 							unset($sql);
@@ -587,7 +602,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 		//redirect the browser
 			if ($action == "update") {
-				messages::add($text['message-update']);
+				message::add($text['message-update']);
 				if (!permission_exists('domain_add')) { //admin, updating own domain
 					header("Location: domain_edit.php");
 				}
@@ -596,7 +611,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				}
 			}
 			if ($action == "add") {
-				messages::add($text['message-add']);
+				message::add($text['message-add']);
 				header("Location: domains.php");
 			}
 			return;
@@ -627,6 +642,47 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 		$document['title'] = $text['title-domain-add'];
 	}
 
+//copy settings javascript
+	if (permission_exists("domain_select") && permission_exists("domain_setting_add") && count($_SESSION['domains']) > 1) {
+		echo "<script language='javascript' type='text/javascript'>\n";
+		echo "	var fade_speed = 400;\n";
+		echo "	function show_domains() {\n";
+		echo "		document.getElementById('action').value = 'copy';\n";
+		echo "		$('#button_copy').fadeOut(fade_speed, function() {\n";
+		echo "			$('#button_back').fadeIn(fade_speed);\n";
+		echo "			$('#target_domain_uuid').fadeIn(fade_speed);\n";
+		echo "			$('#button_paste').fadeIn(fade_speed);\n";
+		echo "		});";
+		echo "	}";
+		echo "	function hide_domains() {\n";
+		echo "		document.getElementById('action').value = '';\n";
+		echo "		$('#button_back').fadeOut(fade_speed);\n";
+		echo "		$('#target_domain_uuid').fadeOut(fade_speed);\n";
+		echo "		$('#button_paste').fadeOut(fade_speed, function() {\n";
+		echo "			$('#button_copy').fadeIn(fade_speed);\n";
+		echo "			document.getElementById('target_domain_uuid').selectedIndex = 0;\n";
+		echo "		});\n";
+		echo "	}\n";
+		echo "\n";
+		echo "	$( document ).ready(function() {\n";
+		echo "		$('#domain_setting_search').focus();\n";
+		if ($search == '') {
+			echo "		// scroll to previous category\n";
+			echo "		var category_span_id;\n";
+			echo "		var url = document.location.href;\n";
+			echo "		var hashindex = url.indexOf('#');\n";
+			echo "		if (hashindex == -1) { }\n";
+			echo "		else {\n";
+			echo "			category_span_id = url.substr(hashindex + 1);\n";
+			echo "		}\n";
+			echo "		if (category_span_id) {\n";
+			echo "			$('#page').animate({scrollTop: $('#anchor_'+category_span_id).offset().top - 200}, 'slow');\n";
+			echo "		}\n";
+		}
+		echo "	});\n";
+		echo "</script>";
+	}
+
 //show the content
 	echo "<form method='post' name='frm' action=''>\n";
 	echo "<table width='100%' cellpadding='0' cellspacing='0' border='0'>\n";
@@ -643,8 +699,19 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	if (permission_exists('domain_add')) { //only for superadmin, not admin editing their own domain
 		echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='domains.php'\" value='".$text['button-back']."'>\n";
 	}
+	//if (permission_exists("domain_select") && permission_exists("domain_setting_add") && count($_SESSION['domains']) > 1) {
+	//	echo "		<input type='button' class='btn' id='button_copy' alt='".$text['button-copy']."' onclick='show_domains();' value='".$text['button-copy']."'>";
+	//	echo "		<input type='button' class='btn' style='display: none;' id='button_back' alt='".$text['button-back']."' onclick='hide_domains();' value='".$text['button-back']."'> ";
+	//	echo "		<select class='formfld' style='display: none; width: auto;' name='target_domain_uuid' id='target_domain_uuid'>\n";
+	//	echo "			<option value=''>Select Domain...</option>\n";
+	//	foreach ($_SESSION['domains'] as $domain) {
+	//		echo "		<option value='".escape($domain["domain_uuid"])."'>".escape($domain["domain_name"])."</option>\n";
+	//	}
+	//	echo "		</select>\n";
+	//	echo "		<input type='button' class='btn' id='button_paste' style='display: none;' alt='".$text['button-paste']."' value='".$text['button-paste']."' onclick=\"$('#frm').attr('action', 'domain_settings.php?search='+$('#domain_setting_search').val()).submit();\">";
+	//}
 	if (permission_exists('domain_export')) {
-		echo "	<input type='button' class='btn' name='' alt='".$text['button-export']."' onclick=\"window.location='".PROJECT_PATH."/app/domain_export/index.php?id=".$domain_uuid."'\" value='".$text['button-export']."'>\n";
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-export']."' onclick=\"window.location='".PROJECT_PATH."/app/domain_export/index.php?id=".escape($domain_uuid)."'\" value='".$text['button-export']."'>\n";
 	}
 	echo "	<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
 	echo "</td>\n";
@@ -666,7 +733,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-name']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='domain_name' maxlength='255' value=\"".$domain_name."\">\n";
+	echo "	<input class='formfld' type='text' name='domain_name' maxlength='255' value=\"".escape($domain_name)."\">\n";
 	echo "<br />\n";
 	echo $text['description-name']."\n";
 	echo "</td>\n";
@@ -691,7 +758,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='domain_description' maxlength='255' value=\"".$domain_description."\">\n";
+	echo "	<input class='formfld' type='text' name='domain_description' maxlength='255' value=\"".escape($domain_description)."\">\n";
 	echo "<br />\n";
 	echo $text['description-description']."\n";
 	echo "</td>\n";
@@ -700,7 +767,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	<tr>\n";
 	echo "		<td colspan='2' align='right'>\n";
 	if ($action == "update") {
-		echo "		<input type='hidden' name='domain_uuid' value='$domain_uuid'>\n";
+		echo "		<input type='hidden' name='domain_uuid' value='".escape($domain_uuid)."'>\n";
 	}
 	echo "			<br />";
 	echo "			<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
@@ -717,4 +784,5 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 //include the footer
 	require_once "resources/footer.php";
+
 ?>

@@ -254,10 +254,12 @@ if ($db_type == "pgsql") {
 	}
 } //end if db_type pgsql
 
-//domain list
-	if ( ( !isset($_SESSION["domain_uuid"])) or (strlen($_SESSION["domain_uuid"]) == 0)) {
+//get the domain list
+	if (!is_array($_SESSION['domains']) or !isset($_SESSION["domain_uuid"])) {
+
 		//get the domain
 			$domain_array = explode(":", $_SERVER["HTTP_HOST"]);
+
 		//get the domains from the database
 			$sql = "select * from v_domains";
 			$prep_statement = $db->prepare($sql);
@@ -331,8 +333,8 @@ if ($db_type == "pgsql") {
 		$domain_uuid = uuid();
 	}
 
-//check the domain cidr range
-	if (is_array($_SESSION['domain']["cidr"])) {
+//check the domain cidr range 
+	if (isset($_SESSION['domain']["cidr"]) && !defined('STDIN')) {
 		$found = false;
 		foreach($_SESSION['domain']["cidr"] as $cidr) {
 			if (check_cidr($cidr, $_SERVER['REMOTE_ADDR'])) {
@@ -347,7 +349,7 @@ if ($db_type == "pgsql") {
 	}
 
 //check the api cidr range
-	if (is_array($_SESSION['api']["cidr"])) {
+	if (isset($_SESSION['api']["cidr"])) {
 		$found = false;
 		foreach($_SESSION['api']["cidr"] as $cidr) {
 			if (check_cidr($cidr, $_SERVER['REMOTE_ADDR'])) {

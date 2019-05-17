@@ -22,7 +22,7 @@
 		$apps[$x]['description']['nl-nl'] = "";
 		$apps[$x]['description']['pl-pl'] = "";
 		$apps[$x]['description']['pt-br'] = "";
-        $apps[$x]['description']['pt-pt'] = "Chamada directa com base na hora do dia.";
+        	$apps[$x]['description']['pt-pt'] = "Chamada directa com base na hora do dia.";
 		$apps[$x]['description']['ro-ro'] = "";
 		$apps[$x]['description']['ru-ru'] = "Прямые вызовы на основании времени суток.";
 		$apps[$x]['description']['sv-se'] = "";
@@ -64,6 +64,9 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "time_condition_domain";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "time_condition_context";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 
 	//default settings
@@ -198,7 +201,15 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "time_conditions";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "preset_usa";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = '{"thanksgiving_day":{"wday":"5-6","mon":"11","mday":"22-28"}}';
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = '{"thanksgiving_day":{"wday":"5","mon":"11","mday":"22-28"}}';
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "USA Holiday";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "2fcab411-971d-466c-bf6d-42f6bcd32ad2";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "time_conditions";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "preset_usa";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = '{"black_friday":{"wday":"6","mon":"11","mday":"23-29"}}';
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "USA Holiday";
 		$y++;

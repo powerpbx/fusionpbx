@@ -154,6 +154,7 @@
 		$apps[$x]['permissions'][$y]['name'] = "fax_file_delete";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "fax_active_view";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
@@ -161,6 +162,9 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "fax_active_all";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "fax_send_greeting";
+		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 
 	//default settings
 		$y=0;

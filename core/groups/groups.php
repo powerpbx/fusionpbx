@@ -62,7 +62,7 @@
 		$db->exec(check_sql($sql));
 		unset($sql);
 
-		messages::add($text['message-update']);
+		message::add($text['message-update']);
 	}
 
 //get the groups
@@ -81,7 +81,7 @@
 
 
 //get group counts
-	$sql = "select group_uuid, count(user_uuid) as group_count from v_group_users ";
+	$sql = "select group_uuid, count(user_uuid) as group_count from v_user_groups ";
 	if (!permission_exists('user_all')) {
 		$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
 	}
@@ -108,7 +108,7 @@
 		}
 	}
 	if (permission_exists('user_view')) {
-		echo "  <input type='button' class='btn' onclick=\"window.location='index.php'\" value='".$text['header-user_manager']."'>";
+		echo "  <input type='button' class='btn' onclick=\"window.location='../users/users.php'\" value='".$text['header-user_manager']."'>";
 	}
 	if (permission_exists('group_edit')) {
 		echo "	<input type='button' class='btn' alt='".$text['button-restore']."' onclick=\"window.location='permissions_default.php'\" value='".$text['button-restore']."'>";
