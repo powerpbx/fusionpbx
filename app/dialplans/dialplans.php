@@ -301,7 +301,7 @@
 		echo "<a href='".PROJECT_PATH."/app/time_conditions/time_condition_edit.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	elseif (permission_exists('dialplan_add')) {
-		echo "<a href='dialplan_add.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
+		echo "<a href='".PROJECT_PATH."/app/dialplans/dialplan_add.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	if (permission_exists('dialplan_delete') && $dialplan_count > 0) {
 		echo "<a href='javascript:void(0);' onclick=\"if (confirm('".$text['confirm-delete']."')) { document.forms.frm_delete.submit(); }\" alt='".$text['button-delete']."'>".$v_link_label_delete."</a>";
@@ -413,7 +413,7 @@
 		echo "<a href='".PROJECT_PATH."/app/time_conditions/time_condition_edit.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	elseif (permission_exists('dialplan_add')) {
-		echo "<a href='dialplan_add.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
+		echo "<a href='".PROJECT_PATH."/app/dialplans/dialplan_add.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	if (permission_exists('dialplan_delete') && $dialplan_count > 0) {
 		echo "<a href='javascript:void(0);' onclick=\"if (confirm('".$text['confirm-delete']."')) { document.forms.frm_delete.submit(); }\" alt='".$text['button-delete']."'>".$v_link_label_delete."</a>";

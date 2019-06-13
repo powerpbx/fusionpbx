@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -43,17 +43,32 @@
 	$text = $language->get();
 
 //get variables used to control the order
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
+
+//validate order by
+	if (strlen($order_by) > 0) {
+		$order_by = preg_replace('#[^a-zA-Z0-9_\-]#', '', $order_by);
+	}
+
+//validate the order
+	switch ($order) {
+		case 'asc':
+			break;
+		case 'desc':
+			break;
+		default:
+			$order = '';
+	}
 
 //add the search term
 	$search = strtolower(check_str($_GET["search"]));
 	if (strlen($search) > 0) {
-		$sql_search = "and (";
-		$sql_search .= "lower(conference_center_name) like '%".$search."%' ";
-		$sql_search .= "or lower(conference_center_extension) like '%".$search."%' ";
-		$sql_search .= "or lower(conference_center_greeting) like '%".$search."%' ";
-		$sql_search .= "or lower(conference_center_description) like '%".$search."%' ";
+		$sql_search = "and ( ";
+		$sql_search .= "lower(conference_center_name) like :search ";
+		$sql_search .= "or lower(conference_center_extension) like :search ";
+		$sql_search .= "or lower(conference_center_greeting) like :search ";
+		$sql_search .= "or lower(conference_center_description) like :search ";
 		$sql_search .= ") ";
 	}
 
@@ -63,24 +78,18 @@
 
 //prepare to page the results
 	$sql = "select count(conference_center_uuid) as num_rows from v_conference_centers ";
-	$sql .= "where domain_uuid = '".$_SESSION["domain_uuid"]."' ";
+	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$prep_statement = $db->prepare($sql);
-	if ($prep_statement) {
-		$prep_statement->execute();
-		$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-		if ($row['num_rows'] > 0) {
-			$num_rows = $row['num_rows'];
-		}
-		else {
-			$num_rows = '0';
-		}
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	if (strlen($search) > 0) {
+		$parameters['search'] = '%'.$search.'%';
 	}
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
-	$param = "";
+	$param = '';
 	$page = $_GET['page'];
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
 	list($paging_controls, $rows_per_page, $var3) = paging($num_rows, $param, $rows_per_page);
@@ -88,14 +97,14 @@
 
 //get the list
 	$sql = "select * from v_conference_centers ";
-	$sql .= "where domain_uuid = '".$_SESSION["domain_uuid"]."' ";
+	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
 	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$sql .= "limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset ($prep_statement, $sql);
+	$sql .= "limit :rows_per_page offset :offset ";
+	$database = new database;
+	$parameters['rows_per_page'] = $rows_per_page;
+	$parameters['offset'] = $offset;
+	$result = $database->select($sql, $parameters, 'all');
 
 //alternate the row style
 	$c = 0;
