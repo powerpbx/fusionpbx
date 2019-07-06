@@ -284,7 +284,7 @@
 	}
 	
 	if (!permission_exists('xml_cdr_domain')) { //only show the user their calls
-		echo "and (extension_uuid = '".implode("' or extension_uuid = '", $extension_uuids)."') ";
+		$sql .= "and (c.extension_uuid = '".implode("' or c.extension_uuid = '", $extension_uuids)."') ";
 	}
 	if ($missed == true) {
 		$sql .= "and missed_call = 1 \n";
@@ -304,7 +304,7 @@
 	}
 	if (strlen($caller_id_name) > 0) {
 		$mod_caller_id_name = str_replace("*", "%", $caller_id_name);
-		$sql .= "and caller_id_name like :mod_caller_id_name \n";
+		$sql .= "and caller_id_name like :caller_id_name \n";
 		$parameters['caller_id_name'] = '%'.$mod_caller_id_name.'%';
 	}
 	if (strlen($caller_id_number) > 0) {
