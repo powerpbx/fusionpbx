@@ -74,7 +74,7 @@
 	echo "		</td>\n";
 	echo "		<td valign='top' style='text-align: right; white-space: nowrap;'>\n";
 	if ($_SESSION['theme']['menu_style']['text'] != 'side') {
-		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$_SESSION["username"]."</a>";
+		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=".$_SESSION['user_uuid']."'>".$_SESSION["username"]."</a>";
 	}
 	echo "		</td>\n";
 	echo "	</tr>\n";
@@ -1059,6 +1059,18 @@
 						$hud[$n]['html'] .= "<tr class='tr_link_void'>\n";
 						$hud[$n]['html'] .= "<td valign='top' class='".$row_style[$c]." hud_text'>".$text['label-memory_usage']."</td>\n";
 						$hud[$n]['html'] .= "<td valign='top' class='".$row_style[$c]." hud_text' style='text-align: right;'>".$percent_memory."%</td>\n";
+						$hud[$n]['html'] .= "</tr>\n";
+						$c = ($c) ? 0 : 1;
+					}
+				}
+
+			//memory available
+				if (stristr(PHP_OS, 'Linux')) {
+					$result = trim(shell_exec('free -hw | grep \'Mem:\' | cut -d\' \' -f 58-64'));
+					if ($result != '') {
+						$hud[$n]['html'] .= "<tr class='tr_link_void'>\n";
+						$hud[$n]['html'] .= "<td valign='top' class='".$row_style[$c]." hud_text'>".$text['label-memory_available']."</td>\n";
+						$hud[$n]['html'] .= "<td valign='top' class='".$row_style[$c]." hud_text' style='text-align: right;'>".$result."</td>\n";
 						$hud[$n]['html'] .= "</tr>\n";
 						$c = ($c) ? 0 : 1;
 					}

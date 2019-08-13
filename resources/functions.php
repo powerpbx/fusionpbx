@@ -2018,8 +2018,8 @@ function number_pad($number,$n) {
 
 //escape user data
 	function escape($string) {
-		return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-		//return htmlentities($string, ENT_QUOTES, 'UTF-8');
+		return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		//return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
 	}
 
 //output pre-formatted array keys and values
@@ -2124,10 +2124,11 @@ function number_pad($number,$n) {
 
 //validate and format order by clause of select statement
 	if (!function_exists('order_by')) {
-		function order_by($col, $dir) {
+		function order_by($col, $dir, $col_default = '', $dir_default = 'asc') {
 			$col = preg_replace('#[^a-zA-Z0-9-_.]#', '', $col);
 			$dir = strtolower($dir) == 'desc' ? 'desc' : 'asc';
 			if ($col != '') { return ' order by '.$col.' '.$dir.' '; }
+			else if ($col_default != '') { return ' order by '.$col_default.' '.$dir.' '; }
 		}
 	}
 

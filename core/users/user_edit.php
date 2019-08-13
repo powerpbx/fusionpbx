@@ -103,11 +103,11 @@
 	}
 
 //retrieve password requirements
-	$required['length'] = $_SESSION['user']['password_length']['numeric'];
-	$required['number'] = ($_SESSION['user']['password_number']['boolean'] == 'true') ? true : false;
-	$required['lowercase'] = ($_SESSION['user']['password_lowercase']['boolean'] == 'true') ? true : false;
-	$required['uppercase'] = ($_SESSION['user']['password_uppercase']['boolean'] == 'true') ? true : false;
-	$required['special'] = ($_SESSION['user']['password_special']['boolean'] == 'true') ? true : false;
+	$required['length'] = $_SESSION['users']['password_length']['numeric'];
+	$required['number'] = ($_SESSION['users']['password_number']['boolean'] == 'true') ? true : false;
+	$required['lowercase'] = ($_SESSION['users']['password_lowercase']['boolean'] == 'true') ? true : false;
+	$required['uppercase'] = ($_SESSION['users']['password_uppercase']['boolean'] == 'true') ? true : false;
+	$required['special'] = ($_SESSION['users']['password_special']['boolean'] == 'true') ? true : false;
 
 //prepare the data
 	if (count($_POST) > 0) {
@@ -662,6 +662,9 @@
 	}
 	if (permission_exists('user_add') || permission_exists('user_edit')) {
 		echo "	<input type='button' class='btn' style='margin-right: 10px;' onclick=\"window.location='users.php'\" value='".$text['button-back']."'>";
+	}
+	if (permission_exists('ticket_add') || permission_exists('ticket_edit')) {
+		echo "	<input type='button' class='btn' style='margin-right: 3px;' onclick=\"window.location='/app/tickets/tickets.php?user_uuid=".escape($user_uuid)."'\" value='".$text['button-tickets']."'>";
 	}
 	echo "	<input type='submit' class='btn' value='".$text['button-save']."'>";
 	echo "</div>\n";
