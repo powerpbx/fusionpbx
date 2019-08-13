@@ -17,21 +17,25 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2008-2012 All Rights Reserved.
+	Copyright (C) 2008-2019 All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('conference_session_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('conference_session_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
@@ -42,30 +46,31 @@ else {
 	require_once "resources/paging.php";
 
 //set variables from the http values
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
-	$conference_session_uuid = check_str($_GET["uuid"]);
+	$order_by = $_GET["order_by"] != '' ? $_GET["order_by"] : 'start_epoch';
+	$order = $_GET['order'] != '' ? $_GET['order'] : 'asc';
+	$conference_session_uuid = $_GET["uuid"];
 
 //add meeting_uuid to a session variable
-	if (strlen($conference_session_uuid) > 0) {
+	if (is_uuid($conference_session_uuid)) {
 		$_SESSION['meeting']['session_uuid'] = $conference_session_uuid;
 	}
 
 //get the list
 	$sql = "select * from v_conference_sessions ";
-	$sql .= "where domain_uuid = '$domain_uuid' ";
-	$sql .= "and conference_session_uuid = '".$_SESSION['meeting']['session_uuid']."' ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll();
-	foreach ($result as &$row) {
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and conference_session_uuid = :conference_session_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['conference_session_uuid'] = $_SESSION['meeting']['session_uuid'];
+	$database = new database;
+	$row = $database->select($sql, $parameters, 'row');
+	if (is_array($row) && sizeof($row) != 0) {
 		$meeting_uuid = $row["meeting_uuid"];
 		$recording = $row["recording"];
 		$start_epoch = $row["start_epoch"];
 		$end_epoch = $row["end_epoch"];
 		$profile = $row["profile"];
 	}
-	unset ($prep_statement);
+	unset($sql, $parameters, $row);
 
 //set the year, month and day based on the session start epoch
 	$tmp_year = date("Y", $start_epoch);
@@ -110,51 +115,40 @@ else {
 	echo "	</tr>\n";
 	echo "</table>\n";
 
-	//prepare to page the results
-		$sql = "select count(*) as num_rows from v_conference_session_details ";
-		$sql .= "where domain_uuid = '$domain_uuid' ";
-		$sql .= "and conference_session_uuid = '".$_SESSION['meeting']['session_uuid']."' ";
-		$prep_statement = $db->prepare($sql);
-		if ($prep_statement) {
-		$prep_statement->execute();
-			$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-			if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-			}
-			else {
-				$num_rows = '0';
-			}
-		}
+//prepare to page the results
+	$sql = "select count(*) from v_conference_session_details ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and conference_session_uuid = :conference_session_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['conference_session_uuid'] = $_SESSION['meeting']['session_uuid'];
+	$num_rows = $database->select($sql, $parameters, 'column');
+	unset($sql, $parameters);
 
-	//prepare to page the results
-		$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
-		$param = "";
-		$page = $_GET['page'];
-		if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
-		list($paging_controls, $rows_per_page, $var3) = paging($num_rows, $param, $rows_per_page);
-		$offset = $rows_per_page * $page;
+//prepare to page the results
+	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
+	$param = '';
+	$page = $_GET['page'];
+	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
+	list($paging_controls, $rows_per_page, $var3) = paging($num_rows, $param, $rows_per_page);
+	$offset = $rows_per_page * $page;
 
-	//get the list
-		$sql = "select * from v_conference_session_details ";
-		$sql .= "where domain_uuid = '$domain_uuid' ";
-		$sql .= "and conference_session_uuid = '".$_SESSION['meeting']['session_uuid']."' ";
-		if (strlen($order_by) == 0) {
-			$sql .= "order by start_epoch asc ";
-		}
-		else {
-			$sql .= "order by $order_by $order ";
-		}
-		$sql .= "limit $rows_per_page offset $offset ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll();
-		$result_count = count($result);
-		unset ($prep_statement, $sql);
+//get the list
+	$sql = "select * from v_conference_session_details ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and conference_session_uuid = :conference_session_uuid ";
+	$sql .= order_by($order_by, $order);
+	$sql .= limit_offset($rows_per_page, $offset);
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['conference_session_uuid'] = $_SESSION['meeting']['session_uuid'];
+	$conference_session_details = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
+//show the styles
 	$c = 0;
 	$row_style["0"] = "row_style0";
 	$row_style["1"] = "row_style1";
 
+//show the conent
 	echo "<table class='tr_hover' width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
 	//echo th_order_by('meeting_uuid', 'Meeting UUID', $order_by, $order);
@@ -173,8 +167,8 @@ else {
 	}
 	echo "</tr>\n";
 
-	if ($result_count > 0) {
-		foreach($result as $row) {
+	if (is_array($conference_session_details) && sizeof($conference_session_details) != 0) {
+		foreach($conference_session_details as $row) {
 			if (defined('TIME_24HR') && TIME_24HR == 1) {
 				$start_date = date("j M Y H:i:s", $row['start_epoch']);
 				$end_date = date("j M Y H:i:s", $row['end_epoch']);
@@ -187,26 +181,26 @@ else {
 				$time_difference = $row['end_epoch'] - $row['start_epoch'];
 				$time_difference = gmdate("G:i:s", $time_difference);
 			}
-			$tr_link = (permission_exists('conference_session_details')) ? "href='/app/xml_cdr/xml_cdr_details.php?uuid=".$row['uuid']."'" : null;
+			$tr_link = (permission_exists('conference_session_details')) ? "href='/app/xml_cdr/xml_cdr_details.php?id=".escape($row['uuid'])."'" : null;
 			echo "<tr ".$tr_link.">\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['meeting_uuid']."&nbsp;</td>\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['conference_session_uuid']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['caller_id_name']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['caller_id_number']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".ucwords($row['moderator'])."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['network_addr']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['caller_id_name'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['caller_id_number'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".ucwords(escape($row['moderator']))."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['network_addr'])."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$time_difference."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$start_date."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$end_date."&nbsp;</td>\n";
 			if (permission_exists('conference_session_details')) {
 				echo "	<td class='list_control_icon'>";
-				echo "		<a href='/app/xml_cdr/xml_cdr_details.php?uuid=".$row['uuid']."' alt='".$text['button-view']."'>$v_link_label_view</a>";
+				echo "		<a href='/app/xml_cdr/xml_cdr_details.php?id=".escape($row['uuid'])."' alt='".$text['button-view']."'>$v_link_label_view</a>";
 				echo "	</td>\n";
 			}
 			echo "</tr>\n";
 			if ($c==0) { $c=1; } else { $c=0; }
 		} //end foreach
-		unset($sql, $result, $row_count);
+		unset($conference_session_details);
 	} //end if results
 
 	echo "<tr>\n";
@@ -228,4 +222,5 @@ else {
 
 //include the footer
 	require_once "resources/footer.php";
+
 ?>

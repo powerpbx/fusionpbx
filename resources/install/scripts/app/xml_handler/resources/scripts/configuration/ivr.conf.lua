@@ -1,6 +1,6 @@
 --      xml_handler.lua
 --      Part of FusionPBX
---      Copyright (C) 2016 Mark J Crane <markjcrane@fusionpbx.com>
+--      Copyright (C) 2016-2018 Mark J Crane <markjcrane@fusionpbx.com>
 --      All rights reserved.
 --
 --      Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 	if not XML_STRING  then
 		--log cache error
 			if (debug["cache"]) then
-				freeswitch.consoleLog("warning", "[xml_handler] " .. ivr_menu_cache_key .. " can not be get from memcache: " .. tostring(err) .. "\n");
+				freeswitch.consoleLog("warning", "[xml_handler] " .. ivr_menu_cache_key .. " can not be get from the cache: " .. tostring(err) .. "\n");
 			end
 
 		--required includes
@@ -95,7 +95,11 @@
 
 			local settings = Settings.new(dbh, domain_name, domain_uuid)
 			local storage_type = settings:get('recordings', 'storage_type', 'text')
-
+			local storage_path = settings:get('recordings', 'storage_path', 'text')
+			if (storage_path ~= nil) then
+				storage_path = storage_path:gsub("${domain_name}", domain_name)
+				storage_path = storage_path:gsub("${domain_uuid}", domain_uuid)
+			end
 		--get the recordings from the database
 			ivr_menu_greet_long_is_base64 = false;
 			ivr_menu_greet_short_is_base64 = false;
@@ -113,7 +117,8 @@
 
 				--function to get recording to local fs
 					local function load_record(name)
-						local path, is_base64 = base_path .. "/" .. name
+						local path = base_path .. "/" .. name;
+						local is_base64 = false;
 
 						if not file_exists(path) then
 							local sql = "SELECT recording_base64 FROM v_recordings " .. 
@@ -125,16 +130,14 @@
 							end
 
 							dbh:query(sql, params, function(row)
-							--get full path to recording
-								is_base64, name = true, path
-
-							--save the recording to the file system
+								--save the recording to the file system
 								if #row.recording_base64 > 32 then
+									is_base64 = true;
 									file.write_base64(path, row.recording_base64);
+									--add the full path and file name
+									name = path;
 								end
 							end);
-						else
-							name = path
 						end
 						return name, is_base64
 					end
@@ -274,15 +277,15 @@
 			local ok, err = cache.set(ivr_menu_uuid, XML_STRING, expire["ivr"]);
 			if debug["cache"] then
 				if ok then
-					freeswitch.consoleLog("notice", "[xml_handler] " .. ivr_menu_uuid .. " stored in memcache\n");
+					freeswitch.consoleLog("notice", "[xml_handler] " .. ivr_menu_uuid .. " stored in the cache\n");
 				else
-					freeswitch.consoleLog("warning", "[xml_handler] " .. ivr_menu_uuid .. " can not be stored in memcache: " .. tostring(err) .. "\n");
+					freeswitch.consoleLog("warning", "[xml_handler] " .. ivr_menu_uuid .. " can not be stored in the cache: " .. tostring(err) .. "\n");
 				end
 			end
 
 		--send the xml to the console
 			if (debug["xml_string"]) then
-				local file = assert(io.open(temp_dir .. "/ivr.conf.xml", "w"));
+				local file = assert(io.open(temp_dir .. "/ivr-"..ivr_menu_uuid..".conf.xml", "w"));
 				file:write(XML_STRING);
 				file:close();
 			end
@@ -295,6 +298,6 @@
 	else
 		--send to the console
 			if (debug["cache"]) then
-				freeswitch.consoleLog("notice", "[xml_handler] " .. ivr_menu_cache_key .. " source: memcache\n");
+				freeswitch.consoleLog("notice", "[xml_handler] " .. ivr_menu_cache_key .. " source: cache\n");
 			end
 	end --if XML_STRING

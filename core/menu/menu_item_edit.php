@@ -39,60 +39,59 @@ else {
 	$text = $language->get();
 
 //get the menu_uuid
-	$menu_uuid = check_str($_REQUEST["id"]);
-	$menu_item_uuid = check_str($_REQUEST['menu_item_uuid']);
-	$group_uuid_name = check_str($_REQUEST['group_uuid_name']);
-	$menu_item_group_uuid = check_str($_REQUEST['menu_item_group_uuid']);
+	$menu_uuid = $_REQUEST["id"];
+	$menu_item_uuid = $_REQUEST['menu_item_uuid'];
+	$group_uuid_name = $_REQUEST['group_uuid_name'];
+	$menu_item_group_uuid = $_REQUEST['menu_item_group_uuid'];
 
 //delete the group from the menu item
-	if ($_REQUEST["a"] == "delete" && permission_exists("menu_delete") && $menu_item_group_uuid != '') {
+	if ($_REQUEST["a"] == "delete" && permission_exists("menu_delete") && is_uuid($menu_item_group_uuid)) {
 		//delete the group from the users
-			$sql = "delete from v_menu_item_groups  ";
-			$sql .= "where menu_item_group_uuid = '".$menu_item_group_uuid."' ";
-			$db->exec(check_sql($sql));
+			$array['menu_item_groups'][0]['menu_item_group_uuid'] = $menu_item_group_uuid;
+			$database = new database;
+			$database->app_name = 'menu';
+			$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
+			$database->delete($array);
+			unset($array);
 		//redirect the browser
-			messages::add($text['message-delete']);
+			message::add($text['message-delete']);
 			header("Location: menu_item_edit.php?id=".$menu_uuid."&menu_item_uuid=".$menu_item_uuid."&menu_uuid=".$menu_uuid);
 			return;
 	}
 
 //action add or update
-	if (isset($_REQUEST["menu_item_uuid"])) {
-		if (strlen($_REQUEST["menu_item_uuid"]) > 0) {
-			$action = "update";
-			$menu_item_uuid = check_str($_REQUEST["menu_item_uuid"]);
-		}
-		else {
-			$action = "add";
-		}
+	if (is_uuid($_REQUEST["menu_item_uuid"])) {
+		$action = "update";
+		$menu_item_uuid = $_REQUEST["menu_item_uuid"];
 	}
 	else {
 		$action = "add";
 	}
+
 
 //clear the menu session so it will rebuild with the update
 	$_SESSION["menu"] = "";
 
 //get the HTTP POST variables and set them as PHP variables
 	if (count($_POST) > 0) {
-		$menu_uuid = check_str($_POST["menu_uuid"]);
-		$menu_item_uuid = check_str($_POST["menu_item_uuid"]);
-		$menu_item_title = check_str($_POST["menu_item_title"]);
-		$menu_item_link = check_str($_POST["menu_item_link"]);
-		$menu_item_category = check_str($_POST["menu_item_category"]);
-		$menu_item_icon = check_str($_POST["menu_item_icon"]);
-		$menu_item_description = check_str($_POST["menu_item_description"]);
-		$menu_item_protected = check_str($_POST["menu_item_protected"]);
-		//$menu_item_uuid = check_str($_POST["menu_item_uuid"]);
-		$menu_item_parent_uuid = check_str($_POST["menu_item_parent_uuid"]);
-		$menu_item_order = check_str($_POST["menu_item_order"]);
+		$menu_uuid = $_POST["menu_uuid"];
+		$menu_item_uuid = $_POST["menu_item_uuid"];
+		$menu_item_title = $_POST["menu_item_title"];
+		$menu_item_link = $_POST["menu_item_link"];
+		$menu_item_category = $_POST["menu_item_category"];
+		$menu_item_icon = $_POST["menu_item_icon"];
+		$menu_item_description = $_POST["menu_item_description"];
+		$menu_item_protected = $_POST["menu_item_protected"];
+		//$menu_item_uuid = $_POST["menu_item_uuid"];
+		$menu_item_parent_uuid = $_POST["menu_item_parent_uuid"];
+		$menu_item_order = $_POST["menu_item_order"];
 	}
 
 //when a HTTP POST is available then process it
 	if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 		if ($action == "update") {
-			$menu_item_uuid = check_str($_POST["menu_item_uuid"]);
+			$menu_item_uuid = $_POST["menu_item_uuid"];
 		}
 
 		//check for all required data
@@ -116,101 +115,77 @@ else {
 		//add or update the database
 		if ($_POST["persistformvar"] != "true") {
 			//get the language from the menu
-				$sql = "SELECT menu_language FROM v_menus ";
-				$sql .= "where menu_uuid = '$menu_uuid' ";
-				$prep_statement = $db->prepare(check_sql($sql));
-				$prep_statement->execute();
-				$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-				foreach ($result as &$row) {
-					$menu_language = $row['menu_language'];
-				}
+				$sql = "select menu_language from v_menus ";
+				$sql .= "where menu_uuid = :menu_uuid ";
+				$parameters['menu_uuid'] = $menu_uuid;
+				$database = new database;
+				$menu_language = $database->select($sql, $parameters, 'column');
+				unset($sql, $parameters);
 
 			//get the highest menu item order
-				if (strlen($menu_item_parent_uuid) == 0) {
-					$sql = "SELECT menu_item_order FROM v_menu_items ";
-					$sql .= "where menu_uuid = '$menu_uuid' ";
+				if (!is_uuid($menu_item_parent_uuid)) {
+					$sql = "select menu_item_order from v_menu_items ";
+					$sql .= "where menu_uuid = :menu_uuid ";
 					$sql .= "and menu_item_parent_uuid is null ";
 					$sql .= "order by menu_item_order desc ";
 					$sql .= "limit 1 ";
-					$prep_statement = $db->prepare(check_sql($sql));
-					$prep_statement->execute();
-					$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-					foreach ($result as &$row) {
-						$highest_menu_item_order = $row['menu_item_order'];
-					}
-					unset($prep_statement);
+					$parameters['menu_uuid'] = $menu_uuid;
+					$database = new database;
+					$highest_menu_item_order = $database->select($sql, $parameters, 'column');
+					unset($sql, $parameters);
 				}
 
 			//add a menu item
 				if ($action == "add" && permission_exists('menu_add')) {
 					$menu_item_uuid = uuid();
-					$sql = "insert into v_menu_items ";
-					$sql .= "(";
-					$sql .= "menu_uuid, ";
-					$sql .= "menu_item_title, ";
-					$sql .= "menu_item_link, ";
-					$sql .= "menu_item_category, ";
-					$sql .= "menu_item_icon, ";
-					$sql .= "menu_item_description, ";
-					$sql .= "menu_item_protected, ";
-					$sql .= "menu_item_uuid, ";
-					$sql .= "menu_item_parent_uuid, ";
-					if (strlen($menu_item_parent_uuid) == 0) {
-						$sql .= "menu_item_order, ";
-					}
-					$sql .= "menu_item_add_user, ";
-					$sql .= "menu_item_add_date ";
-					$sql .= ")";
-					$sql .= "values ";
-					$sql .= "(";
-					$sql .= "'$menu_uuid', ";
-					$sql .= "'$menu_item_title', ";
-					$sql .= "'$menu_item_link', ";
-					$sql .= "'$menu_item_category', ";
-					$sql .= "'$menu_item_icon', ";
-					$sql .= "'$menu_item_description', ";
-					$sql .= "'$menu_item_protected', ";
-					$sql .= "'".$menu_item_uuid."', ";
-					if (strlen($menu_item_parent_uuid) == 0) {
-						$sql .= "null, ";
-						$sql .= "'".($highest_menu_item_order+1)."', ";
+					$array['menu_items'][0]['menu_uuid'] = $menu_uuid;
+					$array['menu_items'][0]['menu_item_title'] = $menu_item_title;
+					$array['menu_items'][0]['menu_item_link'] = $menu_item_link;
+					$array['menu_items'][0]['menu_item_category'] = $menu_item_category;
+					$array['menu_items'][0]['menu_item_icon'] = $menu_item_icon;
+					$array['menu_items'][0]['menu_item_description'] = $menu_item_description;
+					$array['menu_items'][0]['menu_item_protected'] = $menu_item_protected;
+					$array['menu_items'][0]['menu_item_uuid'] = $menu_item_uuid;
+					if (!is_uuid($menu_item_parent_uuid)) {
+						$array['menu_items'][0]['menu_item_parent_uuid'] = null;
+						$array['menu_items'][0]['menu_item_order'] = ($highest_menu_item_order + 1);
 					}
 					else {
-						$sql .= "'$menu_item_parent_uuid', ";
+						$array['menu_items'][0]['menu_item_parent_uuid'] = $menu_item_parent_uuid;
 					}
-					$sql .= "'".$_SESSION["username"]."', ";
-					$sql .= "now() ";
-					$sql .= ")";
-					$db->exec(check_sql($sql));
-					unset($sql);
+					$array['menu_items'][0]['menu_item_add_user'] = $_SESSION["username"];
+					$array['menu_items'][0]['menu_item_add_date'] = 'now()';
+					$database = new database;
+					$database->app_name = 'menu';
+					$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
+					$database->save($array);
+					unset($array);
 				}
 
 			//update the menu item
 				if ($action == "update" && permission_exists('menu_edit')) {
-					$sql  = "update v_menu_items set ";
-					$sql .= "menu_item_title = '$menu_item_title', ";
-					$sql .= "menu_item_link = '$menu_item_link', ";
-					$sql .= "menu_item_category = '$menu_item_category', ";
-					$sql .= "menu_item_icon = '$menu_item_icon', ";
-					$sql .= "menu_item_description = '$menu_item_description', ";
-					$sql .= "menu_item_protected = '$menu_item_protected', ";
-					if (strlen($menu_item_parent_uuid) == 0) {
-						$sql .= "menu_item_parent_uuid = null, ";
-						if (strlen($menu_item_order) > 0) {
-							$sql .= "menu_item_order = '$menu_item_order', ";
-						}
-						else {
-							$sql .= "menu_item_order = '".($highest_menu_item_order+1)."', ";
-						}
+					$array['menu_items'][0]['menu_uuid'] = $menu_uuid;
+					$array['menu_items'][0]['menu_item_title'] = $menu_item_title;
+					$array['menu_items'][0]['menu_item_link'] = $menu_item_link;
+					$array['menu_items'][0]['menu_item_category'] = $menu_item_category;
+					$array['menu_items'][0]['menu_item_icon'] = $menu_item_icon;
+					$array['menu_items'][0]['menu_item_description'] = $menu_item_description;
+					$array['menu_items'][0]['menu_item_protected'] = $menu_item_protected;
+					$array['menu_items'][0]['menu_item_uuid'] = $menu_item_uuid;
+					if (!is_uuid($menu_item_parent_uuid)) {
+						$array['menu_items'][0]['menu_item_parent_uuid'] = null;
+						$array['menu_items'][0]['menu_item_order'] = is_numeric($menu_item_order) ? $menu_item_order : ($highest_menu_item_order + 1);
 					}
 					else {
-						$sql .= "menu_item_parent_uuid = '$menu_item_parent_uuid', ";
+						$array['menu_items'][0]['menu_item_parent_uuid'] = $menu_item_parent_uuid;
 					}
-					$sql .= "menu_item_mod_user = '".$_SESSION["username"]."', ";
-					$sql .= "menu_item_mod_date = now() ";
-					$sql .= "where menu_uuid = '$menu_uuid' ";
-					$sql .= "and menu_item_uuid = '$menu_item_uuid' ";
-					$count = $db->exec(check_sql($sql));
+					$array['menu_items'][0]['menu_item_add_user'] = $_SESSION["username"];
+					$array['menu_items'][0]['menu_item_add_date'] = 'now()';
+					$database = new database;
+					$database->app_name = 'menu';
+					$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
+					$database->save($array);
+					unset($array);
 				}
 
 			//add a group to the menu
@@ -219,71 +194,64 @@ else {
 					$group_uuid = $group_data[0];
 					$group_name = $group_data[1];
 					//add the group to the menu
-						if (strlen($menu_item_uuid) > 0) {
+						if (is_uuid($menu_item_uuid)) {
 							$menu_item_group_uuid = uuid();
-							$sql_insert = "insert into v_menu_item_groups ";
-							$sql_insert .= "(";
-							$sql_insert .= "menu_item_group_uuid, ";
-							$sql_insert .= "menu_uuid, ";
-							$sql_insert .= "menu_item_uuid, ";
-							$sql_insert .= "group_name, ";
-							$sql_insert .= "group_uuid ";
-							$sql_insert .= ")";
-							$sql_insert .= "values ";
-							$sql_insert .= "(";
-							$sql_insert .= "'".$menu_item_group_uuid."', ";
-							$sql_insert .= "'".$menu_uuid."', ";
-							$sql_insert .= "'".$menu_item_uuid."', ";
-							$sql_insert .= "'".$group_name."', ";
-							$sql_insert .= "'".$group_uuid."' ";
-							$sql_insert .= ")";
-							$db->exec($sql_insert);
+							$array['menu_item_groups'][0]['menu_item_group_uuid'] = $menu_item_group_uuid;
+							$array['menu_item_groups'][0]['menu_uuid'] = $menu_uuid;
+							$array['menu_item_groups'][0]['menu_item_uuid'] = $menu_item_uuid;
+							$array['menu_item_groups'][0]['group_name'] = $group_name;
+							$array['menu_item_groups'][0]['group_uuid'] = $group_uuid;
+							$database = new database;
+							$database->app_name = 'menu';
+							$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
+							$database->save($array);
+							unset($array);
 						}
 				}
 
 			//add title to menu languages
 				if ($_REQUEST["a"] != "delete" && strlen($menu_item_title) > 0 && permission_exists('menu_add')) {
-					$sql = "select count(*) as num_rows from v_menu_languages ";
-					$sql .= "where menu_item_uuid = '".$menu_item_uuid."' ";
-					$sql .= "and menu_language = '$menu_language' ";
-					$prep_statement = $db->prepare($sql);
-					$prep_statement->execute();
-					$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-					if ($row['num_rows'] == 0) {
-						$sql_insert = "insert into v_menu_languages ";
-						$sql_insert .= "(";
-						$sql_insert .= "menu_language_uuid, ";
-						$sql_insert .= "menu_uuid, ";
-						$sql_insert .= "menu_item_uuid, ";
-						$sql_insert .= "menu_language, ";
-						$sql_insert .= "menu_item_title ";
-						$sql_insert .= ")";
-						$sql_insert .= "values ";
-						$sql_insert .= "(";
-						$sql_insert .= "'".uuid()."', ";
-						$sql_insert .= "'".$menu_uuid."', ";
-						$sql_insert .= "'".$menu_item_uuid."', ";
-						$sql_insert .= "'".$menu_language."', ";
-						$sql_insert .= "'".$menu_item_title."' ";
-						$sql_insert .= ")";
-						$db->exec($sql_insert);
+					$sql = "select count(*) from v_menu_languages ";
+					$sql .= "where menu_item_uuid = :menu_item_uuid ";
+					$sql .= "and menu_language = :menu_language ";
+					$parameters['menu_item_uuid'] = $menu_item_uuid;
+					$parameters['menu_language'] = $menu_language;
+					$database = new database;
+					$num_rows = $database->select($sql, $parameters, 'column');
+					if ($num_rows == 0) {
+						$array['menu_languages'][0]['menu_language_uuid'] = uuid();
+						$array['menu_languages'][0]['menu_uuid'] = $menu_uuid;
+						$array['menu_languages'][0]['menu_item_uuid'] = $menu_item_uuid;
+						$array['menu_languages'][0]['menu_language'] = $menu_language;
+						$array['menu_languages'][0]['menu_item_title'] = $menu_item_title;
+						$database = new database;
+						$database->app_name = 'menu';
+						$database->app_uuid = 'f4b3b3d2-6287-489c-2a00-64529e46f2d7';
+						$database->save($array);
+						unset($array);
 					}
 					else {
 						$sql  = "update v_menu_languages set ";
-						$sql .= "menu_item_title = '$menu_item_title' ";
-						$sql .= "where menu_uuid = '$menu_uuid' ";
-						$sql .= "and menu_item_uuid = '$menu_item_uuid' ";
-						$sql .= "and menu_language = '$menu_language' ";
-						$count = $db->exec(check_sql($sql));
+						$sql .= "menu_item_title = :menu_item_title ";
+						$sql .= "where menu_uuid = :menu_uuid ";
+						$sql .= "and menu_item_uuid = :menu_item_uuid ";
+						$sql .= "and menu_language = :menu_language ";
+						$parameters['menu_item_title'] = $menu_item_title;
+						$parameters['menu_uuid'] = $menu_uuid;
+						$parameters['menu_item_uuid'] = $menu_item_uuid;
+						$parameters['menu_language'] = $menu_language;
+						$database = new database;
+						$database->execute($sql, $parameters);
 					}
+					unset($sql, $parameters, $num_rows);
 				}
 
 			//set response message
 				if ($action == "add") {
-					messages::add($text['message-add']);
+					message::add($text['message-add']);
 				}
 				if ($action == "update") {
-					messages::add($text['message-update']);
+					message::add($text['message-update']);
 				}
 
 			//redirect the user
@@ -294,20 +262,21 @@ else {
 					header("Location: menu_edit.php?id=".$menu_uuid);
 				}
 				return;
-		} //if ($_POST["persistformvar"] != "true")
-	} //(count($_POST)>0 && strlen($_POST["persistformvar"]) == 0)
+		}
+	}
 
 //pre-populate the form
 	if (count($_GET)>0 && $_POST["persistformvar"] != "true") {
 		$menu_item_uuid = $_GET["menu_item_uuid"];
 
 		$sql = "select * from v_menu_items ";
-		$sql .= "where menu_uuid = '$menu_uuid' ";
-		$sql .= "and menu_item_uuid = '$menu_item_uuid' ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-		foreach ($result as &$row) {
+		$sql .= "where menu_uuid = :menu_uuid ";
+		$sql .= "and menu_item_uuid = :menu_item_uuid ";
+		$parameters['menu_uuid'] = $menu_uuid;
+		$parameters['menu_item_uuid'] = $menu_item_uuid;
+		$database = new database;
+		$row = $database->select($sql, $parameters, 'row');
+		if (is_array($row) && sizeof($row) != 0) {
 			$menu_item_title = $row["menu_item_title"];
 			$menu_item_link = $row["menu_item_link"];
 			$menu_item_category = $row["menu_item_category"];
@@ -323,15 +292,17 @@ else {
 			$menu_item_mod_user = $row["menu_item_mod_user"];
 			$menu_item_mod_date = $row["menu_item_mod_date"];
 		}
+		unset($sql, $parameters, $row);
 	}
 
 //get the the menu items
-	$sql = "SELECT * FROM v_menu_items ";
-	$sql .= "where menu_uuid = '$menu_uuid' ";
+	$sql = "select * from v_menu_items ";
+	$sql .= "where menu_uuid = :menu_uuid ";
 	$sql .= "order by menu_item_title asc ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$menu_items = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+	$parameters['menu_uuid'] = $menu_uuid;
+	$database = new database;
+	$menu_items = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //get the assigned groups
 	$sql = "select ";
@@ -346,30 +317,35 @@ else {
 	$sql .= "order by ";
 	$sql .= "	g.domain_uuid desc, ";
 	$sql .= "	g.group_name asc ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->bindParam(':menu_uuid', $menu_uuid);
-	$prep_statement->bindParam(':menu_item_uuid', $menu_item_uuid);
-	$prep_statement->execute();
-	$menu_item_groups = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset($sql, $prep_statement);
+	$parameters['menu_uuid'] = $menu_uuid;
+	$parameters['menu_item_uuid'] = $menu_item_uuid;
+	$database = new database;
+	$menu_item_groups = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //set the assigned_groups array
-	foreach($menu_item_groups as $field) {
-		if (strlen($field['group_name']) > 0) {
-			$assigned_groups[] = $field['group_uuid'];
+	if (is_array($menu_item_groups) && sizeof($menu_item_groups) != 0) {
+		$assigned_groups = array();
+		foreach ($menu_item_groups as $field) {
+			if (strlen($field['group_name']) > 0) {
+				if (is_uuid($field['group_uuid'])) {
+					$assigned_groups[] = $field['group_uuid'];
+				}
+			}
 		}
 	}
 
 //get the groups
 	$sql = "select * from v_groups ";
-	if (sizeof($assigned_groups) > 0) {
-		$sql .= "where group_uuid not in ('".implode("','",$assigned_groups)."') ";
+	$sql .= "where (domain_uuid is null or domain_uuid = :domain_uuid) ";
+	if (is_array($assigned_groups) && sizeof($assigned_groups) != 0) {
+		$sql .= "and group_uuid not in ('".implode("','",$assigned_groups)."') ";
 	}
 	$sql .= "order by domain_uuid desc, group_name asc ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$groups = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset($sql, $prep_statement);
+	$database = new database;
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$groups = $database->select($sql, $parameters, 'all');
+	unset($sql, $sql_where, $parameters);
 
 //include the header
 	require_once "resources/header.php";
@@ -394,7 +370,7 @@ else {
 	echo "	</b>\n";
 	echo "</td>\n";
 	echo "<td width='70%' align='right' valign='top'>";
-	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='menu_edit.php?id=".$menu_uuid."'\" value='".$text['button-back']."'>";
+	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='menu_edit.php?id=".escape($menu_uuid)."'\" value='".$text['button-back']."'>";
 	echo "	<input type='submit' class='btn' name='submit' value='".$text['button-save']."'>\n";
 	echo "	<br><br>";
 	echo "</td>\n";
@@ -402,12 +378,12 @@ else {
 
 	echo "	<tr>";
 	echo "		<td class='vncellreq'>".$text['label-title']."</td>";
-	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_title' value='$menu_item_title'></td>";
+	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_title' value='".escape($menu_item_title)."'></td>";
 	echo "	</tr>";
 
 	echo "	<tr>";
 	echo "		<td class='vncellreq'>".$text['label-link']."</td>";
-	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_link' value='$menu_item_link'></td>";
+	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_link' value='".escape($menu_item_link)."'></td>";
 	echo "	</tr>";
 
 	echo "	<tr>";
@@ -442,7 +418,7 @@ else {
 			echo "				<option value=''></option>\n";
 			foreach ($glyphicons as $glyphicon_class => $glyphicon_name) {
 				$selected = ($menu_item_icon == $glyphicon_class) ? "selected" : null;
-				echo "			<option value='".$glyphicon_class."' ".$selected.">".$glyphicon_name."</option>\n";
+				echo "			<option value='".escape($glyphicon_class)."' ".$selected.">".escape($glyphicon_name)."</option>\n";
 			}
 			echo "			</select>\n";
 			echo "		</td>\n";
@@ -453,13 +429,13 @@ else {
 			echo "</table>\n";
 			echo "<div id='glyphicons' style='clear: both; display: none; padding-top: 10px; color: #000;'>";
 			foreach ($glyphicons as $glyphicon_class => $glyphicon_name) {
-				echo "<span class='glyphicon ".$glyphicon_class."' style='font-size: 24px; float: left; margin: 0 8px 8px 0; cursor: pointer; opacity: 0.3;' title='".$glyphicon_name."' onclick=\"$('#menu_item_icon').val('".$glyphicon_class."'); $('#glyphicons').slideUp(); $('#grid_icon').fadeIn();\" onmouseover=\"this.style.opacity='1';\" onmouseout=\"this.style.opacity='0.3';\"></span>\n";
+				echo "<span class='glyphicon ".escape($glyphicon_class)."' style='font-size: 24px; float: left; margin: 0 8px 8px 0; cursor: pointer; opacity: 0.3;' title='".escape(glyphicon_name)."' onclick=\"$('#menu_item_icon').val('".escape($glyphicon_class)."'); $('#glyphicons').slideUp(); $('#grid_icon').fadeIn();\" onmouseover=\"this.style.opacity='1';\" onmouseout=\"this.style.opacity='0.3';\"></span>\n";
 			}
 			echo "</div>";
 		}
 	}
 	else {
-		echo "		<input type='text' class='formfld' name='menu_item_icon' value='".$menu_item_icon."'>";
+		echo "		<input type='text' class='formfld' name='menu_item_icon' value='".escape($menu_item_icon)."'>";
 	}
 	echo "		</td>";
 	echo "	</tr>";
@@ -471,10 +447,10 @@ else {
 	echo "<option value=\"\"></option>\n";
 	foreach($menu_items as $field) {
 			if ($menu_item_parent_uuid == $field['menu_item_uuid']) {
-				echo "<option value='".$field['menu_item_uuid']."' selected>".$field['menu_item_title']."</option>\n";
+				echo "<option value='".escape($field['menu_item_uuid'])."' selected>".escape($field['menu_item_title'])."</option>\n";
 			}
 			else {
-				echo "<option value='".$field['menu_item_uuid']."'>".$field['menu_item_title']."</option>\n";
+				echo "<option value='".escape($field['menu_item_uuid'])."'>".escape($field['menu_item_title'])."</option>\n";
 			}
 	}
 	echo "</select>";
@@ -485,7 +461,7 @@ else {
 	echo "	<tr>";
 	echo "		<td class='vncell' valign='top'>".$text['label-groups']."</td>";
 	echo "		<td class='vtable'>";
-	if (is_array($menu_item_groups)) {
+	if (is_array($menu_item_groups) && sizeof($menu_item_groups) != 0) {
 		echo "<table cellpadding='0' cellspacing='0' border='0'>\n";
 		foreach($menu_item_groups as $field) {
 			if (strlen($field['group_name']) > 0) {
@@ -495,7 +471,7 @@ else {
 				echo "	</td>\n";
 				if (permission_exists('group_member_delete') || if_group("superadmin")) {
 					echo "	<td class='list_control_icons' style='width: 25px;'>";
-					echo 		"<a href='menu_item_edit.php?id=".$field['menu_uuid']."&menu_item_group_uuid=".$field['menu_item_group_uuid']."&menu_item_uuid=".$menu_item_uuid."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
+					echo 		"<a href='menu_item_edit.php?id=".escape($field['menu_uuid'])."&menu_item_group_uuid=".escape($field['menu_item_group_uuid'])."&menu_item_uuid=".escape($menu_item_uuid)."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
 					echo "	</td>";
 				}
 				echo "</tr>\n";
@@ -507,11 +483,11 @@ else {
 		echo "<br />\n";
 		echo "<select name='group_uuid_name' class='formfld' style='width: auto; margin-right: 3px;'>\n";
 		echo "	<option value=''></option>\n";
-		foreach($groups as $field) {
-			if ($field['group_name'] == "superadmin" && !if_group("superadmin")) { continue; }	//only show the superadmin group to other superadmins
-			if ($field['group_name'] == "admin" && (!if_group("superadmin") && !if_group("admin") )) { continue; }	//only show the admin group to other admins
-			if (!in_array($field["group_uuid"], $assigned_groups)) {
-				echo "	<option value='".$field['group_uuid']."|".$field['group_name']."'>".$field['group_name'].(($field['domain_uuid'] != '') ? "@".$_SESSION['domains'][$field['domain_uuid']]['domain_name'] : null)."</option>\n";
+		foreach($groups as $row) {
+			if ($row['group_name'] == "superadmin" && !if_group("superadmin")) { continue; }	//only show the superadmin group to other superadmins
+			if ($row['group_name'] == "admin" && (!if_group("superadmin") && !if_group("admin") )) { continue; }	//only show the admin group to other admins
+			if (!in_array($row["group_uuid"], $assigned_groups)) {
+				echo "	<option value='".$row['group_uuid']."|".$row['group_name']."'>".$row['group_name'].(($row['domain_uuid'] != '') ? "@".$_SESSION['domains'][$row['domain_uuid']]['domain_name'] : null)."</option>\n";
 			}
 		}
 		echo "</select>";
@@ -548,14 +524,14 @@ else {
 		if ($menu_item_parent_uuid == "") {
 			echo "	<tr>";
 			echo "		<td class='vncell'>".$text['label-menu_order']."</td>";
-			echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_order' value='$menu_item_order'></td>";
+			echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_order' value='".escape($menu_item_order)."'></td>";
 			echo "	</tr>";
 		}
 	}
 
 	echo "	<tr>";
 	echo "		<td class='vncell'>".$text['label-description']."</td>";
-	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_description' value='$menu_item_description'></td>";
+	echo "		<td class='vtable'><input type='text' class='formfld' name='menu_item_description' value='".escape($menu_item_description)."'></td>";
 	echo "	</tr>";
 
 	if (permission_exists('menu_add') || permission_exists('menu_edit')) {
@@ -567,10 +543,10 @@ else {
 		echo "			</td>\n";
 		echo "			<td align='right'>";
 		if ($action == "update") {
-			echo "			<input type='hidden' name='menu_item_uuid' value='$menu_item_uuid'>";
+			echo "			<input type='hidden' name='menu_item_uuid' value='".escape($menu_item_uuid)."'>";
 		}
-		echo "				<input type='hidden' name='menu_uuid' value='$menu_uuid'>";
-		echo "				<input type='hidden' name='menu_item_uuid' value='$menu_item_uuid'>";
+		echo "				<input type='hidden' name='menu_uuid' value='".escape($menu_uuid)."'>";
+		echo "				<input type='hidden' name='menu_item_uuid' value='".escape($menu_item_uuid)."'>";
 		echo "				<br>";
 		echo "				<input type='submit' class='btn' name='submit' value='".$text['button-save']."'>\n";
 		echo "			</td>";

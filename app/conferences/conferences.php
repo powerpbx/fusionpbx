@@ -64,28 +64,22 @@ else {
 	//prepare to page the results
 		if (if_group("superadmin") || if_group("admin")) {
 			//show all extensions
-			$sql = "select count(*) as num_rows from v_conferences ";
-			$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
+			$sql = "select count(*) from v_conferences ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
 		}
 		else {
 			//show only assigned extensions
-			$sql = "select count(*) as num_rows from v_conferences as c, v_conference_users as u ";
+			$sql = "select count(*) from v_conferences as c, v_conference_users as u ";
 			$sql .= "where c.conference_uuid = u.conference_uuid ";
-			$sql .= "and c.domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			$sql .= "and u.user_uuid = '".$_SESSION['user_uuid']."' ";
+			$sql .= "and c.domain_uuid = :domain_uuid ";
+			$sql .= "and u.user_uuid = :user_uuid ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$parameters['user_uuid'] = $_SESSION['user_uuid'];
 		}
-		if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-		$prep_statement = $db->prepare($sql);
-		if ($prep_statement) {
-		$prep_statement->execute();
-			$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-			if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-			}
-			else {
-				$num_rows = '0';
-			}
-		}
+		$database = new database;
+		$num_rows = $database->select($sql, $parameters, 'column');
+		unset($sql);
 
 	//prepare to page the results
 		$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -99,22 +93,20 @@ else {
 		if (if_group("superadmin") || if_group("admin")) {
 			//show all extensions
 			$sql = "select * from v_conferences ";
-			$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
+			$sql .= "where domain_uuid = :domain_uuid ";
 		}
 		else {
 			//show only assigned extensions
 			$sql = "select * from v_conferences as c, v_conference_users as u ";
 			$sql .= "where c.conference_uuid = u.conference_uuid ";
-			$sql .= "and c.domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			$sql .= "and u.user_uuid = '".$_SESSION['user_uuid']."' ";
+			$sql .= "and c.domain_uuid = :domain_uuid ";
+			$sql .= "and u.user_uuid = :user_uuid ";
 		}
-		if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-		$sql .= "limit $rows_per_page offset $offset ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll();
-		$result_count = count($result);
-		unset ($prep_statement, $sql);
+		$sql .= order_by($order_by, $order);
+		$sql .= limit_offset($rows_per_page, $offset);
+		$database = new database;
+		$result = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
 
 	$c = 0;
 	$row_style["0"] = "row_style0";
@@ -138,30 +130,30 @@ else {
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($result_count > 0) {
+	if (is_array($result) && sizeof($result) != 0) {
 		foreach($result as $row) {
 			$conference_name = $row['conference_name'];
 			$conference_name = str_replace("-", " ", $conference_name);
 			$tr_link = "href='conference_edit.php?id=".$row['conference_uuid']."'";
 			echo "<tr ".$tr_link.">\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'><a href='conference_edit.php?id=".$row['conference_uuid']."'>".$conference_name."</a>&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['conference_extension']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['conference_profile']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['conference_order']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.$row['conference_enabled']]."&nbsp;</td>\n";
-			echo "	<td valign='top' class='row_stylebg' width='35%'>".$row['conference_description']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'><a href='conference_edit.php?id=".escape($row['conference_uuid'])."'>".$conference_name."</a>&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['conference_extension'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['conference_profile'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['conference_order'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.escape($row['conference_enabled'])]."&nbsp;</td>\n";
+			echo "	<td valign='top' class='row_stylebg' width='35%'>".escape($row['conference_description'])."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('conference_edit')) {
-				echo 	"<a href='conference_edit.php?id=".$row['conference_uuid']."' alt='edit'>$v_link_label_edit</a>";
+				echo 	"<a href='conference_edit.php?id=".escape($row['conference_uuid'])."' alt='edit'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('conference_delete')) {
-				echo 	"<a href='conference_delete.php?id=".$row['conference_uuid']."' alt='delete' onclick=\"return confirm('".$text['confirm-delete-2']."')\">$v_link_label_delete</a>";
+				echo 	"<a href='conference_delete.php?id=".escape($row['conference_uuid'])."' alt='delete' onclick=\"return confirm('".$text['confirm-delete-2']."')\">$v_link_label_delete</a>";
 			}
 			echo 	"</td>\n";
 			echo "</tr>\n";
 			if ($c==0) { $c=1; } else { $c=0; }
 		} //end foreach
-		unset($sql, $result, $row_count);
+		unset($result);
 	} //end if results
 
 	echo "<tr>\n";

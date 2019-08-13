@@ -44,8 +44,8 @@
 
 //get the http value and set as a php variable
 	if (!$included) {
-		$menu_uuid = check_str($_REQUEST["menu_uuid"]);
-		$menu_language = check_str($_REQUEST["menu_language"]);
+		$menu_uuid = $_REQUEST["menu_uuid"];
+		$menu_language = $_REQUEST["menu_language"];
 	}
 
 //menu restore default
@@ -66,7 +66,7 @@
 //redirect
 	if (!$included) {
 		//show a message to the user
-		messages::add($text['message-restore']);
+		message::add($text['message-restore']);
 		header("Location: ".PROJECT_PATH."/core/menu/menu_edit.php?id=".$menu_uuid);
 		return;
 	}

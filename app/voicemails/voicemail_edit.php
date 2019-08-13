@@ -17,7 +17,7 @@
 
  The Initial Developer of the Original Code is
  Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2016
+ Portions created by the Initial Developer are Copyright (C) 2008-2018
  the Initial Developer. All Rights Reserved.
 
  Contributor(s):
@@ -82,13 +82,13 @@
 		//delete the voicemail from the destionations
 			$sqld = "
 				delete from
-					v_voicemail_destinations as d
+					v_voicemail_destinations
 				where
-					d.voicemail_destination_uuid = '".$voicemail_destination_uuid."' and
-					d.voicemail_uuid = '".$voicemail_uuid."'";
+					voicemail_destination_uuid = '".$voicemail_destination_uuid."' and
+					voicemail_uuid = '".$voicemail_uuid."'";
 			$db->exec(check_sql($sqld));
 		//redirect the browser
-			messages::add($text['message-delete']);
+			message::add($text['message-delete']);
 			header("Location: voicemail_edit.php?id=".$voicemail_uuid);
 			return;
 	}
@@ -116,7 +116,7 @@
 				)";
 			$db->exec(check_sql($sqli));
 		//redirect the browser
-			messages::add($text['message-add']);
+			message::add($text['message-add']);
 	}
 
 if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
@@ -184,7 +184,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				$db->exec(check_sql($sql));
 				unset($sql);
 
-				messages::add($text['message-add']);
+				message::add($text['message-add']);
 			} //if ($action == "add")
 
 			if ($action == "update" && permission_exists('voicemail_edit')) {
@@ -208,7 +208,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 				$db->exec(check_sql($sql));
 				unset($sql);
 
-				messages::add($text['message-update']);
+				message::add($text['message-update']);
 			} //if ($action == "update")
 
 
@@ -335,6 +335,39 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	require_once "resources/header.php";
 	$document['title'] = $text['title-voicemail'];
 
+//password complexity
+	$password_complexity = $_SESSION['voicemail']['password_complexity']['boolean'];
+	if ($password_complexity == "true") {
+		echo "<script>\n";	
+		$req['length'] = $_SESSION['voicemail']['password_min_length']['numeric'];
+		echo "	function check_password_strength(pwd) {\n";
+		echo "		var msg_errors = [];\n";
+		//length
+		if (is_numeric($req['length']) && $req['length'] != 0) {
+			echo "	var re = /.{".$req['length'].",}/;\n"; 
+			echo "	if (!re.test(pwd)) { msg_errors.push('".$req['length']."+ ".$text['label-digits']."'); }\n";
+		}
+		//numberic only
+		echo "		var re = /(?=.*[a-zA-Z\W])/;\n";
+		echo "		if (re.test(pwd)) { msg_errors.push('".$text['label-numberic_only']."'); }\n";
+		//repeating digits
+		echo "		var re = /(\d)\\1{2}/;\n";
+		echo "		if (re.test(pwd)) { msg_errors.push('".$text['label-password_repeating']."'); }\n";
+		//sequential digits
+		echo "		var re = /(012|123|345|456|567|678|789|987|876|765|654|543|432|321|210)/;\n";
+		echo "		if (re.test(pwd)) { msg_errors.push('".$text['label-password_sequential']."'); }\n";
+	
+		echo "		if (msg_errors.length > 0) {\n";
+		echo "			var msg = '".$text['message-password_requirements'].": ' + msg_errors.join(', ');\n";
+		echo "			display_message(msg, 'negative', '6000');\n";
+		echo "			return false;\n";
+		echo "		}\n";
+		echo "		else {\n";
+		echo "			return true;\n";
+		echo "		}\n";
+		echo "	}\n";
+		echo "</script>\n";
+	}
 //show the content
 	echo "<form method='post' name='frm' id='frm' action=''>\n";
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
@@ -345,7 +378,11 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "</td>\n";
 	echo "<td width='70%' align='right' valign='top'>\n";
 	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"javascript:history.back();\" value='".$text['button-back']."'>\n";
-	echo "	<input type='button' class='btn' value='".$text['button-save']."' onclick='submit_form();'>\n";
+	if ($password_complexity == "true") {
+		echo "		<input type='button' class='btn' value='".$text['button-save']."' onclick=\"if (check_password_strength(document.getElementById('password').value)) { submit_form(); }\">";
+	} else {
+		echo "	<input type='button' class='btn' value='".$text['button-save']."' onclick='submit_form();'>\n";
+	}
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -354,7 +391,8 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-voicemail_id']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='voicemail_id' maxlength='255' value='$voicemail_id'>\n";
+	echo "	<input class='formfld' type='text' name='voicemail_id' maxlength='255' value='".escape($voicemail_id)."'>\n";
+	echo "	<input type='text' style='display: none;' disabled='disabled'>\n"; //help defeat browser auto-fill
 	echo "<br />\n";
 	echo $text['description-voicemail_id']."\n";
 	echo "</td>\n";
@@ -365,7 +403,8 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-voicemail_password']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='voicemail_password' id='password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" autocomplete='off' maxlength='50' value=\"$voicemail_password\">\n";
+	echo "	<input type='password' style='display: none;' disabled='disabled'>\n"; //help defeat browser auto-fill
+	echo "	<input class='formfld' type='password' name='voicemail_password' id='password' autocomplete='off' onmouseover=\"this.type='text';\" onfocus=\"this.type='text';\" onmouseout=\"if (!$(this).is(':focus')) { this.type='password'; }\" onblur=\"this.type='password';\" autocomplete='off' maxlength='50' value=\"".escape($voicemail_password)."\">\n";
 	echo "<br />\n";
 	echo $text['description-voicemail_password']."\n";
 	echo "</td>\n";
@@ -395,7 +434,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	if ($greeting_count > 0) {
 		foreach ($greetings as $greeting) {
 			$selected = ($greeting['greeting_id'] == $greeting_id) ? 'selected' : null;
-			echo "<option value='".$greeting['greeting_id']."' ".$selected.">".$greeting['greeting_name']."</option>\n";
+			echo "<option value='".escape($greeting['greeting_id'])."' ".escape($selected).">".escape($greeting['greeting_name'])."</option>\n";
 		}
 	}
 	echo "	</select>\n";
@@ -409,7 +448,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-voicemail_alternate_greet_id']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='voicemail_alternate_greet_id' maxlength='255' value='$voicemail_alternate_greet_id'>\n";
+	echo "	<input class='formfld' type='text' name='voicemail_alternate_greet_id' maxlength='255' value='".escape($voicemail_alternate_greet_id)."'>\n";
 	echo "	<br />\n";
 	echo "	".$text['description-voicemail_alternate_greet_id']."\n";
 	echo "</td>\n";
@@ -450,20 +489,20 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 			$voicemail_option_param = ucfirst(trim($voicemail_option_param));
 			echo "				<tr>\n";
 			echo "					<td class='vtable'>\n";
-			echo "						".$field['voicemail_option_digits'];
+			echo "						".escape($field['voicemail_option_digits']);
 			echo "					</td>\n";
 			echo "					<td class='vtable'>\n";
-			echo "						".$voicemail_option_param."&nbsp;\n";
+			echo "						".escape($voicemail_option_param)."&nbsp;\n";
 			echo "					</td>\n";
 			echo "					<td class='vtable'>\n";
-			echo "						".$field['voicemail_option_order']."&nbsp;\n";
+			echo "						".escape($field['voicemail_option_order'])."&nbsp;\n";
 			echo "					</td>\n";
 			echo "					<td class='vtable'>\n";
-			echo "						".$field['voicemail_option_description']."&nbsp;\n";
+			echo "						".escape($field['voicemail_option_description'])."&nbsp;\n";
 			echo "					</td>\n";
 			echo "					<td class='list_control_icons'>";
-			echo 						"<a href='voicemail_option_edit.php?id=".$field['voicemail_option_uuid']."&voicemail_uuid=".$field['voicemail_uuid']."' alt='".$text['button-edit']."'>".$v_link_label_edit."</a>";
-			echo 						"<a href='voicemail_option_delete.php?id=".$field['voicemail_option_uuid']."&voicemail_uuid=".$field['voicemail_uuid']."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
+			echo 						"<a href='voicemail_option_edit.php?id=".escape($field['voicemail_option_uuid'])."&voicemail_uuid=".escape($field['voicemail_uuid'])."' alt='".$text['button-edit']."'>".$v_link_label_edit."</a>";
+			echo 						"<a href='voicemail_option_delete.php?id=".escape($field['voicemail_option_uuid'])."&voicemail_uuid=".escape($field['voicemail_uuid'])."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
 			echo "					</td>\n";
 			echo "				</tr>\n";
 		}
@@ -520,7 +559,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-voicemail_mail_to']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='voicemail_mail_to' maxlength='255' value=\"$voicemail_mail_to\">\n";
+	echo "	<input class='formfld' type='text' name='voicemail_mail_to' maxlength='255' value=\"".escape($voicemail_mail_to)."\">\n";
 	echo "<br />\n";
 	echo $text['description-voicemail_mail_to']."\n";
 	echo "</td>\n";
@@ -531,7 +570,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 		echo "	".$text['label-voicemail_sms_to']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-		echo "	<input class='formfld' type='text' name='voicemail_sms_to' maxlength='255' value=\"$voicemail_sms_to\">\n";
+		echo "	<input class='formfld' type='text' name='voicemail_sms_to' maxlength='255' value=\"".escape($voicemail_sms_to)."\">\n";
 		echo "<br />\n";
 		echo $text['description-voicemail_sms_to']."\n";
 		echo "</td>\n";
@@ -612,9 +651,9 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 			echo "		<table width='52%'>\n";
 			foreach($result as $field) {
 				echo "		<tr>\n";
-				echo "			<td class='vtable'>".$field['voicemail_id']."</td>\n";
+				echo "			<td class='vtable'>".escape($field['voicemail_id'])."</td>\n";
 				echo "			<td>\n";
-				echo "				<a href='voicemail_edit.php?id=".$voicemail_uuid."&voicemail_destination_uuid=".$field['voicemail_destination_uuid']."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>\n";
+				echo "				<a href='voicemail_edit.php?id=".escape($voicemail_uuid)."&voicemail_destination_uuid=".escape($field['voicemail_destination_uuid'])."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>\n";
 				echo "			</td>\n";
 				echo "		</tr>\n";
 				$voicemail_uuid_copied[] = $field['voicemail_uuid_copy'];
@@ -647,7 +686,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 		echo "			<option value=\"\"></option>\n";
 		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 		foreach($result as $field) {
-			echo "			<option value='".$field['voicemail_uuid']."'>".$field['voicemail_id']."</option>\n";
+			echo "			<option value='".escape($field['voicemail_uuid'])."'>".escape($field['voicemail_id'])."</option>\n";
 		}
 		echo "			</select>";
 		echo "			<input type='button' class='btn' value=\"".$text['button-add']."\" onclick='submit_form();'>\n";
@@ -688,7 +727,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	".$text['label-voicemail_description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='voicemail_description' maxlength='255' value=\"$voicemail_description\">\n";
+	echo "	<input class='formfld' type='text' name='voicemail_description' maxlength='255' value=\"".escape($voicemail_description)."\">\n";
 	echo "<br />\n";
 	echo $text['description-voicemail_description']."\n";
 	echo "</td>\n";
@@ -696,13 +735,17 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	<tr>\n";
 	echo "		<td colspan='2' align='right'>\n";
 	if ($action == "update") {
-		echo "				<input type='hidden' name='voicemail_uuid' value='$voicemail_uuid'>\n";
+		echo "				<input type='hidden' name='voicemail_uuid' value='".escape($voicemail_uuid)."'>\n";
 	}
 	$http_referer = parse_url($_SERVER["HTTP_REFERER"]);
-	echo "				<input type='hidden' name='referer_path' value='".$http_referer['path']."'>\n";
-	echo "				<input type='hidden' name='referer_query' value='".$http_referer['query']."'>\n";
+	echo "				<input type='hidden' name='referer_path' value='".escape($http_referer['path'])."'>\n";
+	echo "				<input type='hidden' name='referer_query' value='".escape($http_referer['query'])."'>\n";
 	echo "				<br>";
-	echo "				<input type='button' class='btn' value='".$text['button-save']."' onclick='submit_form();'>\n";
+	if ($password_complexity == "true") {
+		echo "			<input type='button' class='btn' value='".$text['button-save']."' onclick=\"if (check_password_strength(document.getElementById('password').value)) { submit_form(); }\">";
+	} else {
+		echo "			<input type='button' class='btn' value='".$text['button-save']."' onclick='submit_form();'>\n";
+	}
 	echo "		</td>\n";
 	echo "	</tr>";
 	echo "</table>";
@@ -724,4 +767,5 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 
 //include the footer
 	require_once "resources/footer.php";
+
 ?>

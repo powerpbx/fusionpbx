@@ -19,38 +19,30 @@
 	$text = $language->get();
 
 //get variables used to control the order
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
 
 //add the search term
-	$search = check_str($_GET["search"]);
+	$search = $_GET["search"];
 	if (strlen($search) > 0) {
 		$sql_search = "where (";
-		$sql_search .= "profile_name like '%".$search."%'";
-		$sql_search .= "or profile_enabled like '%".$search."%'";
-		$sql_search .= "or profile_description like '%".$search."%'";
+		$sql_search .= "profile_name like :search";
+		$sql_search .= "or profile_enabled like :search";
+		$sql_search .= "or profile_description like :search";
 		$sql_search .= ")";
+		$parameters['search'] = '%'.$search.'%';
 	}
 //additional includes
 	require_once "resources/header.php";
 	require_once "resources/paging.php";
 
 //prepare to page the results
-	$sql = "select count(*) as num_rows from v_conference_profiles ";
-	//$sql .= "where domain_uuid = '$domain_uuid' ";
+	$sql = "select count(*) from v_conference_profiles ";
+	//$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$prep_statement = $db->prepare($sql);
-	if ($prep_statement) {
-		$prep_statement->execute();
-		$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-		if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-		}
-		else {
-				$num_rows = '0';
-		}
-	}
+	//$parameters['domain_uuid'] = $domain_uuid;
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -62,14 +54,13 @@
 
 //get the list
 	$sql = "select * from v_conference_profiles ";
-	//$sql .= "where domain_uuid = '$domain_uuid' ";
+	//$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$sql .= "limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset ($prep_statement, $sql);
+	$sql .= order_by($order_by, $order);
+	$sql .= limit_offset($rows_per_page, $offset);
+	//$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$result = $database->select($sql, $parameters, 'all');
 
 //alternate the row style
 	$c = 0;
@@ -82,7 +73,7 @@
 	echo "		<td width='50%' align='left' nowrap='nowrap'><b>".$text['title-conference_profiles']."</b></td>\n";
 	echo "		<form method='get' action=''>\n";
 	echo "			<td width='50%' style='vertical-align: top; text-align: right; white-space: nowrap;'>\n";
-	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".$search."'>\n";
+	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".escape($search)."'>\n";
 	echo "				<input type='submit' class='btn' name='submit' value='".$text['button-search']."'>\n";
 	echo "			</td>\n";
 	echo "		</form>\n";
@@ -109,21 +100,21 @@
 	echo "</td>\n";
 	echo "<tr>\n";
 
-	if (is_array($result)) {
+	if (is_array($result) && sizeof($result) != 0) {
 		foreach($result as $row) {
 			if (permission_exists('conference_profile_edit')) {
 				$tr_link = "href='conference_profile_edit.php?id=".$row['conference_profile_uuid']."'";
 			}
 			echo "<tr ".$tr_link.">\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['profile_name']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['profile_enabled']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['profile_description']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['profile_name'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['profile_enabled'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['profile_description'])."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('conference_profile_edit')) {
-				echo "<a href='conference_profile_edit.php?id=".$row['conference_profile_uuid']."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+				echo "<a href='conference_profile_edit.php?id=".escape($row['conference_profile_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('conference_profile_delete')) {
-				echo "<a href='conference_profile_delete.php?id=".$row['conference_profile_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+				echo "<a href='conference_profile_delete.php?id=".escape($row['conference_profile_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";

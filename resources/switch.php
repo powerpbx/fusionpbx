@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -93,11 +93,15 @@ function event_socket_request_cmd($cmd) {
 	return $response;
 }
 
-function byte_convert($bytes, $decimals = 2) {
-	if ($bytes <= 0) { return '0 Bytes'; }
-	$convention = 1024;
-	$formattedbytes = array_reduce( array(' B', ' KB', ' MB', ' GB', ' TB', ' PB', ' EB', 'ZB'), create_function( '$a,$b', 'return is_numeric($a)?($a>='.$convention.'?$a/'.$convention.':number_format($a,'.$decimals.').$b):$a;' ), $bytes );
-	return $formattedbytes;
+function byte_convert($bytes, $precision = 2) {
+	static $units = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
+	$step = 1024;
+	$i = 0;
+	while (($bytes / $step) > 0.9) {
+		$bytes = $bytes / $step;
+		$i++;
+	}
+	return round($bytes, $precision).' '.$units[$i];
 }
 
 function remove_config_from_cache($name) {
@@ -170,7 +174,9 @@ function save_setting_xml() {
 			$xml .= "    <param name=\"listen-ip\" value=\"" . $event_socket_ip_address . "\"/>\n";
 			$xml .= "    <param name=\"listen-port\" value=\"" . $row['event_socket_port'] . "\"/>\n";
 			$xml .= "    <param name=\"password\" value=\"" . $row['event_socket_password'] . "\"/>\n";
-			$xml .= "    <!--<param name=\"apply-inbound-acl\" value=\"lan\"/>-->\n";
+			if (strlen($row['event_socket_acl']) > 0) {
+				$xml .= "    <param name=\"apply-inbound-acl\" value=\"" . $row['event_socket_acl'] . "\"/>\n";
+			}
 			$xml .= "  </settings>\n";
 			$xml .= "</configuration>";
 			fwrite($fout, $xml);
@@ -395,37 +401,43 @@ function save_var_xml() {
 
 		//get the hostname
 		$hostname = trim(event_socket_request_cmd('api switchname'));
+		if (strlen($hostname) == 0){
+			$hostname = trim(gethostname());
+		}
+		if (strlen($hostname) == 0){
+			return;
+		}
 
 		//build the xml
 		$sql = "select * from v_vars ";
 		$sql .= "where var_enabled = 'true' ";
-		$sql .= "order by var_cat, var_order asc ";
+		$sql .= "order by var_category, var_order asc ";
 		$prep_statement = $db->prepare(check_sql($sql));
 		$prep_statement->execute();
-		$prev_var_cat = '';
-		$result = $prep_statement->fetchAll(PDO::FETCH_ASSOC);
+		$variables = $prep_statement->fetchAll(PDO::FETCH_ASSOC);
+		$prev_var_category = '';
 		$xml = '';
-		foreach ($result as &$row) {
-			if ($row['var_cat'] != 'Provision') {
-				if ($prev_var_cat != $row['var_cat']) {
-					$xml .= "\n<!-- ".$row['var_cat']." -->\n";
+		foreach ($variables as &$row) {
+			if ($row['var_category'] != 'Provision') {
+				if ($prev_var_category != $row['var_category']) {
+					$xml .= "\n<!-- ".$row['var_category']." -->\n";
 					if (strlen($row["var_description"]) > 0) {
 						$xml .= "<!-- ".base64_decode($row['var_description'])." -->\n";
 					}
 				}
-
-				if ($row['var_cat'] == 'Exec-Set') { $var_cmd = 'exec-set'; } else { $var_cmd = 'set'; }
+				if (strlen($row['var_command']) == 0) { $row['var_command'] = 'set'; }
+				if ($row['var_category'] == 'Exec-Set') { $row['var_command'] = 'exec-set'; }
 				if (strlen($row['var_hostname']) == 0) {
-					$xml .= "<X-PRE-PROCESS cmd=\"".$var_cmd."\" data=\"".$row['var_name']."=".$row['var_value']."\" />\n";
+					$xml .= "<X-PRE-PROCESS cmd=\"".$row['var_command']."\" data=\"".$row['var_name']."=".$row['var_value']."\" />\n";
 				} elseif ($row['var_hostname'] == $hostname) {
-					$xml .= "<X-PRE-PROCESS cmd=\"".$var_cmd."\" data=\"".$row['var_name']."=".$row['var_value']."\" />\n";
+					$xml .= "<X-PRE-PROCESS cmd=\"".$row['var_command']."\" data=\"".$row['var_name']."=".$row['var_value']."\" />\n";
 				}
 			}
-			$prev_var_cat = $row['var_cat'];
+			$prev_var_category = $row['var_category'];
 		}
 		$xml .= "\n";
 		fwrite($fout, $xml);
-		unset($xml);
+		unset($prep_statement, $variables, $xml);
 		fclose($fout);
 
 		//apply settings
@@ -567,13 +579,10 @@ function extension_presence_id($extension, $number_alias = false) {
 		$sql .= "where domain_uuid = '$domain_uuid' ";
 		$sql .= "and (extension = '$extension' ";
 		$sql .= "or number_alias = '$extension') ";
-		$sql .= "and enabled = 'true' ";
-
 		$result = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 		if (count($result) == 0) {
 			return false;
 		}
-
 		foreach ($result as &$row) {
 			$extension = $row['extension'];
 			$number_alias = $row['number_alias'];
@@ -1279,7 +1288,7 @@ if (!function_exists('switch_conf_xml')) {
 			$file_contents = file_get_contents($path."/autoload_configs/switch.conf.xml");
 
 		//prepare the php variables
-			if (stristr(PHP_OS, 'WIN')) {
+			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 				$php_bin = win_find_php('php.exe');
 				if(!$php_bin){ // relay on system path
 					$php_bin = 'php.exe';
@@ -1303,7 +1312,6 @@ if (!function_exists('switch_conf_xml')) {
 			else {
 				if (file_exists(PHP_BINDIR.'/php')) { define("PHP_BIN", "php"); }
 				$v_mailer_app = PHP_BINDIR."/".PHP_BIN." ".$_SERVER["DOCUMENT_ROOT"].PROJECT_PATH."/secure/v_mailto.php";
-				$v_mailer_app = sprintf('"%s"', $v_mailer_app);
 				$v_mailer_app_args = "-t";
 			}
 

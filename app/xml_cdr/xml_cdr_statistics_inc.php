@@ -23,16 +23,20 @@
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('xml_cdr_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('xml_cdr_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 /*//show all call detail records to admin and superadmin. for everyone else show only the call details for extensions assigned to them
 	if (!if_group("admin") && !if_group("superadmin")) {
@@ -233,9 +237,10 @@ else {
 		}
 	}
 
+	$sql_where = ' where ';
 	// concatenate the 'ands's array, add to where clause
 	if (sizeof($sql_where_ands) > 0) {
-		$sql_where = " where ".implode(" and ", $sql_where_ands)." and ";
+		$sql_where .= implode(" and ", $sql_where_ands)." and ";
 	}
 
 //calculate the seconds in different time frames

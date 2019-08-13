@@ -222,6 +222,8 @@ if (!class_exists('domains')) {
 				$db_name = $config->db_name;
 				$db_username = $config->db_username;
 				$db_password = $config->db_password;
+				$db_secure = $config->db_secure;
+				$db_cert_authority = $config->db_cert_authority;
 				$db_host = $config->db_host;
 				$db_path = $config->db_path;
 				$db_port = $config->db_port;
@@ -297,13 +299,6 @@ if (!class_exists('domains')) {
 					//get the context
 						$context = $domain_name;
 
-					//show the domain when display_type is set to text
-						if ($display_type == "text") {
-							echo "\n";
-							echo $domain_name;
-							echo "\n";
-						}
-
 					//get the default settings - this needs to be done to reset the session values back to the defaults for each domain in the loop
 						foreach($database_default_settings as $row) {
 							$name = $row['default_setting_name'];
@@ -347,7 +342,6 @@ if (!class_exists('domains')) {
 
 					//get the list of installed apps from the core and mod directories and execute the php code in app_defaults.php
 						$default_list = glob($_SERVER["DOCUMENT_ROOT"] . PROJECT_PATH . "/*/*/app_defaults.php");
-						$display_type = $this->display_type;
 						foreach ($default_list as &$default_path) {
 							include($default_path);
 						}

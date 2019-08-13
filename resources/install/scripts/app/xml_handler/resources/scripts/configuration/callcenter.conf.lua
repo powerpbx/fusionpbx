@@ -1,6 +1,6 @@
 --      xml_handler.lua
 --      Part of FusionPBX
---      Copyright (C) 2015-2017 Mark J Crane <markjcrane@fusionpbx.com>
+--      Copyright (C) 2015-2018 Mark J Crane <markjcrane@fusionpbx.com>
 --      All rights reserved.
 --
 --      Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
 	if not XML_STRING then
 		--log cache error
 			if (debug["cache"]) then
-				freeswitch.consoleLog("warning", "[xml_handler] " .. cc_cache_key .. " can not be get from memcache: " .. tostring(err) .. "\n");
+				freeswitch.consoleLog("warning", "[xml_handler] " .. cc_cache_key .. " can not be get from the cache: " .. tostring(err) .. "\n");
 			end
 
 		--connect to the database
@@ -76,6 +76,7 @@
 			x = 0;
 			dbh:query(sql, function(row)
 				--set as variables
+					queue_uuid = row.call_center_queue_uuid;
 					domain_uuid = row.domain_uuid;
 					domain_name = row.domain_name;
 					queue_name = row.queue_name;
@@ -100,7 +101,7 @@
 					queue_name = queue_name:gsub(" ", "-");
 
 				--start the xml
-					table.insert(xml, [[                            <queue name="]]..queue_name..[[@]]..domain_name..[[">]]);
+					table.insert(xml, [[                            <queue name="]]..queue_uuid..[[" label="]]..queue_name..[[@]]..domain_name..[[">]]);
 					table.insert(xml, [[                                    <param name="strategy" value="]]..queue_strategy..[["/>]]);
 				--set ringback
 					queue_ringback = format_ringback(queue_moh_sound);
@@ -161,6 +162,7 @@
 			x = 0;
 			dbh:query(sql, function(row)
 				--get the values from the database and set as variables
+					agent_uuid = row.call_center_agent_uuid;
 					domain_uuid = row.domain_uuid;
 					domain_name = row.domain_name;
 					agent_name = row.agent_name;
@@ -222,7 +224,8 @@
 
 				--build the xml string
 					table.insert(xml, [[                            <agent ]]);
-					table.insert(xml, [[                            	name="]]..agent_name..[[@]]..domain_name..[[" ]]);
+					table.insert(xml, [[                            	name="]]..agent_uuid..[[" ]]);
+					table.insert(xml, [[                            	label="]]..agent_name..[[@]]..domain_name..[[" ]]);
 					table.insert(xml, [[                            	type="]]..agent_type..[[" ]]);
 					table.insert(xml, [[                            	contact="]]..agent_contact..[[" ]]);
 					table.insert(xml, [[                            	status="]]..agent_status..[[" ]]);
@@ -256,17 +259,20 @@
 				--get the values from the database and set as variables
 					domain_uuid = row.domain_uuid;
 					domain_name = row.domain_name;
-					agent_name = row.agent_name;
-					queue_name = row.queue_name;
+					agent_uuid = row.call_center_agent_uuid;
+					queue_uuid = row.call_center_queue_uuid;
 					tier_level = row.tier_level;
 					tier_position = row.tier_position;
 				--build the xml
 					table.insert(xml, [[                            <tier ]]);
-					table.insert(xml, [[				agent="]]..agent_name..[[@]]..domain_name..[[" ]]);
-					table.insert(xml, [[				queue="]]..queue_name..[[@]]..domain_name..[[" ]]);
-					table.insert(xml, [[				level="]]..tier_level..[[" ]]);
-					table.insert(xml, [[				position="]]..tier_position..[[" ]]);
-					table.insert(xml, [[				/>]]);
+					table.insert(xml, [[                            	agent="]]..agent_uuid..[[" ]]);
+					table.insert(xml, [[                            	queue="]]..queue_uuid..[[" ]]);
+					table.insert(xml, [[                            	domain_name="]]..domain_name..[[" ]]);
+					--table.insert(xml, [[                            	agent_name="]]..agent_name..[[" ]]);
+					--table.insert(xml, [[                            	queue_name="]]..queue_name..[[" ]]);
+					table.insert(xml, [[                            	level="]]..tier_level..[[" ]]);
+					table.insert(xml, [[                            	position="]]..tier_position..[[" ]]);
+					table.insert(xml, [[                            />]]);
 			end)
 			table.insert(xml, [[                    </tiers>]]);
 
@@ -287,17 +293,10 @@
 			local ok, err = cache.set(cc_cache_key, XML_STRING, expire["callcenter"]);
 			if debug["cache"] then
 				if ok then
-					freeswitch.consoleLog("notice", "[xml_handler] " .. cc_cache_key .. " stored in memcache\n");
+					freeswitch.consoleLog("notice", "[xml_handler] " .. cc_cache_key .. " stored in the cache\n");
 				else
-					freeswitch.consoleLog("warning", "[xml_handler] " .. cc_cache_key .. " can not be stored in memcache: " .. tostring(err) .. "\n");
+					freeswitch.consoleLog("warning", "[xml_handler] " .. cc_cache_key .. " can not be stored in the cache: " .. tostring(err) .. "\n");
 				end
-			end
-
-		--send the xml to the console
-			if (debug["xml_string"]) then
-				local file = assert(io.open(temp_dir .. "/callcenter.conf.xml", "w"));
-				file:write(XML_STRING);
-				file:close();
 			end
 
 		--send to the console
@@ -307,6 +306,13 @@
 	else
 		--send to the console
 			if (debug["cache"]) then
-				freeswitch.consoleLog("notice", "[xml_handler] " .. cc_cache_key .. " source: memcache\n");
+				freeswitch.consoleLog("notice", "[xml_handler] " .. cc_cache_key .. " source: cache\n");
 			end
 	end --if XML_STRING
+
+--send the xml to the console
+	if (debug["xml_string"]) then
+		local file = assert(io.open(temp_dir .. "/callcenter.conf.xml", "w"));
+		file:write(XML_STRING);
+		file:close();
+	end

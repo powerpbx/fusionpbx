@@ -38,14 +38,14 @@ else {
 	$language = new text;
 	$text = $language->get();
 
-$search = check_str($_REQUEST['search']);
+$search = $_REQUEST['search'];
 
 require "resources/classes/domains.php";
 $domain = new domains();
 $domain->db = $db;
 $domain->set();
 
-messages::add($text['message-settings_reloaded']);
-header("Location: default_settings.php".(($search != '') ? "?search=".$search : null));
+message::add($text['message-settings_reloaded']);
+header("Location: default_settings.php".($search != '' ? "?search=".$search : null));
 
 ?>

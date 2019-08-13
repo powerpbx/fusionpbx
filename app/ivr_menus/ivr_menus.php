@@ -43,37 +43,38 @@
 	$text = $language->get();
 
 //get variables used to control the order
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
 
 //add the search term
-	$search = strtolower(check_str($_GET["search"]));
+	$search = strtolower($_GET["search"]);
 	if (strlen($search) > 0) {
 		$sql_search = "and (";
-		$sql_search .= "lower(ivr_menu_name) like '%".$search."%' ";
-		$sql_search .= "or lower(ivr_menu_extension) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_greet_long) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_greet_short) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_invalid_sound) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_exit_sound) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_confirm_macro) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_confirm_key) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_tts_engine) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_tts_voice) like '%".$search."%' ";
+		$sql_search .= "lower(ivr_menu_name) like :search ";
+		$sql_search .= "or lower(ivr_menu_extension) like :search ";
+		//$sql_search .= "or lower(ivr_menu_greet_long) like :search ";
+		//$sql_search .= "or lower(ivr_menu_greet_short) like :search ";
+		//$sql_search .= "or lower(ivr_menu_invalid_sound) like :search ";
+		//$sql_search .= "or lower(ivr_menu_exit_sound) like :search ";
+		//$sql_search .= "or lower(ivr_menu_confirm_macro) like :search ";
+		//$sql_search .= "or lower(ivr_menu_confirm_key) like :search ";
+		//$sql_search .= "or lower(ivr_menu_tts_engine) like :search ";
+		//$sql_search .= "or lower(ivr_menu_tts_voice) like :search ";
 		//$sql_search .= "or lower(ivr_menu_confirm_attempts) like '%".$search."%'" ;
-		//$sql_search .= "or lower(ivr_menu_timeout) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_exit_app) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_exit_data) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_inter_digit_timeout) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_max_failures) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_max_timeouts) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_digit_len) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_direct_dial) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_ringback) like '%".$search."%' ";
-		//$sql_search .= "or lower(ivr_menu_cid_prefix) like '%".$search."%' ";
-		$sql_search .= "or lower(ivr_menu_enabled) like '%".$search."%' ";
-		$sql_search .= "or lower(ivr_menu_description) like '%".$search."%' ";
+		//$sql_search .= "or lower(ivr_menu_timeout) like :search ";
+		//$sql_search .= "or lower(ivr_menu_exit_app) like :search ";
+		//$sql_search .= "or lower(ivr_menu_exit_data) like :search ";
+		//$sql_search .= "or lower(ivr_menu_inter_digit_timeout) like :search ";
+		//$sql_search .= "or lower(ivr_menu_max_failures) like :search ";
+		//$sql_search .= "or lower(ivr_menu_max_timeouts) like :search ";
+		//$sql_search .= "or lower(ivr_menu_digit_len) like :search ";
+		//$sql_search .= "or lower(ivr_menu_direct_dial) like :search ";
+		//$sql_search .= "or lower(ivr_menu_ringback) like :search ";
+		//$sql_search .= "or lower(ivr_menu_cid_prefix) like :search ";
+		$sql_search .= "or lower(ivr_menu_enabled) like :search ";
+		$sql_search .= "or lower(ivr_menu_description) like :search ";
 		$sql_search .= ")";
+		$parameters['search'] = '%'.$search.'%';
 	}
 
 //additional includes
@@ -81,40 +82,28 @@
 	require_once "resources/paging.php";
 
 //prepare to page the results
-	$sql = "select count(ivr_menu_uuid) as num_rows from v_ivr_menus ";
-	$sql .= "where domain_uuid = '".$_SESSION["domain_uuid"]."' ";
+	$sql = "select count(*) from v_ivr_menus ";
+	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$prep_statement = $db->prepare($sql);
-	if ($prep_statement) {
-		$prep_statement->execute();
-		$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-		if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-		}
-		else {
-				$num_rows = '0';
-		}
-	}
+	$parameters['domain_uuid'] = $_SESSION["domain_uuid"];
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$param = "";
-	$page = $_GET['page'];
+	$page = escape($_GET['page']);
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
 	list($paging_controls, $rows_per_page, $var3) = paging($num_rows, $param, $rows_per_page);
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = "select * from v_ivr_menus ";
-	$sql .= "where domain_uuid = '".$_SESSION["domain_uuid"]."' ";
-	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$sql .= "limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset ($prep_statement, $sql);
+	$sql = str_replace('count(*)', '*', $sql);
+	$sql .= order_by($order_by, $order);
+	$sql .= limit_offset($rows_per_page, $offset);
+	$database = new database;
+	$result = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //alternate the row style
 	$c = 0;
@@ -127,7 +116,7 @@
 	echo "		<td width='50%' align='left' nowrap='nowrap'><b>".$text['title-ivr_menus']."</b></td>\n";
 	echo "		<form method='get' action=''>\n";
 	echo "			<td width='50%' style='vertical-align: top; text-align: right; white-space: nowrap;'>\n";
-	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".$search."'>\n";
+	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".escape($search)."'>\n";
 	echo "				<input type='submit' class='btn' name='submit' value='".$text['button-search']."'>\n";
 	echo "			</td>\n";
 	echo "		</form>\n";
@@ -181,47 +170,47 @@
 	if (is_array($result)) {
 		foreach($result as $row) {
 			if (permission_exists('ivr_menu_edit')) {
-				$tr_link = "href='ivr_menu_edit.php?id=".$row['ivr_menu_uuid']."'";
+				$tr_link = "href='ivr_menu_edit.php?id=".escape($row['ivr_menu_uuid'])."'";
 			}
 			echo "<tr ".$tr_link.">\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_uuid']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['dialplan_uuid']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_name']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_extension']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_greet_long']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_greet_short']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_invalid_sound']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_exit_sound']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_confirm_macro']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_confirm_key']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_tts_engine']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_tts_voice']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_confirm_attempts']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_timeout']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_exit_app']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_exit_data']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_inter_digit_timeout']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_max_failures']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_max_timeouts']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_digit_len']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_direct_dial']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_ringback']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_cid_prefix']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_enabled']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['ivr_menu_description']."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_uuid'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['dialplan_uuid'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_name'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_extension'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_greet_long'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_greet_short'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_invalid_sound'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_exit_sound'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_confirm_macro'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_confirm_key'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_tts_engine'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_tts_voice'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_confirm_attempts'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_timeout'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_exit_app'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_exit_data'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_inter_digit_timeout'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_max_failures'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_max_timeouts'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_digit_len'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_direct_dial'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_ringback'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_cid_prefix'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_enabled'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['ivr_menu_description'])."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('ivr_menu_edit')) {
-				echo "<a href='ivr_menu_edit.php?id=".$row['ivr_menu_uuid']."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+				echo "<a href='ivr_menu_edit.php?id=".escape($row['ivr_menu_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('ivr_menu_delete')) {
-				echo "<a href='ivr_menu_delete.php?id=".$row['ivr_menu_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+				echo "<a href='ivr_menu_delete.php?id=".escape($row['ivr_menu_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";
 			if ($c==0) { $c=1; } else { $c=0; }
-		} //end foreach
-		unset($sql, $result, $row_count);
-	} //end if results
+		}
+	}
+	unset($result, $row);
 
 	echo "<tr>\n";
 	echo "<td colspan='27' align='left'>\n";

@@ -17,22 +17,26 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2012
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('call_center_agent_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('call_center_agent_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
@@ -44,7 +48,7 @@ else {
 	require_once "resources/paging.php";
 
 //get http values and set them to php variables
-	$order_by = $_GET["order_by"];
+	$order_by = $_GET["order_by"] != '' ? $_GET["order_by"] : 'agent_name';
 	$order = $_GET["order"];
 
 //show content
@@ -63,20 +67,13 @@ else {
 	echo "</tr>\n";
 	echo "</tr></table>\n";
 
-	$sql = "select * from v_call_center_agents ";
-	$sql .= "where domain_uuid = '$domain_uuid' ";
-	if (strlen($order_by) == 0) {
-		$order_by = 'agent_name';
-		$order = 'asc';
-	}
-	else {
-		$sql .= "order by $order_by $order ";
-	}
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	$num_rows = count($result);
-	unset ($prep_statement, $result, $sql);
+	$sql = "select count(*) from v_call_center_agents ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
+	unset($sql, $parameters);
+
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 	$param = "";
 	$page = $_GET['page'];
@@ -85,21 +82,13 @@ else {
 	$offset = $rows_per_page * $page;
 
 	$sql = "select * from v_call_center_agents ";
-	$sql .= "where domain_uuid = '$domain_uuid' ";
-	if (strlen($order_by) == 0) {
-		$order_by = 'agent_name';
-		$order = 'asc';
-	}
-	else {
-		$sql .= "order by $order_by $order ";
-	}
-	$sql .= " limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	$result_count = count($result);
-	unset ($prep_statement, $sql);
-
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= order_by($order_by, $order);
+	$sql .= limit_offset($rows_per_page, $offset);
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$result = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 	$c = 0;
 	$row_style["0"] = "row_style0";
@@ -125,59 +114,58 @@ else {
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($result_count == 0) { //no results
-	}
-	else { //received results
+	if (is_array($result)) {
 		foreach($result as $row) {
-			$tr_link = (permission_exists('call_center_agent_edit')) ? "href='call_center_agent_edit.php?id=".$row['call_center_agent_uuid']."'" : null;
+			$tr_link = (permission_exists('call_center_agent_edit')) ? "href='call_center_agent_edit.php?id=".escape($row['call_center_agent_uuid'])."'" : null;
 			echo "<tr ".$tr_link.">\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[domain_uuid]."</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[domain_uuid])."</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>";
 			if (permission_exists('call_center_agent_edit')) {
-				echo "<a href='call_center_agent_edit.php?id=".$row['call_center_agent_uuid']."'>".$row['agent_name']."</a>";
+				echo "<a href='call_center_agent_edit.php?id=".escape($row['call_center_agent_uuid'])."'>".escape($row['agent_name'])."</a>";
 			}
 			else {
-				echo $row['agent_name'];
+				echo escape($row['agent_name']);
 			}
 			echo "	</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['agent_id']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['agent_type']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['agent_call_timeout']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['agent_id'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['agent_type'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['agent_call_timeout'])."&nbsp;</td>\n";
 			$agent_contact = $row['agent_contact'];
 			// parse out gateway uuid
 			$bridge_statement = explode('/', $row['agent_contact']);
 			if ($bridge_statement[0] == 'sofia' && $bridge_statement[1] == 'gateway' && is_uuid($bridge_statement[2])) {
 				// retrieve gateway name from db
-				$sql = "select gateway from v_gateways where gateway_uuid = '".$bridge_statement[2]."' ";
-				$prep_statement = $db->prepare(check_sql($sql));
-				$prep_statement->execute();
-				$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+				$sql = "select gateway from v_gateways ";
+				$sql .= "where gateway_uuid = :gateway_uuid ";
+				$parameters['gateway_uuid'] = $bridge_statement[2];
+				$database = new database;
+				$result = $database->select($sql, $parameters, 'all');
 				if (count($result) > 0) {
 					$gateway_name = $result[0]['gateway'];
 					$agent_contact = str_replace($bridge_statement[2], $gateway_name, $agent_contact);
 				}
-				unset ($prep_statement, $sql, $bridge_statement);
+				unset($sql, $parameters, $bridge_statement);
 			}
 			echo "	<td valign='top' class='".$row_style[$c]."'>".$agent_contact."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['agent_max_no_answer']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['agent_status']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['agent_max_no_answer'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['agent_status'])."&nbsp;</td>\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[agent_wrap_up_time]."&nbsp;</td>\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[agent_reject_delay_time]."&nbsp;</td>\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[agent_busy_delay_time]."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>\n";
 			if (permission_exists('call_center_agent_edit')) {
-				echo "<a href='call_center_agent_edit.php?id=".$row['call_center_agent_uuid']."' alt='".$text['button-edit']."'>".$v_link_label_edit."</a>";
+				echo "<a href='call_center_agent_edit.php?id=".escape($row['call_center_agent_uuid'])."' alt='".$text['button-edit']."'>".$v_link_label_edit."</a>";
 			}
 			if (permission_exists('call_center_agent_delete')) {
-				echo "<a href='call_center_agent_delete.php?id=".$row['call_center_agent_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
+				echo "<a href='call_center_agent_delete.php?id=".escape($row['call_center_agent_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
 			}
-			//echo "		<input type='button' class='btn' name='' alt='edit' onclick=\"window.location='call_center_agent_edit.php?id=".$row[call_center_agent_uuid]."'\" value='e'>\n";
-			//echo "		<input type='button' class='btn' name='' alt='delete' onclick=\"if (confirm('Are you sure you want to delete this?')) { window.location='call_center_agent_delete.php?id=".$row[call_center_agent_uuid]."' }\" value='x'>\n";
+			//echo "		<input type='button' class='btn' name='' alt='edit' onclick=\"window.location='call_center_agent_edit.php?id=".escape($row[call_center_agent_uuid])."'\" value='e'>\n";
+			//echo "		<input type='button' class='btn' name='' alt='delete' onclick=\"if (confirm('Are you sure you want to delete this?')) { window.location='call_center_agent_delete.php?id=".escape($row[call_center_agent_uuid])."' }\" value='x'>\n";
 			echo "	</td>\n";
 			echo "</tr>\n";
 			if ($c==0) { $c=1; } else { $c=0; }
 		} //end foreach
-		unset($sql, $result, $row_count);
+		unset($result);
 	} //end if results
 
 	echo "<tr>\n";
@@ -201,4 +189,5 @@ else {
 
 //show the footer
 	require_once "resources/footer.php";
+
 ?>

@@ -43,19 +43,20 @@
 	$text = $language->get();
 
 //get variables used to control the order
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
 
 //add the search term
-	$search = check_str($_GET["search"]);
+	$search = $_GET["search"];
 	if (strlen($search) > 0) {
-		$sql_search = "and (";
-		$sql_search .= "label like '%".$search."%'";
-		$sql_search .= "or name like '%".$search."%'";
-		$sql_search .= "or value like '%".$search."%'";
-		$sql_search .= "or enabled like '%".$search."%'";
-		$sql_search .= "or description like '%".$search."%'";
-		$sql_search .= ")";
+		$sql_where = "and (";
+		$sql_where .= "label like :search ";
+		$sql_where .= "or name like :search ";
+		$sql_where .= "or value like :search ";
+		$sql_where .= "or enabled like :search ";
+		$sql_where .= "or description like :search ";
+		$sql_where .= ")";
+		$parameters['search'] = '%'.$search.'%';
 	}
 
 //additional includes
@@ -63,21 +64,12 @@
 	require_once "resources/paging.php";
 
 //prepare to page the results
-	$sql = "select count(*) as num_rows from v_device_vendor_functions ";
-	$sql .= "where device_vendor_uuid = '$device_vendor_uuid' ";
-	$sql .= $sql_search;
-	if (strlen($order_by) == 0) { $sql .= "order by name asc "; } else { $sql .= "order by $order_by $order "; }
-	$prep_statement = $db->prepare($sql);
-	if ($prep_statement) {
-		$prep_statement->execute();
-		$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-		if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-		}
-		else {
-				$num_rows = '0';
-		}
-	}
+	$sql = "select count(*) from v_device_vendor_functions ";
+	$sql .= "where device_vendor_uuid = :device_vendor_uuid ";
+	$sql .= $sql_where;
+	$parameters['device_vendor_uuid'] = $device_vendor_uuid;
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -88,15 +80,12 @@
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = "select * from v_device_vendor_functions ";
-	$sql .= "where device_vendor_uuid = '$device_vendor_uuid' ";
-	$sql .= $sql_search;
-	if (strlen($order_by) == 0) { $sql .= "order by name asc "; } else { $sql .= "order by $order_by $order "; }
-	$sql .= "limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$vendor_functions = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset ($prep_statement, $sql);
+	$sql = str_replace('count(*)', '*', $sql);
+	$sql .= order_by($order_by, $order, 'name', 'asc');
+	$sql .= limit_offset($rows_per_page, $offset);
+	$database = new database;
+	$vendor_functions = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
 
 //alternate the row style
 	$c = 0;
@@ -118,7 +107,7 @@
 
 	echo "<table class='tr_hover' width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
-	echo "<th>".$text['label-label']."</th>\n";
+	//echo "<th>".$text['label-label']."</th>\n";
 	echo th_order_by('name', $text['label-name'], $order_by, $order);
 	echo th_order_by('value', $text['label-value'], $order_by, $order);
 	echo "<th>".$text['label-groups']."</th>\n";
@@ -126,7 +115,7 @@
 	echo th_order_by('description', $text['label-description'], $order_by, $order);
 	echo "<td class='list_control_icons'>";
 	if (permission_exists('device_vendor_function_add')) {
-		echo "<a href='device_vendor_function_edit.php?device_vendor_uuid=".$_GET['id']."' alt='".$text['button-add']."'>$v_link_label_add</a>";
+		echo "<a href='device_vendor_function_edit.php?device_vendor_uuid=".escape($_GET['id'])."' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	else {
 		echo "&nbsp;\n";
@@ -134,62 +123,59 @@
 	echo "</td>\n";
 	echo "<tr>\n";
 
-	if (is_array($vendor_functions)) {
+	if (is_array($vendor_functions) && @sizeof($vendor_functions) != 0) {
 		foreach($vendor_functions as $row) {
 
 			//get the groups that have been assigned to the vendor functions
 				$sql = "select ";
-				$sql .= "	fg.*, g.domain_uuid as group_domain_uuid ";
+				$sql .= "fg.*, g.domain_uuid as group_domain_uuid ";
 				$sql .= "from ";
-				$sql .= "	v_device_vendor_function_groups as fg, ";
-				$sql .= "	v_groups as g ";
+				$sql .= "v_device_vendor_function_groups as fg, ";
+				$sql .= "v_groups as g ";
 				$sql .= "where ";
-				$sql .= "	fg.group_uuid = g.group_uuid ";
-				$sql .= "	and fg.device_vendor_uuid = :device_vendor_uuid ";
-				//$sql .= "	and fg.device_vendor_uuid = '$device_vendor_uuid' ";
-				$sql .= "	and fg.device_vendor_function_uuid = :device_vendor_function_uuid ";
-				//$sql .= "	and fg.device_vendor_function_uuid = '".$row['device_vendor_function_uuid']."' ";
+				$sql .= "fg.group_uuid = g.group_uuid ";
+				$sql .= "and fg.device_vendor_uuid = :device_vendor_uuid ";
+				$sql .= "and fg.device_vendor_function_uuid = :device_vendor_function_uuid ";
 				$sql .= "order by ";
-				$sql .= "	g.domain_uuid desc, ";
-				$sql .= "	g.group_name asc ";
-				$prep_statement = $db->prepare(check_sql($sql));
-				$prep_statement->bindParam(':device_vendor_uuid', $device_vendor_uuid);
-				$prep_statement->bindParam(':device_vendor_function_uuid', $row['device_vendor_function_uuid']);
-				$prep_statement->execute();
-				$vendor_function_groups = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-				unset($sql, $prep_statement);
+				$sql .= "g.domain_uuid desc, ";
+				$sql .= "g.group_name asc ";
+				$parameters['device_vendor_uuid'] = $device_vendor_uuid;
+				$parameters['device_vendor_function_uuid'] = $row['device_vendor_function_uuid'];
+				$database = new database;
+				$vendor_function_groups = $database->select($sql, $parameters, 'all');
+				unset($sql, $parameters);
 				unset($group_list);
 				foreach ($vendor_function_groups as &$sub_row) {
-					$group_list[] = $sub_row["group_name"].(($sub_row['group_domain_uuid'] != '') ? "@".$_SESSION['domains'][$sub_row['group_domain_uuid']]['domain_name'] : null);
+					$group_list[] = escape($sub_row["group_name"]).(($sub_row['group_domain_uuid'] != '') ? "@".escape($_SESSION['domains'][$sub_row['group_domain_uuid']]['domain_name']) : null);
 				}
 				$group_list = isset($group_list) ? implode(', ', $group_list) : '';
 				unset ($vendor_function_groups);
 			//build the edit link
 				if (permission_exists('device_vendor_function_edit')) {
-					$tr_link = "href='device_vendor_function_edit.php?device_vendor_uuid=".$row['device_vendor_uuid']."&id=".$row['device_vendor_function_uuid']."'";
+					$tr_link = "href='device_vendor_function_edit.php?device_vendor_uuid=".escape($row['device_vendor_uuid'])."&id=".escape($row['device_vendor_function_uuid'])."'";
 				}
 			//show the row of data
 				echo "<tr ".$tr_link.">\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.$row['name']]."&nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['name']." &nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['value']."&nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$group_list."&nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['enabled']."&nbsp;</td>\n";
-				echo "	<td valign='top' class='".$row_style[$c]."'>".$row['description']."&nbsp;</td>\n";
+				//echo "	<td valign='top' class='".$row_style[$c]."'>".$text['label-'.escape($row['name'])]."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['name'])." &nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['value'])."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($group_list)."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['enabled'])."&nbsp;</td>\n";
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['description'])."&nbsp;</td>\n";
 				echo "	<td class='list_control_icons'>";
 				if (permission_exists('device_vendor_function_edit')) {
-					echo "<a href='device_vendor_function_edit.php?device_vendor_uuid=".$row['device_vendor_uuid']."&id=".$row['device_vendor_function_uuid']."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+					echo "<a href='device_vendor_function_edit.php?device_vendor_uuid=".escape($row['device_vendor_uuid'])."&id=".escape($row['device_vendor_function_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 				}
 				if (permission_exists('device_vendor_function_delete')) {
-					echo "<a href='device_vendor_function_delete.php?device_vendor_uuid=".$row['device_vendor_uuid']."&id=".$row['device_vendor_function_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+					echo "<a href='device_vendor_function_delete.php?device_vendor_uuid=".escape($row['device_vendor_uuid'])."&id=".escape($row['device_vendor_function_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
 				}
 				echo "	</td>\n";
 				echo "</tr>\n";
 			//toggle the value of the c variable
 				if ($c==0) { $c=1; } else { $c=0; }
-		} //end foreach
-		unset($sql, $result, $row_count);
-	} //end if results
+		}
+		unset($vendor_functions, $row);
+	}
 
 	echo "<tr>\n";
 	echo "<td colspan='7' align='left'>\n";
@@ -199,7 +185,7 @@
 	echo "		<td width='33.3%' align='center' nowrap='nowrap'>$paging_controls</td>\n";
 	echo "		<td class='list_control_icons'>";
 	if (permission_exists('device_vendor_function_add')) {
-		echo 		"<a href='device_vendor_function_edit.php?device_vendor_uuid=".$_GET['id']."' alt='".$text['button-add']."'>$v_link_label_add</a>";
+		echo 		"<a href='device_vendor_function_edit.php?device_vendor_uuid=".escape($_GET['id'])."' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	else {
 		echo 		"&nbsp;";

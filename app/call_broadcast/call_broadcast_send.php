@@ -69,11 +69,13 @@ function cmd_async($cmd) {
 
 //get the call broadcast details from the database
 	$sql = "select * from v_call_broadcasts ";
-	$sql .= "where domain_uuid = '$domain_uuid' ";
-	$sql .= "and call_broadcast_uuid = '$call_broadcast_uuid' ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	while($row = $prep_statement->fetch()) {
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "and call_broadcast_uuid = :call_broadcast_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['call_broadcast_uuid'] = $call_broadcast_uuid;
+	$database = new database;
+	$row = $database->select($sql, $parameters, 'row');
+	if (is_array($row) && sizeof($row) != 0) {
 		$broadcast_name = $row["broadcast_name"];
 		$broadcast_description = $row["broadcast_description"];
 		$broadcast_timeout = $row["broadcast_timeout"];
@@ -95,9 +97,8 @@ function cmd_async($cmd) {
 		//	$broadcast_destination_application = $broadcast_destination_array[0];
 		//	$broadcast_destination_data = $broadcast_destination_array[1];
 		//}
-		break; //limit to 1 row
 	}
-	unset ($prep_statement);
+	unset($sql, $parameters, $row);
 
 	if (strlen($broadcast_caller_id_name) == 0) {
 		$broadcast_caller_id_name = "anonymous";
@@ -271,7 +272,7 @@ require_once "resources/header.php";
 		}
 
 	if (strlen($group_name) > 0) {
-		$sql = " select * from v_users as u, v_group_users as m ";
+		$sql = " select * from v_users as u, v_user_groups as m ";
 		$sql .= "where u.user_uuid = m.user_uuid ";
 		$sql .= "and u.user_enabled = 'true' ";
 		$sql .= "and m.group_name = '".$group_name."' ";
@@ -287,7 +288,6 @@ require_once "resources/header.php";
 	$prep_statement = $db->prepare(check_sql($sql));
 	$prep_statement->execute();
 	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	$result_count = count($result);
 	unset ($prep_statement, $sql);
 
 	$c = 0;
@@ -307,7 +307,7 @@ require_once "resources/header.php";
 	echo th_order_by('user_phone_2', 'phone_2', $order_by, $order);
 	echo "<tr>\n";
 
-	if ($result_count > 0) {
+	if (is_array($result)) {
 		foreach($result as $row) {
 			echo "<tr >\n";
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[username]."&nbsp;</td>\n";

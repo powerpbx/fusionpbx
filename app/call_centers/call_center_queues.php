@@ -17,22 +17,26 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2012
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('call_center_queue_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permisission
+	if (permission_exists('call_center_queue_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
@@ -44,7 +48,7 @@ else {
 	require_once "resources/paging.php";
 
 //get http variables and set as php variables
-	$order_by = $_GET["order_by"];
+	$order_by = $_GET["order_by"] != '' ? $_GET["order_by"] : 'queue_name';
 	$order = $_GET["order"];
 
 //show the content
@@ -52,6 +56,9 @@ else {
 	echo "<tr>\n";
 	echo "<td width='50%' align='left' nowrap='nowrap'><b>".$text['header-call_center_queues']."</b></td>\n";
 	echo "<td width='50%' align='right'>\n";
+	if (permission_exists('call_center_wallboard')) {
+		echo "  <input type='button' class='btn' value='".$text['button-wallboard']."' onclick=\"document.location.href='".PROJECT_PATH."/app/call_center_wallboard/call_center_wallboard.php';\" />\n";
+	}
 	echo "	<input type='button' class='btn' value='".$text['button-agents']."' alt='".$text['button-agents']."' onclick=\"window.location='call_center_agents.php'\">\n";
 	echo "</td>\n";
 	echo "</tr>\n";
@@ -63,29 +70,15 @@ else {
 	echo "</tr></table>\n";
 
 	//get total call center queues count from the database
-		$sql = "select count(*) as num_rows from v_call_center_queues where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-		$prep_statement = $db->prepare($sql);
-		if ($prep_statement) {
-			$prep_statement->execute();
-			$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-			$total_call_center_queues = $row['num_rows'];
-		}
-		unset($prep_statement, $row);
+		$sql = "select count(*) from v_call_center_queues ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$database = new database;
+		$total_call_center_queues = $database->select($sql, $parameters, 'column');
+		unset($sql, $parameters);
 
-	//prepare to page the results (reuse $sql from above)
-		if (strlen($order_by) == 0) {
-			$order_by = 'queue_name';
-			$order = 'asc';
-		}
-		else {
-			$sql .= "order by $order_by $order ";
-		}
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-		$num_rows = count($result);
-		unset ($prep_statement, $result, $sql);
-
+	//prepare to page the results
+		$num_rows = $total_call_center_queues;
 		$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
 		$param = "";
 		$page = $_GET['page'];
@@ -94,21 +87,14 @@ else {
 		$offset = $rows_per_page * $page;
 
 		$sql = "select * from v_call_center_queues ";
-		$sql .= "where domain_uuid = '$domain_uuid' ";
-		if (strlen($order_by) == 0) {
-			$order_by = 'queue_name';
-			$order = 'asc';
-		}
-		else {
-			$sql .= "order by $order_by $order ";
-		}
-		$sql .= " limit $rows_per_page offset $offset ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-		$result_count = count($result);
-		unset ($prep_statement, $sql);
-
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= order_by($order_by, $order);
+		$sql .= limit_offset($rows_per_page, $offset);
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$database = new database;
+		$result = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+		
 	$c = 0;
 	$row_style["0"] = "row_style0";
 	$row_style["1"] = "row_style1";
@@ -139,38 +125,38 @@ else {
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($result_count > 0) {
+	if (is_array($result)) {
 		foreach($result as $row) {
-			$tr_link = (permission_exists('call_center_queue_edit')) ? "href='call_center_queue_edit.php?id=".$row[call_center_queue_uuid]."'" : null;
+			$tr_link = (permission_exists('call_center_queue_edit')) ? "href='call_center_queue_edit.php?id=".escape($row[call_center_queue_uuid])."'" : null;
 			echo "<tr ".$tr_link.">\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>";
 			if (permission_exists('call_center_queue_edit')) {
-				echo "<a href='call_center_queue_edit.php?id=".$row[call_center_queue_uuid]."'>".$row[queue_name]."</a>";
+				echo "<a href='call_center_queue_edit.php?id=".escape($row[call_center_queue_uuid])."'>".escape($row[queue_name])."</a>";
 			}
 			else {
-				echo $row[queue_name];
+				echo escape($row[queue_name]);
 			}
 			echo "	</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_extension]."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_strategy]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_moh_sound]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_record_template]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_time_base_score]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_max_wait_time]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_max_wait_time_with_no_agent]."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".ucwords($row[queue_tier_rules_apply])."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_tier_rule_wait_second]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_tier_rule_no_agent_no_wait]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_discard_abandoned_after]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_abandoned_resume_allowed]."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row[queue_tier_rule_wait_multiply_level]."&nbsp;</td>\n";
-			echo "	<td valign='top' class='row_stylebg'>".$row[queue_description]."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_extension])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_strategy])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_moh_sound])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_record_template])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_time_base_score])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_max_wait_time])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_max_wait_time_with_no_agent])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".ucwords(escape($row[queue_tier_rules_apply]))."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_tier_rule_wait_second])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_tier_rule_no_agent_no_wait])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_discard_abandoned_after])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_abandoned_resume_allowed])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row[queue_tier_rule_wait_multiply_level])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='row_stylebg'>".escape($row[queue_description])."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('call_center_queue_edit')) {
-				echo "<a href='call_center_queue_edit.php?id=".$row[call_center_queue_uuid]."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+				echo "<a href='call_center_queue_edit.php?id=".escape($row[call_center_queue_uuid])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('call_center_queue_delete')) {
-				echo "<a href='call_center_queue_delete.php?id=".$row[call_center_queue_uuid]."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+				echo "<a href='call_center_queue_delete.php?id=".escape($row[call_center_queue_uuid])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";
@@ -200,7 +186,7 @@ else {
 	echo "</table>";
 	echo "<br><br>";
 
-
 //show the footer
 	require_once "resources/footer.php";
+
 ?>

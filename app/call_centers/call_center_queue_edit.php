@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -44,9 +44,9 @@
 	$text = $language->get();
 
 //action add or update
-	if (isset($_REQUEST["id"])) {
+	if (is_uuid($_REQUEST["id"])) {
 		$action = "update";
-		$call_center_queue_uuid = check_str($_REQUEST["id"]);
+		$call_center_queue_uuid = $_REQUEST["id"];
 	}
 	else {
 		$action = "add";
@@ -55,17 +55,15 @@
 //get total call center queues count from the database, check limit, if defined
 	if ($action == 'add') {
 		if ($_SESSION['limit']['call_center_queues']['numeric'] != '') {
-			$sql = "select count(*) as num_rows from v_call_center_queues ";
-			$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			$prep_statement = $db->prepare($sql);
-			if ($prep_statement) {
-				$prep_statement->execute();
-				$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-				$total_call_center_queues = $row['num_rows'];
-			}
-			unset($prep_statement, $row);
+			$sql = "select count(*) from v_call_center_queues ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$database = new database;
+			$total_call_center_queues = $database->select($sql, $parameters, 'column');
+			unset($sql, $parameters);
+
 			if ($total_call_center_queues >= $_SESSION['limit']['call_center_queues']['numeric']) {
-				messages::add($text['message-maximum_queues'].' '.$_SESSION['limit']['call_center_queues']['numeric'], 'negative');
+				message::add($text['message-maximum_queues'].' '.$_SESSION['limit']['call_center_queues']['numeric'], 'negative');
 				header('Location: call_center_queues.php');
 				return;
 			}
@@ -75,32 +73,30 @@
 //get http post variables and set them to php variables
 	if (is_array($_POST)) {
 		//get the post variables a run a security chack on them
-			//$domain_uuid = check_str($_POST["domain_uuid"]);
-			$dialplan_uuid = check_str($_POST["dialplan_uuid"]);
-			$queue_name = check_str($_POST["queue_name"]);
-			$queue_extension = check_str($_POST["queue_extension"]);
-			$queue_strategy = check_str($_POST["queue_strategy"]);
-			$queue_moh_sound = check_str($_POST["queue_moh_sound"]);
-			$queue_record_template = check_str($_POST["queue_record_template"]);
-			$queue_time_base_score = check_str($_POST["queue_time_base_score"]);
-			$queue_max_wait_time = check_str($_POST["queue_max_wait_time"]);
-			$queue_max_wait_time_with_no_agent = check_str($_POST["queue_max_wait_time_with_no_agent"]);
-			$queue_max_wait_time_with_no_agent_time_reached = check_str($_POST["queue_max_wait_time_with_no_agent_time_reached"]);
-			$queue_tier_rules_apply = check_str($_POST["queue_tier_rules_apply"]);
-			$queue_tier_rule_wait_second = check_str($_POST["queue_tier_rule_wait_second"]);
-			$queue_tier_rule_wait_multiply_level = check_str($_POST["queue_tier_rule_wait_multiply_level"]);
-			$queue_tier_rule_no_agent_no_wait = check_str($_POST["queue_tier_rule_no_agent_no_wait"]);
-			$queue_timeout_action = check_str($_POST["queue_timeout_action"]);
-			$queue_discard_abandoned_after = check_str($_POST["queue_discard_abandoned_after"]);
-			$queue_abandoned_resume_allowed = check_str($_POST["queue_abandoned_resume_allowed"]);
-			$queue_cid_prefix = check_str($_POST["queue_cid_prefix"]);
-			$queue_announce_sound = check_str($_POST["queue_announce_sound"]);
-			$queue_announce_frequency = check_str($_POST["queue_announce_frequency"]);
-			$queue_cc_exit_keys = check_str($_POST["queue_cc_exit_keys"]);
-			$queue_description = check_str($_POST["queue_description"]);
-
-		//replace the space in the queue name with a dash
-			$queue_name = str_replace(" ", "-", $queue_name);
+			//$domain_uuid = $_POST["domain_uuid"];
+			$dialplan_uuid = $_POST["dialplan_uuid"];
+			$queue_name = $_POST["queue_name"];
+			$queue_extension = $_POST["queue_extension"];
+			$queue_greeting = $_POST["queue_greeting"];
+			$queue_strategy = $_POST["queue_strategy"];
+			$queue_moh_sound = $_POST["queue_moh_sound"];
+			$queue_record_template = $_POST["queue_record_template"];
+			$queue_time_base_score = $_POST["queue_time_base_score"];
+			$queue_max_wait_time = $_POST["queue_max_wait_time"];
+			$queue_max_wait_time_with_no_agent = $_POST["queue_max_wait_time_with_no_agent"];
+			$queue_max_wait_time_with_no_agent_time_reached = $_POST["queue_max_wait_time_with_no_agent_time_reached"];
+			$queue_tier_rules_apply = $_POST["queue_tier_rules_apply"];
+			$queue_tier_rule_wait_second = $_POST["queue_tier_rule_wait_second"];
+			$queue_tier_rule_wait_multiply_level = $_POST["queue_tier_rule_wait_multiply_level"];
+			$queue_tier_rule_no_agent_no_wait = $_POST["queue_tier_rule_no_agent_no_wait"];
+			$queue_timeout_action = $_POST["queue_timeout_action"];
+			$queue_discard_abandoned_after = $_POST["queue_discard_abandoned_after"];
+			$queue_abandoned_resume_allowed = $_POST["queue_abandoned_resume_allowed"];
+			$queue_cid_prefix = $_POST["queue_cid_prefix"];
+			$queue_announce_sound = $_POST["queue_announce_sound"];
+			$queue_announce_frequency = $_POST["queue_announce_frequency"];
+			$queue_cc_exit_keys = $_POST["queue_cc_exit_keys"];
+			$queue_description = $_POST["queue_description"];
 
 		//remove invalid characters
 			$queue_cid_prefix = str_replace(":", "-", $queue_cid_prefix);
@@ -113,40 +109,49 @@
 //delete the tier (agent from the queue)
 	if ($_REQUEST["a"] == "delete" && strlen($_REQUEST["id"]) > 0 && permission_exists("call_center_tier_delete")) {
 		//set the variables
-			$call_center_queue_uuid = check_str($_REQUEST["id"]);
-			$call_center_tier_uuid = check_str($_REQUEST["call_center_tier_uuid"]);
+			$call_center_queue_uuid = $_REQUEST["id"];
+			$call_center_tier_uuid = $_REQUEST["call_center_tier_uuid"];
 		//get the agent details
-			$sql = "select agent_name, queue_name ";
+			$sql = "select agent_name, queue_name, call_center_agent_uuid, call_center_queue_uuid ";
 			$sql .= "from v_call_center_tiers ";
-			$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			$sql .= "and call_center_tier_uuid = '".$call_center_tier_uuid."' ";
-			$prep_statement = $db->prepare(check_sql($sql));
-			$prep_statement->execute();
-			$tiers = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-			if (is_array($tiers)) {
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "and call_center_tier_uuid = :call_center_tier_uuid ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$parameters['call_center_tier_uuid'] = $call_center_tier_uuid;
+			$database = new database;
+			$tiers = $database->select($sql, $parameters, 'all');
+			unset($sql, $parameters);
+
+			if (is_array($tiers) && sizeof($tiers) != 0) {
 				foreach ($tiers as &$row) {
-					$agent_name = $row["agent_name"];
-					$queue_name = $row["queue_name"];
+					$call_center_agent_uuid = $row["call_center_agent_uuid"];
+					$call_center_queue_uuid = $row["call_center_queue_uuid"];
 				}
 			}
-			unset ($prep_statement);
 		//delete the agent from freeswitch
-			//get the domain using the $_SESSION['domain_uuid']
-			$tmp_domain = $_SESSION['domains'][$_SESSION['domain_uuid']]['domain_name'];
 			//setup the event socket connection
 			$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
 			//delete the agent over event socket
 			if ($fp) {
 				//callcenter_config tier del [queue_name] [agent_name]
-				$cmd = "api callcenter_config tier del ".$queue_name."@".$tmp_domain." ".$agent_name."@".$_SESSION['domains'][$_SESSION['domain_uuid']]['domain_name'];
+				$cmd = "api callcenter_config tier del ".$call_center_queue_uuid." ".$call_center_agent_uuid;
 				$response = event_socket_request($fp, $cmd);
 			}
 		//delete the tier from the database
 			if (strlen($call_center_tier_uuid) > 0) {
-				$sql = "delete from v_call_center_tiers where domain_uuid = '".$_SESSION['domain_uuid']."' and call_center_tier_uuid = '".$call_center_tier_uuid."'";
-				$prep_statement = $db->prepare(check_sql($sql));
-				$prep_statement->execute();
-				unset($sql);
+				$array['call_center_tiers'][0]['call_center_tier_uuid'] = $call_center_tier_uuid;
+				$array['call_center_tiers'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
+
+				$p = new permissions;
+				$p->add('call_center_tier_delete', 'temp');
+
+				$database = new database;
+				$database->app_name = 'call_centers';
+				$database->app_uuid = '95788e50-9500-079e-2807-fd530b0ea370';
+				$database->delete($array);
+				unset($array);
+
+				$p->delete('call_center_tier_delete', 'temp');
 			}
 	}
 
@@ -155,7 +160,7 @@
 
 		//get the uuid from the POST
 			if ($action == "update") {
-				$call_center_queue_uuid = check_str($_POST["call_center_queue_uuid"]);
+				$call_center_queue_uuid = $_POST["call_center_queue_uuid"];
 			}
 	
 		//check for all required data
@@ -207,27 +212,52 @@
 				$_POST["dialplan_uuid"] = $dialplan_uuid;
 			}
 
+		//update the call centier tiers array
+			$x = 0;
+			foreach ($_POST["call_center_tiers"] as $row) {
+				//add the domain_uuid
+					if (strlen($row["domain_uuid"]) == 0) {
+						$_POST["call_center_tiers"][$x]["domain_uuid"] = $_SESSION['domain_uuid'];
+					}
+				//unset ring_group_destination_uuid if the field has no value
+					if (strlen($row["call_center_agent_uuid"]) == 0) {
+						unset($_POST["call_center_tiers"][$x]);
+					}
+				//increment the row
+					$x++;
+			}
+
 		//get the application and data
 			$action_array = explode(":",$queue_timeout_action);
-			$queue_timeout_application = $action_array[0];
-			$queue_timeout_data = substr($queue_timeout_action, strlen($action_array[0])+1, strlen($queue_timeout_application));
+			$queue_timeout_app = $action_array[0];
+			unset($action_array[0]);
+			$queue_timeout_data = implode($action_array);
+
+		//add the recording path if needed
+			if (file_exists($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$queue_greeting)) {
+				$queue_greeting_path = $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$queue_greeting;
+			}
+			else {
+				$queue_greeting_path = $queue_greeting;
+			}
 
 		//build the xml dialplan
-			$dialplan_xml = "<extension name=\"".$queue_name."\" continue=\"\" uuid=\"".$dialplan_uuid."\">\n";
+			$dialplan_xml = "<extension name=\"".$queue_name."\" continue=\"\" uuid=\"".escape($dialplan_uuid)."\">\n";
 			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^([^#]+#)(.*)\$\" break=\"never\">\n";
 			$dialplan_xml .= "		<action application=\"set\" data=\"caller_id_name=\$2\"/>\n";
 			$dialplan_xml .= "	</condition>\n";
-			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^".$queue_extension."$\">\n";
+			$dialplan_xml .= "	<condition field=\"destination_number\" expression=\"^".escape($queue_extension)."$\">\n";
 			$dialplan_xml .= "		<action application=\"answer\" data=\"\"/>\n";
 			$dialplan_xml .= "		<action application=\"set\" data=\"hangup_after_bridge=true\"/>\n";
+			$dialplan_xml .= "		<action application=\"playback\" data=\"".escape($queue_greeting_path)."\"/>\n";
 			if (strlen($queue_cid_prefix) > 0) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"effective_caller_id_name=".$queue_cid_prefix."#\${caller_id_name}\"/>\n";
 			}
 			if (strlen($queue_cc_exit_keys) > 0) {
 				$dialplan_xml .= "		<action application=\"set\" data=\"cc_exit_keys=".$queue_cc_exit_keys."\"/>\n";
 			}
-			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".$queue_name.'@'.$_SESSION['domain_name']."\"/>\n";
-			$dialplan_xml .= "		<action application=\"".$queue_timeout_application."\" data=\"".$queue_timeout_data."\"/>\n";
+			$dialplan_xml .= "		<action application=\"callcenter\" data=\"".$call_center_queue_uuid."\"/>\n";
+			$dialplan_xml .= "		<action application=\"".$queue_timeout_app."\" data=\"".$queue_timeout_data."\"/>\n";
 			$dialplan_xml .= "	</condition>\n";
 			$dialplan_xml .= "</extension>\n";
 
@@ -244,18 +274,9 @@
 			$dialplan["dialplan_description"] = $queue_description;
 			$dialplan["app_uuid"] = "95788e50-9500-079e-2807-fd530b0ea370";
 
-		//set the queue name
-			$_POST["call_center_tiers"][0]["queue_name"] = $queue_name;
-		
-		//check for to make sure the agent_name was provided if not then remove from the array
-			if (strlen($_POST["call_center_tiers"][0]["agent_name"]) == 0) {
-				unset($_POST["call_center_tiers"]);
-			}
-
 		//prepare the array
 			$array['call_center_queues'][] = $_POST;
 			$array['dialplans'][] = $dialplan;
-			//echo "<pre>". print_r($array, true) ."</pre>";
 
 		//add the dialplan permission
 			$p = new permissions;
@@ -289,10 +310,10 @@
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
-					messages::add($text['message-add']);
+					message::add($text['message-add']);
 				}
 				if ($action == "update") {
-					messages::add($text['message-update']);
+					message::add($text['message-update']);
 				}
 			}
 
@@ -301,17 +322,15 @@
 			remove_config_from_cache('configuration:callcenter.conf');
 
 		//add agent/tier to queue
-			$agent_name = check_str($_POST["agent_name"]);
-			$tier_level = check_str($_POST["tier_level"]);
-			$tier_position = check_str($_POST["tier_position"]);
+			$agent_name = $_POST["agent_name"];
+			$tier_level = $_POST["tier_level"];
+			$tier_position = $_POST["tier_position"];
 
 			if ($agent_name != '') {
 				//setup the event socket connection
 					$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
 				//add the agent using event socket
 					if ($fp) {
-						//get the domain using the $domain_uuid
-						$tmp_domain = $_SESSION['domains'][$domain_uuid]['domain_name'];
 						/* syntax:
 							callcenter_config tier add [queue_name] [agent_name] [level] [position]
 							callcenter_config tier set state [queue_name] [agent_name] [state]
@@ -319,29 +338,29 @@
 							callcenter_config tier set position [queue_name] [agent_name] [position]
 						*/
 						//add the agent
-						$cmd = "api callcenter_config tier add ".$queue_name."@".$tmp_domain." ".$agent_name."@".$tmp_domain." ".$tier_level." ".$tier_position;
+						$cmd = "api callcenter_config tier add ".$call_center_queue_uuid." ".$call_center_agent_uuid." ".$tier_level." ".$tier_position;
 						$response = event_socket_request($fp, $cmd);
 						usleep(200);
 						//agent set level
-						$cmd = "api callcenter_config tier set level ".$queue_name."@".$tmp_domain." ".$agent_name."@".$tmp_domain." ".$tier_level;
+						$cmd = "api callcenter_config tier set level ".$call_center_queue_uuid." ".$call_center_agent_uuid." ".$tier_level;
 						$response = event_socket_request($fp, $cmd);
 						usleep(200);
 						//agent set position
-						$cmd = "api callcenter_config tier set position ".$queue_name."@".$tmp_domain." ".$agent_name."@".$tmp_domain." ".$tier_position;
+						$cmd = "api callcenter_config tier set position ".$call_center_queue_uuid." ".$call_center_agent_uuid." ".$tier_position;
 						$response = event_socket_request($fp, $cmd);
 						usleep(200);
 					}
 			}
 
-			//syncrhonize configuration
-				save_call_center_xml();
+		//syncrhonize configuration
+			save_call_center_xml();
 
-			//remove the cache
-				remove_config_from_cache('configuration:callcenter.conf');
+		//remove the cache
+			remove_config_from_cache('configuration:callcenter.conf');
 
-			//redirect the user
-				header("Location: call_center_queue_edit.php?id=".$call_center_queue_uuid);
-				return;
+		//redirect the user
+			header("Location: call_center_queue_edit.php?id=".escape($call_center_queue_uuid));
+			return;
 
 	} //(count($_POST)>0 && strlen($_POST["persistformvar"]) == 0)
 
@@ -349,20 +368,24 @@
 	$destination = new destinations;
 
 //pre-populate the form
-	if (is_array($_GET) && $_POST["persistformvar"] != "true") {
+	if (is_array($_GET) && is_uuid($_GET["id"]) && $_POST["persistformvar"] != "true") {
 		$call_center_queue_uuid = $_GET["id"];
 		$sql = "select * from v_call_center_queues ";
-		$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-		$sql .= "and call_center_queue_uuid = '$call_center_queue_uuid' ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$call_center_queues = $prep_statement->fetchAll(PDO::FETCH_NAMED);
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and call_center_queue_uuid = :call_center_queue_uuid ";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+		$database = new database;
+		$call_center_queues = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
+
 		if (is_array($call_center_queues)) {
 			foreach ($call_center_queues as &$row) {
 				$queue_name = $row["queue_name"];
 				$dialplan_uuid = $row["dialplan_uuid"];
 				$database_queue_name = $row["queue_name"];
 				$queue_extension = $row["queue_extension"];
+				$queue_greeting = $row["queue_greeting"];
 				$queue_strategy = $row["queue_strategy"];
 				$queue_moh_sound = $row["queue_moh_sound"];
 				$queue_record_template = $row["queue_record_template"];
@@ -384,11 +407,52 @@
 				$queue_description = $row["queue_description"];
 			}
 		}
-		unset ($prep_statement);
 	}
 
-//replace the dash in the queue name with a space
-	$queue_name = str_replace("-", " ", $queue_name);
+//get the tiers
+	$sql = "select t.call_center_tier_uuid, t.call_center_agent_uuid, t.call_center_queue_uuid, t.tier_level, t.tier_position, a.agent_name ";
+	$sql .= "from v_call_center_tiers as t, v_call_center_agents as a ";
+	$sql .= "where t.call_center_queue_uuid = :call_center_queue_uuid ";
+	$sql .= "and t.call_center_agent_uuid = a.call_center_agent_uuid ";
+	$sql .= "and t.domain_uuid = :domain_uuid ";
+	$sql .= "order by tier_level asc, tier_position asc, a.agent_name asc";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$parameters['call_center_queue_uuid'] = $call_center_queue_uuid;
+	$database = new database;
+	$tiers = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+//add an empty row to the tiers array
+	if (count($tiers) == 0) {
+		$rows = $_SESSION['call_center']['agent_add_rows']['numeric'];
+		$id = 0;
+	}
+	if (count($tiers) > 0) {
+		$rows = $_SESSION['call_center']['agent_edit_rows']['numeric'];
+		$id = count($tiers)+1;
+	}
+	for ($x = 0; $x < $rows; $x++) {
+		$tiers[$id]['call_center_tier_uuid'] = uuid();
+		$tiers[$id]['call_center_agent_uuid'] = '';
+		$tiers[$id]['call_center_queue_uuid'] = $call_center_queue_uuid;
+		$tiers[$id]['tier_level'] = '';
+		$tiers[$id]['tier_position'] = '';
+		$tiers[$id]['agent_name'] = '';
+		$id++;
+	}
+
+//get the agents
+	$sql = "select call_center_agent_uuid, agent_name from v_call_center_agents ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= "order by agent_name asc";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$agents = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+	//get the sounds
+	$sounds = new sounds;
+	$sounds = $sounds->get();
 
 //set default values
 	if (strlen($queue_strategy) == 0) { $queue_strategy = "longest-idle-agent"; }
@@ -427,10 +491,13 @@
 	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='call_center_queues.php'\" value='".$text['button-back']."'>\n";
 	if ($action == "update") {
 		echo "	&nbsp;&nbsp;&nbsp;";
-		echo "  <input type='button' class='btn' value='".$text['button-stop']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+unload+".$database_queue_name."@".$_SESSION['domain_name']."';\" />\n";
-		echo "  <input type='button' class='btn' value='".$text['button-start']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+load+".$database_queue_name."@".$_SESSION['domain_name']."';\" />\n";
-		echo "  <input type='button' class='btn' value='".$text['button-restart']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+reload+".$database_queue_name."@".$_SESSION['domain_name']."';\" />\n";
-		echo "  <input type='button' class='btn' value='".$text['button-view']."' onclick=\"document.location.href='".PROJECT_PATH."/app/call_center_active/call_center_active.php?queue_name=".$database_queue_name."';\" />\n";
+		if (permission_exists('call_center_wallboard')) {
+			echo "  <input type='button' class='btn' value='".$text['button-wallboard']."' onclick=\"document.location.href='".PROJECT_PATH."/app/call_center_wallboard/call_center_wallboard.php?queue_name=".escape($call_center_queue_uuid)."';\" />\n";
+		}
+		echo "  <input type='button' class='btn' value='".$text['button-stop']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+unload+".escape($call_center_queue_uuid)."';\" />\n";
+		echo "  <input type='button' class='btn' value='".$text['button-start']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+load+".escape($call_center_queue_uuid)."';\" />\n";
+		echo "  <input type='button' class='btn' value='".$text['button-restart']."' onclick=\"document.location.href='cmd.php?cmd=api+callcenter_config+queue+reload+".escape($call_center_queue_uuid)."';\" />\n";
+		echo "  <input type='button' class='btn' value='".$text['button-view']."' onclick=\"document.location.href='".PROJECT_PATH."/app/call_center_active/call_center_active.php?queue_name=".escape($call_center_queue_uuid)."';\" />\n";
 		echo "	&nbsp;&nbsp;&nbsp;";
 	}
 	echo "	<input type='submit' class='btn' value='".$text['button-save']."'>\n";
@@ -445,7 +512,7 @@
 	echo "	".$text['label-queue_name']."\n";
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='queue_name' maxlength='255' value=\"$queue_name\" required='required'>\n";
+	echo "	<input class='formfld' type='text' name='queue_name' maxlength='255' value=\"".escape($queue_name)."\" required='required'>\n";
 	echo "<br />\n";
 	echo $text['description-queue_name']."\n";
 	echo "</td>\n";
@@ -456,9 +523,42 @@
 	echo "	".$text['label-extension']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='number' name='queue_extension' maxlength='255' min='0' step='1' value=\"$queue_extension\" required='required'>\n";
+	echo "	<input class='formfld' type='number' name='queue_extension' maxlength='255' min='0' step='1' value=\"".escape($queue_extension)."\" required='required'>\n";
 	echo "<br />\n";
 	echo $text['description-extension']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
+	echo "	".$text['label-greeting']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "<select name='queue_greeting' class='formfld' style='width: 200px;' ".((if_group("superadmin")) ? "onchange='changeToInput(this);'" : null).">\n";
+	echo "	<option value=''></option>\n";
+	foreach($sounds as $key => $value) {
+		echo "<optgroup label=".$text['label-'.$key].">\n";
+		$selected = false;
+		foreach($value as $row) {
+			if ($queue_greeting == $row["value"]) { 
+				$selected = true;
+				echo "	<option value='".escape($row["value"])."' selected='selected'>".escape($row["name"])."</option>\n";
+			}
+			else {
+				echo "	<option value='".escape($row["value"])."'>".escape($row["name"])."</option>\n";
+			}
+		}
+		echo "</optgroup>\n";
+	}
+	if (if_group("superadmin")) {
+		if (!$selected && strlen($queue_greeting) > 0) {
+			echo "	<option value='".escape($queue_greeting)."' selected='selected'>".escape($queue_greeting)."</option>\n";
+		}
+		unset($selected);
+	}
+	echo "	</select>\n";
+	echo "<br />\n";
+	echo $text['description-greeting']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
@@ -529,99 +629,66 @@
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if (permission_exists('call_center_tier_view')) {
+	if (permission_exists('call_center_tier_view') && is_array($agents) && count($agents) > 0) {
 		echo "<tr>";
-		echo "	<td class='vncell' valign='top'>".$text['label-tiers']."</td>";
+		echo "	<td class='vncell' valign='top'>".$text['label-agents']."</td>";
 		echo "	<td class='vtable' align='left'>";
-		echo "		<table width='45%' border='0' cellpadding='0' cellspacing='0'>\n";
+		echo "			<table border='0' cellpadding='0' cellspacing='0'>\n";
 		echo "			<tr>\n";
 		echo "				<td class='vtable'>".$text['label-agent_name']."</td>\n";
 		echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_level']."</td>\n";
 		echo "				<td class='vtable' style='text-align: center;'>".$text['label-tier_position']."</td>\n";
 		echo "				<td></td>\n";
 		echo "			</tr>\n";
-
-		if ($call_center_queue_uuid != '') {
-			//replace the space in the queue name with a dash
-			$db_queue_name = str_replace(" ", "-", $queue_name);
-			$db_queue_name = $db_queue_name .'@'.$_SESSION['domain_name'];
-
-			$sql = "select * from v_call_center_tiers ";
-			$sql .= "where (call_center_queue_uuid = '".$call_center_queue_uuid."' or queue_name = '".$db_queue_name."') ";
-			$sql .= "and domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			$sql .= "order by tier_level asc, tier_position asc, agent_name asc";
-			$prep_statement = $db->prepare(check_sql($sql));
-			$prep_statement->execute();
-			$tiers = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-			if (is_array($tiers)) {
-				foreach($tiers as $field) {
-					echo "	<tr>\n";
-					echo "		<td class='vtable'>".$field['agent_name']."</td>\n";
-					echo "		<td class='vtable' style='text-align: center;'>".$field['tier_level']."&nbsp;</td>\n";
-					echo "		<td class='vtable' style='text-align: center;'>".$field['tier_position']."&nbsp;</td>\n";
-					echo "		<td class='list_control_icons'>";
-					if (permission_exists('call_center_tier_edit')) {
-						echo		"<a href='call_center_tier_edit.php?id=".$field['call_center_tier_uuid']."' alt='".$text['button-edit']."'>".$v_link_label_edit."</a>";
-					}
-					if (permission_exists('call_center_tier_delete')) {
-						echo		"<a href='call_center_queue_edit.php?id=".$call_center_queue_uuid."&call_center_tier_uuid=".$field['call_center_tier_uuid']."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
-					}
-					echo "		</td>\n";
-					echo "	</tr>\n";
-					$assigned_agents[] = $field['agent_name'];
-				}
-				unset ($prep_statement, $sql, $tiers);
+		$x = 0;
+		foreach($tiers as $field) {
+			echo "	<tr>\n";
+			echo "		<td class=''>";
+			if (strlen($field['call_center_tier_uuid']) > 0) {
+				echo "		<input name='call_center_tiers[".$x."][call_center_tier_uuid]' type='hidden' value=\"".escape($field['call_center_tier_uuid'])."\">\n";
 			}
+			echo "				<select name=\"call_center_tiers[$x][call_center_agent_uuid]\" class=\"formfld\">\n";
+			echo "					<option value=\"\"></option>\n";
+			foreach($agents as $row) {
+				$selected = '';
+				if ($row['call_center_agent_uuid'] == $field['call_center_agent_uuid']) {
+					$selected = "selected=\"selected\"";
+				}
+				echo "				<option value=\"".escape($row['call_center_agent_uuid'])."\" $selected>".escape($row['agent_name'])."</option>\n";
+			}
+			echo "				</select>";
+			echo "		</td>\n";
+			echo "		<td class='' style='text-align: center;'>";
+			echo "				 <select name=\"call_center_tiers[$x][tier_level]\" class=\"formfld\">\n";
+			$i=0;
+			while($i<=9) {
+				$selected = ($i == $field['tier_level']) ? "selected" : null;
+				echo "				<option value=\"$i\" ".escape($selected).">$i</option>\n";
+				$i++;
+			}
+			echo "				</select>\n";
+			echo "		</td>\n";
+
+			echo "		<td class='' style='text-align: center;'>\n";
+			echo "				<select name=\"call_center_tiers[$x][tier_position]\" class=\"formfld\">\n";
+			$i=0;
+			while($i<=9) {
+				$selected = ($i == $field['tier_position']) ? "selected" : null;
+				echo "				<option value=\"$i\" ".escape($selected).">$i</option>\n";
+				$i++;
+			}
+			echo "				</select>\n";
+			echo "		</td>\n";
+			echo "		<td class=''>";
+			if (permission_exists('call_center_tier_delete')) {
+				echo "			<a href=\"call_center_queue_edit.php?id=".escape($call_center_queue_uuid)."&call_center_tier_uuid=".escape($field['call_center_tier_uuid'])."&a=delete\" alt=\"".$text['button-delete']."\" onclick=\"return confirm('".$text['confirm-delete']."');\">$v_link_label_delete</a>";
+			}
+			echo "		</td>\n";
+			echo "	</tr>\n";
+			$assigned_agents[] = $field['agent_name'];
+			$x++;
 		}
-
-		if (permission_exists('call_center_tier_add')) {
-			//get agents
-			$sql = "select agent_name from v_call_center_agents ";
-			$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-			if ($assigned_agents){
-				foreach($assigned_agents as $assigned_agent) {
-					$sql .= "and agent_name <> '".$assigned_agent."' ";
-				}
-			}
-			$sql .= "order by agent_name asc";
-			$prep_statement = $db->prepare(check_sql($sql));
-			$prep_statement->execute();
-			$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-			if (sizeof($result) > 0) {
-				echo "		<tr>\n";
-				echo "			<td class='vtable'>\n";
-				echo "				<input type=\"hidden\" name='call_center_tiers[0][call_center_tier_uuid]' value='".uuid()."'>\n";
-				echo "				<select id='agent_name' name='call_center_tiers[0][agent_name]' class='formfld'>\n";
-				echo "					<option value=''></option>\n";
-				foreach($result as $field) {
-					echo "				<option value='".$field['agent_name']."'>".$field['agent_name']."</option>\n";
-				}
-				unset($sql,$prep_statement);
-				echo "				</select>";
-				echo "			</td>\n";
-				echo "			<td class='vtable' style='text-align: center;'>\n";
-				echo "				<select class='formfld' name='call_center_tiers[0][tier_level]'>\n";
-				for ($t = 0; $t <= 9; $t++) {
-					echo "				<option value='".$t."'>".$t."</option>\n";
-				}
-				echo "				</select>\n";
-				echo "			</td>\n";
-				echo "			<td class='vtable' style='text-align: center;'>\n";
-				echo "				<select class='formfld' name='call_center_tiers[0][tier_position]'>\n";
-				for ($t = 1; $t <= 9; $t++) {
-					echo "				<option value='".$t."'>".$t."</option>\n";
-				}
-				echo "				</select>\n";
-				echo "			</td>\n";
-				echo "			<td>";
-				echo "				<input type=\"hidden\" name='call_center_tiers[0][domain_uuid]' value='".$_SESSION['domain_uuid']."'>\n";
-				//echo "				<input type=\"hidden\" name='call_center_tiers[0][queue_name]' value='".$queue_name."@".$_SESSION['domain_name']."'>\n";
-				echo "				<input type=\"submit\" class='btn' value=\"".$text['button-add']."\">\n";
-				echo "			</td>\n";
-				echo "		</tr>\n";
-			}
-		}
-
+		unset ($tiers);
 		echo "		</table>\n";
 		echo "		<br>\n";
 		echo "		".$text['description-tiers']."\n";
@@ -649,14 +716,13 @@
 	echo "	".$text['label-record_template']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	$record_ext=($_SESSION['record_ext']=='mp3'?'mp3':'wav');
-	$record_template = $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/archive/\${strftime(%Y)}/\${strftime(%b)}/\${strftime(%d)}/\${uuid}.".$record_ext;
+	$record_template = $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name']."/archive/\${strftime(%Y)}/\${strftime(%b)}/\${strftime(%d)}/\${uuid}.\${record_ext}";
 	echo "	<select class='formfld' name='queue_record_template'>\n";
 	if (strlen($queue_record_template) > 0) {
-		echo "	<option value='$record_template' selected='selected' >".$text['option-true']."</option>\n";
+		echo "	<option value='".escape($record_template)."' selected='selected' >".$text['option-true']."</option>\n";
 	}
 	else {
-		echo "	<option value='$record_template'>".$text['option-true']."</option>\n";
+		echo "	<option value='".escape($record_template)."'>".$text['option-true']."</option>\n";
 	}
 	if (strlen($queue_record_template) == 0) {
 		echo "	<option value='' selected='selected' >".$text['option-false']."</option>\n";
@@ -699,7 +765,7 @@
 	echo "	".$text['label-max_wait_time']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_max_wait_time' maxlength='255' min='0' step='1' value='$queue_max_wait_time'>\n";
+	echo "  <input class='formfld' type='number' name='queue_max_wait_time' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time)."'>\n";
 	echo "<br />\n";
 	echo $text['description-max_wait_time']."\n";
 	echo "</td>\n";
@@ -710,7 +776,7 @@
 	echo "	".$text['label-max_wait_time_with_no_agent']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent' maxlength='255' min='0' step='1' value='$queue_max_wait_time_with_no_agent'>\n";
+	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time_with_no_agent)."'>\n";
 	echo "<br />\n";
 	echo $text['description-max_wait_time_with_no_agent']."\n";
 	echo "</td>\n";
@@ -721,7 +787,7 @@
 	echo "	".$text['label-max_wait_time_with_no_agent_time_reached']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent_time_reached' maxlength='255' min='0' step='1' value='$queue_max_wait_time_with_no_agent_time_reached'>\n";
+	echo "  <input class='formfld' type='number' name='queue_max_wait_time_with_no_agent_time_reached' maxlength='255' min='0' step='1' value='".escape($queue_max_wait_time_with_no_agent_time_reached)."'>\n";
 	echo "<br />\n";
 	echo $text['description-max_wait_time_with_no_agent_time_reached']."\n";
 	echo "</td>\n";
@@ -732,7 +798,7 @@
 	echo "    ".$text['label-timeout_action']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo $destination->select('dialplan', 'queue_timeout_action', $queue_timeout_action);
+	echo $destination->select('dialplan', 'queue_timeout_action', escape($queue_timeout_action));
 	echo "<br />\n";
 	echo $text['description-timeout_action']."\n";
 	echo "</td>\n";
@@ -767,7 +833,7 @@
 	echo "	".$text['label-tier_rule_wait_second']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_tier_rule_wait_second' maxlength='255' min='0' step='1' value='$queue_tier_rule_wait_second'>\n";
+	echo "  <input class='formfld' type='number' name='queue_tier_rule_wait_second' maxlength='255' min='0' step='1' value='".escape($queue_tier_rule_wait_second)."'>\n";
 	echo "<br />\n";
 	echo $text['description-tier_rule_wait_second']."\n";
 	echo "</td>\n";
@@ -826,7 +892,7 @@
 	echo "	".$text['label-discard_abandoned_after']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_discard_abandoned_after' maxlength='255' min='0' step='1' value='$queue_discard_abandoned_after'>\n";
+	echo "  <input class='formfld' type='number' name='queue_discard_abandoned_after' maxlength='255' min='0' step='1' value='".escape($queue_discard_abandoned_after)."'>\n";
 	echo "<br />\n";
 	echo $text['description-discard_abandoned_after']."\n";
 	echo "</td>\n";
@@ -861,7 +927,7 @@
 	echo "	".$text['label-caller_id_name_prefix']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='queue_cid_prefix' maxlength='255' value='$queue_cid_prefix'>\n";
+	echo "  <input class='formfld' type='text' name='queue_cid_prefix' maxlength='255' value='".escape($queue_cid_prefix)."'>\n";
 	echo "<br />\n";
 	echo $text['description-caller_id_name_prefix']."\n";
 	echo "</td>\n";
@@ -872,7 +938,7 @@
 	echo "  ".$text['label-caller_announce_sound']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='text' name='queue_announce_sound' maxlength='255' value='$queue_announce_sound'>\n";
+	echo "  <input class='formfld' type='text' name='queue_announce_sound' maxlength='255' value='".escape($queue_announce_sound)."'>\n";
 	echo "<br />\n";
 	echo $text['description-caller_announce_sound']."\n";
 	echo "</td>\n";
@@ -883,29 +949,29 @@
 	echo "  ".$text['label-caller_announce_frequency']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "  <input class='formfld' type='number' name='queue_announce_frequency' maxlength='255' min='0' step='1' value='$queue_announce_frequency'>\n";
+	echo "  <input class='formfld' type='number' name='queue_announce_frequency' maxlength='255' min='0' step='1' value='".escape($queue_announce_frequency)."'>\n";
 	echo "<br />\n";
 	echo $text['description-caller_announce_frequency']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 
 	echo "<tr>\n";
-        echo "<td class='vncell' valign='top' align='left' nowrap>\n";
-       	echo "  ".$text['label-exit_keys']."\n";
-       	echo "</td>\n";
-       	echo "<td class='vtable' align='left'>\n";
-       	echo "  <input class='formfld' type='text' name='queue_cc_exit_keys' value='$queue_cc_exit_keys'>\n";
-       	echo "<br />\n";
-       	echo $text['description-exit_keys']."\n";
-       	echo "</td>\n";
-       	echo "</tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "  ".$text['label-exit_keys']."\n";
+   	echo "</td>\n";
+   	echo "<td class='vtable' align='left'>\n";
+   	echo "  <input class='formfld' type='text' name='queue_cc_exit_keys' value='".escape($queue_cc_exit_keys)."'>\n";
+   	echo "<br />\n";
+   	echo $text['description-exit_keys']."\n";
+   	echo "</td>\n";
+   	echo "</tr>\n";
 
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 	echo "	".$text['label-description']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	echo "	<input class='formfld' type='text' name='queue_description' maxlength='255' value=\"$queue_description\">\n";
+	echo "	<input class='formfld' type='text' name='queue_description' maxlength='255' value=\"".escape($queue_description)."\">\n";
 	echo "<br />\n";
 	echo $text['description-description']."\n";
 	echo "</td>\n";
@@ -914,8 +980,8 @@
 	echo "	<tr>\n";
 	echo "		<td colspan='2' align='right'>\n";
 	if ($action == "update") {
-		echo "		<input type='hidden' name='call_center_queue_uuid' value='".$call_center_queue_uuid."'>\n";
-		echo "		<input type='hidden' name='dialplan_uuid' value='".$dialplan_uuid."'>\n";
+		echo "		<input type='hidden' name='call_center_queue_uuid' value='".escape($call_center_queue_uuid)."'>\n";
+		echo "		<input type='hidden' name='dialplan_uuid' value='".escape($dialplan_uuid)."'>\n";
 	}
 	echo "			<br />";
 	echo "			<input type='submit' class='btn' value='".$text['button-save']."'>\n";

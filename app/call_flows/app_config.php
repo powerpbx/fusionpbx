@@ -60,6 +60,12 @@
 		$apps[$x]['permissions'][$y]['name'] = "call_flow_delete";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "call_flow_context";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+
+	//cache details
+		$apps[$x]['cache']['key'] = "dialplan.\${call_flow_context}";
 
 	//schema details
 		$y=0;

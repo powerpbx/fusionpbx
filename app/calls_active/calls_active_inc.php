@@ -66,18 +66,18 @@
 	if (isset($results["rows"])) {
 		foreach ($results["rows"] as &$row) {
 			//get the domain
-				if (substr_count($row['presence_id'], '@') > 0) {
-					$presence_id_array = explode('@', $row['presence_id']);
-					$row['domain_name'] = $presence_id_array[1];
-				}
-				else if ($context != '') {
-					if (substr_count($context, '@') > 0) {
-						$context_array = explode('@', $context);
+				if (strlen($row['context']) > 0 and $row['context'] != "public") {
+					if (substr_count($row['context'], '@') > 0) {
+						$context_array = explode('@', $row['context']);
 						$row['domain_name'] = $context_array[1];
 					}
 					else {
 						$row['domain_name'] = $row['context'];
 					}
+				}
+				else if (substr_count($row['presence_id'], '@') > 0) {
+					$presence_id_array = explode('@', $row['presence_id']);
+					$row['domain_name'] = $presence_id_array[1].' '.__line__.' '.$row['presence_id'];
 				}
 			//add the row to the array
 				if (($show == 'all' && permission_exists('call_active_all'))) {
@@ -91,6 +91,7 @@
 		}
 		unset($results);
 	}
+
 
 //set the alternating color for each row
 	$c = 0;
@@ -164,9 +165,9 @@
 					foreach ($row as $key => $value) {
 						$$key = $value;
 					}
-					if (if_group("superadmin") && isset($_REQUEST['debug'])) {
-						echo "<tr><td colspan='20'><pre>".print_r($row, true)."</pre></td></tr>";
-					}
+					//if (if_group("superadmin") && isset($_REQUEST['debug'])) {
+					//	echo "<tr><td colspan='20'><pre>".print_r(escape($row), true)."</pre></td></tr>";
+					//}
 
 				//get the sip profile
 					$name_array = explode("/", $name);
@@ -195,21 +196,21 @@
 
 				//send the html
 					echo "<tr>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$sip_profile."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$created."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($sip_profile)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($created)."&nbsp;</td>\n";
 					if ($show == 'all') {
-						echo "<td valign='top' class='".$row_style[$c]."'>".$domain_name."&nbsp;</td>\n";
+						echo "<td valign='top' class='".$row_style[$c]."'>".escape($domain_name)."&nbsp;</td>\n";
 					}
-					echo "<td valign='top' class='".$row_style[$c]."'>".$tmp_number."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$cid_name."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$cid_num."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$dest."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".((strlen($application) > 0) ? $application.":".$application_data : null)."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$read_codec.":".$read_rate." / ".$write_codec.":".$write_rate."&nbsp;</td>\n";
-					echo "<td valign='top' class='".$row_style[$c]."'>".$secure."&nbsp;</td>\n";
-					echo "<td class='list_control_icons' style='width: 25px; text-align: left;'><a href='javascript:void(0);' alt='".$text['label-hangup']."' onclick=\"hangup(escape('".$uuid."'));\">".$v_link_label_delete."</a></td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($tmp_number)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($cid_name)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($cid_num)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($dest)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".((strlen($application) > 0) ? escape($application).":".escape($application_data) : null)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($read_codec).":".escape($read_rate)." / ".escape($write_codec).":".escape($write_rate)."&nbsp;</td>\n";
+					echo "<td valign='top' class='".$row_style[$c]."'>".escape($secure)."&nbsp;</td>\n";
+					echo "<td class='list_control_icons' style='width: 25px; text-align: left;'><a href='javascript:void(0);' alt='".$text['label-hangup']."' onclick=\"hangup('".escape($uuid)."');\">".$v_link_label_delete."</a></td>\n";
 					echo "</tr>\n";
-				
+
 				//alternate the row style
 					$c = ($c) ? 0 : 1;
 			}

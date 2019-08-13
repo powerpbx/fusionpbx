@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -53,10 +53,10 @@
 	}
 
 //if the username session is not set the check username and password
-	if (strlen($_SESSION['username']) == 0 && isset($_REQUEST["username"]) && isset($_REQUEST["password"])) {
+	if (strlen($_SESSION['username']) == 0) {
 
 		//clear the menu
-			$_SESSION["menu"] = "";
+			unset($_SESSION["menu"]);
 
 		//clear the template only if the template has not been assigned by the superadmin
 			if (strlen($_SESSION['domain']['template']['name']) == 0) {
@@ -65,23 +65,24 @@
 
 		//validate the username and password
 			$auth = new authentication;
-			if (strlen($_REQUEST["username"]) > 0) {
+			if (isset($_REQUEST["username"]) && isset($_REQUEST["password"])) {
 				$auth->username = $_REQUEST["username"];
 				$auth->password = $_REQUEST["password"];
 			}
-			if (strlen($_REQUEST["key"]) > 0) {
+			if (isset($_REQUEST["key"])) {
 				$auth->key = $_REQUEST["key"];
 			}
 			$auth->debug = false;
 			$result = $auth->validate();
 			if ($result["authorized"] == "true") {
-				// set the session variables
+				//set the session variables
 					$_SESSION["domain_uuid"] = $result["domain_uuid"];
 					$_SESSION["user_uuid"] = $result["user_uuid"];
 
-				// user session array
-					$_SESSION["user"]["username"] = $result["username"];
+				//user session array
+					$_SESSION["user"]["domain_uuid"] = $result["domain_uuid"];
 					$_SESSION["user"]["user_uuid"] = $result["user_uuid"];
+					$_SESSION["user"]["username"] = $result["username"];
 					$_SESSION["user"]["contact_uuid"] = $result["contact_uuid"];
 			}
 			else {
@@ -97,26 +98,36 @@
 					openlog('FusionPBX', LOG_NDELAY, LOG_AUTH);
 					syslog(LOG_WARNING, '['.$_SERVER['REMOTE_ADDR']."] authentication failed for ".$result["username"]);
 					closelog();
+
 				//redirect the user to the login page
 					$target_path = ($_REQUEST["path"] != '') ? $_REQUEST["path"] : $_SERVER["PHP_SELF"];
-					messages::add($text['message-invalid_credentials'], 'negative');
+					message::add($text['message-invalid_credentials'], 'negative');
 					header("Location: ".PROJECT_PATH."/login.php?path=".urlencode($target_path));
 					exit;
 			}
 
 		//get the groups assigned to the user and then set the groups in $_SESSION["groups"]
-			$sql = "SELECT * FROM v_group_users ";
-			//$sql .= "where domain_uuid='".$domain_uuid."' ";
-			//$sql .= "and user_uuid='".$_SESSION["user_uuid"]."' ";
-			$sql .= "where domain_uuid=:domain_uuid ";
-			$sql .= "and user_uuid=:user_uuid ";
-			$prep_statement = $db->prepare(check_sql($sql));
+			$sql = "select u.user_group_uuid, u.domain_uuid, u.user_uuid, u.group_uuid, g.group_name, g.group_level ";
+			$sql .= "from v_user_groups as u, v_groups as g  ";
+			$sql .= "where u.domain_uuid = :domain_uuid ";
+			$sql .= "and u.user_uuid = :user_uuid ";
+			$sql .= "and u.group_uuid = g.group_uuid ";
+			$prep_statement = $db->prepare($sql);
 			$prep_statement->bindParam(':domain_uuid', $_SESSION["domain_uuid"] );
 			$prep_statement->bindParam(':user_uuid', $_SESSION["user_uuid"]);
 			$prep_statement->execute();
 			$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
 			$_SESSION["groups"] = $result;
+			$_SESSION["user"]["groups"] = $result;
 			unset($sql, $row_count, $prep_statement);
+
+		//get the users group level
+			$_SESSION["user"]["group_level"] = 0;
+			foreach ($_SESSION['user']['groups'] as $row) {
+				if ($_SESSION["user"]["group_level"] < $row['group_level']) {
+					$_SESSION["user"]["group_level"] = $row['group_level'];
+				}
+			}
 
 		//get the permissions assigned to the groups that the user is a member of set the permissions in $_SESSION['permissions']
 			if (count($_SESSION["groups"]) > 0) {
@@ -140,6 +151,7 @@
 				if (is_array($result)) {
 					foreach ($result as $row) {
 						$_SESSION['permissions'][$row["permission_name"]] = true;
+						$_SESSION["user"]["permissions"][$row["permission_name"]] = true;
 					}
 				}
 				unset($sql, $prep_statement_sub);
@@ -213,7 +225,7 @@
 								if (strlen($row['number_alias']) > 0) {
 									$destination = $row['number_alias'];
 								}
-								
+
 								//build the uers array
 								$_SESSION['user']['extension'][$x]['user'] = $row['extension'];
 								$_SESSION['user']['extension'][$x]['number_alias'] = $row['number_alias'];
@@ -223,8 +235,9 @@
 								$_SESSION['user']['extension'][$x]['outbound_caller_id_number'] = $row['outbound_caller_id_number'];
 								$_SESSION['user']['extension'][$x]['user_context'] = $row['user_context'];
 								$_SESSION['user']['extension'][$x]['description'] = $row['description'];
-								
+
 								//set the user context
+								$_SESSION['user']['user_context'] = $row["user_context"];
 								$_SESSION['user_context'] = $row["user_context"];
 								$x++;
 							}

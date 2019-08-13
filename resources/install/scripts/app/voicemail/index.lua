@@ -1,5 +1,5 @@
 --	Part of FusionPBX
---	Copyright (C) 2013-2017 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2013-2019 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -74,6 +74,8 @@
 			destination_number = session:getVariable("destination_number");
 			caller_id_name = session:getVariable("caller_id_name");
 			caller_id_number = session:getVariable("caller_id_number");
+			current_time_zone = session:getVariable("timezone");
+			effective_caller_id_number = session:getVariable("effective_caller_id_number");
 			voicemail_greeting_number = session:getVariable("voicemail_greeting_number");
 			skip_instructions = session:getVariable("skip_instructions");
 			skip_greeting = session:getVariable("skip_greeting");
@@ -85,6 +87,11 @@
 			voicemail_authorized = session:getVariable("voicemail_authorized");
 			sip_from_user = session:getVariable("sip_from_user");
 			sip_number_alias = session:getVariable("sip_number_alias");
+
+		--modify caller_id_number if effective_caller_id_number is set
+			if (effective_caller_id_number ~= nil) then
+				caller_id_number = effective_caller_id_number;
+			end
 
 		--set default values
 			if (string.sub(caller_id_number, 1, 1) == "/") then
@@ -183,9 +190,31 @@
 						remote_access = settings['voicemail']['remote_access']['boolean'];
 					end
 				end
+
+				password_complexity = '';
+				if (settings['voicemail']['password_complexity'] ~= nil) then
+					if (settings['voicemail']['password_complexity']['boolean'] ~= nil) then
+						password_complexity = settings['voicemail']['password_complexity']['boolean'];
+					end
+				end
+
+				password_min_length = '';
+				if (settings['voicemail']['password_min_length'] ~= nil) then
+					if (settings['voicemail']['password_min_length']['numeric'] ~= nil) then
+						password_min_length = settings['voicemail']['password_min_length']['numeric'];
+					end
+				end
+
+				not_found_message = 'false';
+				if (settings['voicemail']['not_found_message'] ~= nil) then
+					if (settings['voicemail']['not_found_message']['boolean'] ~= nil) then
+						not_found_message = settings['voicemail']['not_found_message']['boolean'];
+					end
+				end
+
 			end
 
-			if settings['voicemail'] then
+			if (settings['voicemail']) then
 				if settings['voicemail']['voicemail_to_sms'] then
 					voicemail_to_sms = (settings['voicemail']['voicemail_to_sms']['boolean'] == 'true');
 				end
@@ -237,23 +266,25 @@
 						end
 
 					--valid voicemail
-						if (voicemail_uuid ~= nil) then
+						if (voicemail_uuid ~= nil and string.len(voicemail_uuid) > 0) then
 						--answer the session
 							if (session:ready()) then
 								session:answer();
+								session:execute("sleep", "1000");
 							end
 
 						--unset bind meta app
 							session:execute("unbind_meta_app", "");
 
-						--set the callback function
-							if (session:ready()) then
-								session:setVariable("playback_terminators", "#");
-								session:setInputCallback("on_dtmf", "");
-							end
 						end
 				end
 			end
+	end
+
+--set the callback function
+	if (session:ready()) then
+		session:setVariable("playback_terminators", "#");
+		session:setInputCallback("on_dtmf", "");
 	end
 
 --general functions
@@ -353,6 +384,13 @@
 --leave a message
 	if (voicemail_action == "save") then
 
+		--set the variables
+			if (session:ready()) then
+				session:setVariable("missed_call", "true");
+				session:setVariable("voicemail_answer_stamp", api:execute("strftime"));
+				session:setVariable("voicemail_answer_epoch", api:execute("strepoch"));
+			end
+
 		--check the voicemail quota
 			if (voicemail_uuid ~= nil and vm_disk_quota ~= nil) then
 				--get voicemail message seconds
@@ -399,7 +437,7 @@
 
 							if file_exists(full_path) then
 								--read file content as base64 string
-									message_base64 = assert(file.read_base64(full_path));
+									message_base64 = file.read_base64(full_path);
 									--freeswitch.consoleLog("notice", "[voicemail] ".. message_base64 .. "\n");
 
 								--delete the file
@@ -416,10 +454,10 @@
 					x = 1;
 					table.insert(destinations, {domain_uuid=domain_uuid,voicemail_destination_uuid=voicemail_uuid,voicemail_uuid=voicemail_uuid,voicemail_uuid_copy=voicemail_uuid});
 					x = x + 1;
-					assert(dbh:query(sql, params, function(row)
+					dbh:query(sql, params, function(row)
 						destinations[x] = row;
 						x = x + 1;
-					end));
+					end);
 
 				--show the storage type
 					freeswitch.consoleLog("notice", "[voicemail] ".. storage_type .. "\n");
@@ -570,8 +608,12 @@
 							referred_by = referred_by:match('[%d]+');
 							session:transfer(referred_by, "XML", context);
 						else
-							session:execute("playback", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/voicemail/vm-no_answer_no_vm.wav");
-							session:hangup("NO_ANSWER");
+							if (not_found_message == "true") then
+								session:answer();
+								session:execute("sleep", "1000");
+								session:execute("playback", sounds_dir.."/"..default_language.."/"..default_dialect.."/"..default_voice.."/voicemail/vm-no_answer_no_vm.wav");
+								session:hangup();
+							end
 						end
 					end
 			end

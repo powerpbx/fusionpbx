@@ -43,17 +43,17 @@
 	$text = $language->get();
 
 //get variables used to control the order
-	$order_by = check_str($_GET["order_by"]);
-	$order = check_str($_GET["order"]);
+	$order_by = $_GET["order_by"] != '' ? $_GET['order_by'] : 'transaction_date';
+	$order = $_GET["order"] != '' ? $_GET['order'] : 'desc';
 
 //add the search term
-	$search = strtolower(check_str($_GET["search"]));
+	$search = strtolower($_GET["search"]);
 	if (strlen($search) > 0) {
 		$sql_search = "and (";
-		$sql_search .= "	lower(transaction_code) like '%".$search."%' ";
-		$sql_search .= "	or lower(transaction_address) like '%".$search."%' ";
-		$sql_search .= "	or lower(transaction_type) like '%".$search."%' ";
-		$sql_search .= "	or lower(app_name) like '%".$search."%' ";
+		$sql_search .= "	lower(transaction_code) like :search ";
+		$sql_search .= "	or lower(transaction_address) like :search ";
+		$sql_search .= "	or lower(transaction_type) like :search ";
+		$sql_search .= "	or lower(app_name) like :search ";
 		$sql_search .= ") ";
 	}
 
@@ -62,21 +62,15 @@
 	require_once "resources/paging.php";
 
 //prepare to page the results
-	$sql = "select count(database_transaction_uuid) as num_rows from v_database_transactions ";
-	$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
+	$sql = "select count(database_transaction_uuid) from v_database_transactions ";
+	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by)> 0) { $sql .= "order by $order_by $order "; }
-	$prep_statement = $db->prepare($sql);
-	if ($prep_statement) {
-		$prep_statement->execute();
-		$row = $prep_statement->fetch(PDO::FETCH_ASSOC);
-		if ($row['num_rows'] > 0) {
-				$num_rows = $row['num_rows'];
-		}
-		else {
-				$num_rows = '0';
-		}
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	if (strlen($search) > 0) {
+		$parameters['search'] = '%'.$search.'%';
 	}
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -91,21 +85,14 @@
 	$sql .= "t.database_transaction_uuid, d.domain_name, u.username, t.user_uuid, t.app_name, t.app_uuid, ";
 	$sql .= "t.transaction_code, t.transaction_address, t.transaction_type, t.transaction_date ";
 	$sql .= "from v_database_transactions as t ";
-	$sql .= "LEFT OUTER JOIN v_domains as d USING (domain_uuid) ";
-	$sql .= "LEFT OUTER JOIN v_users as u USING (user_uuid) ";
-	$sql .= "where t.domain_uuid = '".$_SESSION['domain_uuid']."' ";
+	$sql .= "left outer join v_domains as d using (domain_uuid) ";
+	$sql .= "left outer join v_users as u using (user_uuid) ";
+	$sql .= "where t.domain_uuid = :domain_uuid ";
 	$sql .= $sql_search;
-	if (strlen($order_by) == 0) {
-		$sql .= "order by transaction_date desc ";
-	}
-	else {
-		$sql .= "order by $order_by $order ";
-	}
-	$sql .= "limit $rows_per_page offset $offset ";
-	$prep_statement = $db->prepare(check_sql($sql));
-	$prep_statement->execute();
-	$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-	unset ($prep_statement, $sql);
+	$sql .= order_by($order_by, $order);
+	$sql .= limit_offset($rows_per_page, $offset);
+	$database = new database;
+	$result = $database->select($sql, $parameters, 'all');
 
 //alternate the row style
 	$c = 0;
@@ -118,7 +105,7 @@
 	echo "		<td width='50%' align='left' nowrap='nowrap'><b>".$text['title-database_transactions']."</b></td>\n";
 	echo "		<form method='get' action=''>\n";
 	echo "			<td width='50%' style='vertical-align: top; text-align: right; white-space: nowrap;'>\n";
-	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".$search."'>\n";
+	echo "				<input type='text' class='txt' style='width: 150px' name='search' id='search' value='".escape($search)."'>\n";
 	echo "				<input type='submit' class='btn' name='submit' value='".$text['button-search']."'>\n";
 	echo "			</td>\n";
 	echo "		</form>\n";
@@ -132,44 +119,39 @@
 	echo th_order_by('app_name', $text['label-app_name'], $order_by, $order);
 	echo th_order_by('transaction_code', $text['label-transaction_code'], $order_by, $order);
 	echo th_order_by('transaction_address', $text['label-transaction_address'], $order_by, $order);
-	//echo th_order_by('transaction_type', $text['label-transaction_type'], $order_by, $order);
+	echo th_order_by('transaction_type', $text['label-transaction_type'], $order_by, $order);
 	echo th_order_by('transaction_date', $text['label-transaction_date'], $order_by, $order);
 	//echo th_order_by('transaction_old', $text['label-transaction_old'], $order_by, $order);
 	//echo th_order_by('transaction_new', $text['label-transaction_new'], $order_by, $order);
 	//echo th_order_by('transaction_result', $text['label-transaction_result'], $order_by, $order);
 	echo "<td class='list_control_icons'>";
-	if (permission_exists('database_transaction_add')) {
-		echo "<a href='database_transaction_edit.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
-	}
-	else {
-		echo "&nbsp;\n";
-	}
+	echo "	&nbsp;\n";
 	echo "</td>\n";
 	echo "<tr>\n";
 
 	if (is_array($result)) {
 		foreach($result as $row) {
 			if (permission_exists('database_transaction_edit')) {
-				$tr_link = "href='database_transaction_edit.php?id=".$row['database_transaction_uuid']."'";
+				$tr_link = "href='database_transaction_edit.php?id=".escape($row['database_transaction_uuid'])."'";
 			}
 			echo "<tr ".$tr_link.">\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['domain_name']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['username']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['app_name']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_code']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_address']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_type']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_date']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_old']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_new']."&nbsp;</td>\n";
-			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['transaction_result']."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['domain_name'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['username'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['app_name'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_code'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_address'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_type'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_date'])."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_old']."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_new']."&nbsp;</td>\n";
+			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['transaction_result']."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('database_transaction_edit')) {
-				echo "<a href='database_transaction_edit.php?id=".$row['database_transaction_uuid']."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+				echo "<a href='database_transaction_edit.php?id=".escape($row['database_transaction_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
-			if (permission_exists('database_transaction_delete')) {
-				echo "<a href='database_transaction_delete.php?id=".$row['database_transaction_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
-			}
+			//if (permission_exists('database_transaction_delete')) {
+			//	echo "<a href='database_transaction_delete.php?id=".escape($row['database_transaction_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+			//}
 			echo "	</td>\n";
 			echo "</tr>\n";
 			if ($c==0) { $c=1; } else { $c=0; }
@@ -184,12 +166,7 @@
 	echo "		<td width='33.3%' nowrap='nowrap'>&nbsp;</td>\n";
 	echo "		<td width='33.3%' align='center' nowrap='nowrap'>$paging_controls</td>\n";
 	echo "		<td class='list_control_icons'>";
-	if (permission_exists('database_transaction_add')) {
-		echo 		"<a href='database_transaction_edit.php' alt='".$text['button-add']."'>$v_link_label_add</a>";
-	}
-	else {
-		echo 		"&nbsp;";
-	}
+	echo 			"&nbsp;";
 	echo "		</td>\n";
 	echo "	</tr>\n";
  	echo "	</table>\n";

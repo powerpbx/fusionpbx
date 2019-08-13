@@ -54,6 +54,12 @@
 	if (isset($dbfilename)) {
 		$db_name = $dbfilename;
 	}
+	if (isset($dbsecure)) {
+		$db_secure = $dbsecure;
+	}
+	if (isset($dbcertauthority)) {
+		$db_cert_authority = $dbcertauthority;
+	}
 
 if (!function_exists('get_db_field_names')) {
 	function get_db_field_names($db, $table, $db_name='fusionpbx') {
@@ -240,9 +246,20 @@ if ($db_type == "mysql") {
 if ($db_type == "pgsql") {
 	//database connection
 	try {
+		if (isset($db_secure)) {
+			$dbissecure = $db_secure;
+		}
+		else {
+			$dbissecure = false;
+		}
 		if (strlen($db_host) > 0) {
 			if (strlen($db_port) == 0) { $db_port = "5432"; }
-			$db = new PDO("pgsql:host=$db_host port=$db_port dbname=$db_name user=$db_username password=$db_password");
+			if ($dbissecure == true) {
+				$db = new PDO("pgsql:host=$db_host port=$db_port dbname=$db_name user=$db_username password=$db_password sslmode=verify-ca sslrootcert=$db_cert_authority");
+			}
+			else {
+				$db = new PDO("pgsql:host=$db_host port=$db_port dbname=$db_name user=$db_username password=$db_password");
+			}
 		}
 		else {
 			$db = new PDO("pgsql:dbname=$db_name user=$db_username password=$db_password");
@@ -254,10 +271,12 @@ if ($db_type == "pgsql") {
 	}
 } //end if db_type pgsql
 
-//domain list
-	if ( ( !isset($_SESSION["domain_uuid"])) or (strlen($_SESSION["domain_uuid"]) == 0)) {
+//get the domain list
+	if (!is_array($_SESSION['domains']) or !isset($_SESSION["domain_uuid"])) {
+
 		//get the domain
 			$domain_array = explode(":", $_SERVER["HTTP_HOST"]);
+
 		//get the domains from the database
 			$sql = "select * from v_domains";
 			$prep_statement = $db->prepare($sql);
@@ -331,8 +350,8 @@ if ($db_type == "pgsql") {
 		$domain_uuid = uuid();
 	}
 
-//check the domain cidr range
-	if (is_array($_SESSION['domain']["cidr"])) {
+//check the domain cidr range 
+	if (isset($_SESSION['domain']["cidr"]) && !defined('STDIN')) {
 		$found = false;
 		foreach($_SESSION['domain']["cidr"] as $cidr) {
 			if (check_cidr($cidr, $_SERVER['REMOTE_ADDR'])) {
@@ -347,7 +366,7 @@ if ($db_type == "pgsql") {
 	}
 
 //check the api cidr range
-	if (is_array($_SESSION['api']["cidr"])) {
+	if (isset($_SESSION['api']["cidr"])) {
 		$found = false;
 		foreach($_SESSION['api']["cidr"] as $cidr) {
 			if (check_cidr($cidr, $_SERVER['REMOTE_ADDR'])) {

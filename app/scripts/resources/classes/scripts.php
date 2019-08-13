@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2017
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -38,6 +38,8 @@ if (!class_exists('scripts')) {
 		public $db;
 		public $db_type;
 		public $db_name;
+		public $db_secure;
+		public $db_cert_authority;
 		public $db_host;
 		public $db_port;
 		public $db_path;
@@ -61,6 +63,8 @@ if (!class_exists('scripts')) {
 			$this->db_host = $database->host;
 			$this->db_port = $database->port;
 			$this->db_path = $database->path;
+			$this->db_secure = $database->db_secure;
+			$this->db_cert_authority = $database->db_cert_authority;
 			$this->db_username = $database->username;
 			$this->db_password = $database->password;
 		}
@@ -97,7 +101,7 @@ if (!class_exists('scripts')) {
 				$dst_dir = $_SESSION['switch']['scripts']['dir'];
 				if (file_exists($dst_dir)) {
 					//get the source directory
-					if (file_exists('/usr/share/examples/fusionpbx/scripts')){
+					if (file_exists('/usr/share/examples/fusionpbx/scripts')) {
 						$src_dir = '/usr/share/examples/fusionpbx/scripts';
 					}
 					else {
@@ -113,7 +117,8 @@ if (!class_exists('scripts')) {
 							recursive_copy($app_script, $dst_dir);
 						}
 						unset($app_scripts);
-					}else{
+					}
+					else {
 						throw new Exception("Cannot read from '$src_dir' to get the scripts");
 					}
 					chmod($dst_dir, 0775);
@@ -228,8 +233,15 @@ if (!class_exists('scripts')) {
 					$tmp .= $this->correct_path("	http_protocol = [[".$_SERVER['HTTP_PROTOCOL']."]];\n");
 					$tmp .= "\n";
 
-					$tmp .= "--store settings in memcache\n";
-					$tmp .= "	settings_in_cache = false;\n";
+					$tmp .= "--cache settings\n";
+					$tmp .= "	cache = {}\n";
+					if (strlen($_SESSION['cache']['method']['text']) > 0) {
+						$tmp .= "	cache.method = [[".$_SESSION['cache']['method']['text']."]];\n";  //file, memcache
+					}
+					if (strlen($_SESSION['cache']['location']['text']) > 0) {
+						$tmp .= "	cache.location = [[".$_SESSION['cache']['location']['text']."]];\n";
+					}
+					$tmp .= "	cache.settings = false;\n";
 					$tmp .= "\n";
 
 					if ((strlen($this->db_type) > 0) || (strlen($this->dsn_name) > 0)) {
@@ -245,8 +257,14 @@ if (!class_exists('scripts')) {
 						}
 						elseif ($this->db_type == "pgsql") {
 							if ($this->db_host == "localhost") { $this->db_host = "127.0.0.1"; }
-							$tmp .= "	database.system = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=".$this->db_name." user=".$this->db_username." password=".$this->db_password." options='' application_name='".$this->db_name."'\";\n";
-							$tmp .= "	database.switch = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=freeswitch user=".$this->db_username." password=".$this->db_password." options='' application_name='freeswitch'\";\n";
+							if ($this->db_secure == true) {
+								$tmp .= "	database.system = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=".$this->db_name." user=".$this->db_username." password=".$this->db_password." sslmode=verify-ca sslrootcert=".$this->db_cert_authority." options=''\";\n";
+								$tmp .= "	database.switch = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=freeswitch user=".$this->db_username." password=".$this->db_password." sslmode=verify-ca sslrootcert=".$this->db_cert_authority." options=''\";\n";
+							}
+							else {
+								$tmp .= "	database.system = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=".$this->db_name." user=".$this->db_username." password=".$this->db_password." options=''\";\n";
+								$tmp .= "	database.switch = \"pgsql://hostaddr=".$this->db_host." port=".$this->db_port." dbname=freeswitch user=".$this->db_username." password=".$this->db_password." options=''\";\n";
+							}
 						}
 						elseif ($this->db_type == "sqlite") {
 							$tmp .= "	database.system = \"sqlite://".$this->db_path."/".$this->db_name."\";\n";

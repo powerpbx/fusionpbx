@@ -1,6 +1,6 @@
 --	xml_handler.lua
 --	Part of FusionPBX
---	Copyright (C) 2013-2016 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2013-2018 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -24,6 +24,7 @@
 --	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 --	POSSIBILITY OF SUCH DAMAGE.
 
+--includes
 	local cache = require"resources.functions.cache"
 	local log = require"resources.functions.log"["xml_handler"]
 
@@ -32,19 +33,37 @@
 		call_context = "public";
 	end
 
---get the cache
-	XML_STRING, err = cache.get("dialplan:" .. call_context)
+--set the defaults
+	if (context_type == nil) then
+		context_type = "multiple";
+	end
+	domain_name = 'global';
 
-	if debug['cache'] then
+--get the context
+	local context_name = call_context;
+	if (call_context == "public" or string.sub(call_context, 0, 7) == "public@" or string.sub(call_context, -7) == ".public") then
+		context_name = 'public';
+	end
+	--freeswitch.consoleLog("notice", "[xml_handler] ".. context_type .. " key:" .. dialplan_cache_key .. "\n");
+
+--set the dialplan cache key
+	local dialplan_cache_key = "dialplan:" .. call_context;
+	if (context_name == 'public' and context_type == "single") then
+		dialplan_cache_key = "dialplan:" .. call_context .. ":" .. destination_number;
+	end
+
+--get the cache
+	XML_STRING, err = cache.get(dialplan_cache_key);
+	if (debug['cache']) then
 		if XML_STRING then
-			log.notice("dialplan:"..call_context.." source: memcache");
+			log.notice(dialplan_cache_key.." source: cache");
 		elseif err ~= 'NOT FOUND' then
 			log.notice("error get element from cache: " .. err);
 		end
 	end
 
 --set the cache
-	if not XML_STRING then
+	if (not XML_STRING) then
 
 		--connect to the database
 			local Database = require "resources.functions.database";
@@ -70,25 +89,54 @@
 			table.insert(xml, [[		<context name="]] .. call_context .. [[">]]);
 
 		--get the dialplan xml
-			sql = "select dialplan_xml from v_dialplans as p ";
-			if (call_context == "public" or string.sub(call_context, 0, 7) == "public@" or string.sub(call_context, -7) == ".public") then
-				sql = sql .. "where p.dialplan_context = :call_context ";
+			if (context_name == 'public' and context_type == 'single') then
+				sql = "select d.domain_name, dialplan_xml from v_dialplans as p, v_domains as d ";
+				sql = sql .. "where ( ";
+				sql = sql .. "	p.dialplan_uuid in (select dialplan_uuid from v_destinations where (destination_number = :destination_number or destination_prefix || destination_number = :destination_number)) ";
+				sql = sql .. "	or (p.dialplan_context like '%public%' and p.domain_uuid is null) ";
+				sql = sql .. ") ";
+				sql = sql .. "and p.domain_uuid = d.domain_uuid ";
+				sql = sql .. "and (p.hostname = :hostname or p.hostname is null) ";
+				sql = sql .. "and p.dialplan_enabled = 'true' ";
+				sql = sql .. "order by p.dialplan_order asc ";
+				local params = {destination_number = destination_number, hostname = hostname};
+				if (debug["sql"]) then
+					freeswitch.consoleLog("notice", "[dialplan] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
+				end
+				local found = false;
+				dbh:query(sql, params, function(row)
+					if (row.domain_uuid ~= nil) then
+						domain_name = row.domain_name;
+					end
+					table.insert(xml, row.dialplan_xml);
+					found = true;
+				end);
+				if (not found) then
+					table.insert(xml, [[		<extension name="not-found" continue="false" uuid="9913df49-0757-414b-8cf9-bcae2fd81ae7">]]);
+					table.insert(xml, [[			<condition field="" expression="">]]);
+					table.insert(xml, [[				<action application="set" data="call_direction=inbound" inline="true"/>]]);
+					table.insert(xml, [[				<action application="log" data="[inbound routes] 404 not found ${sip_network_ip}" inline="true"/>]]);
+					table.insert(xml, [[			</condition>]]);
+					table.insert(xml, [[		</extension>]]);
+				end
 			else
-				sql = sql .. "where (p.dialplan_context = :call_context or p.dialplan_context = '${domain_name}') ";
+				sql = "select dialplan_xml from v_dialplans as p ";
+				if (context_name == "public" or string.match(context_name, "@")) then
+					sql = sql .. "where p.dialplan_context = :call_context ";
+				else
+					sql = sql .. "where (p.dialplan_context = :call_context or p.dialplan_context = '${domain_name}') ";
+				end
+				sql = sql .. "and (p.hostname = :hostname or p.hostname is null) ";
+				sql = sql .. "and p.dialplan_enabled = 'true' ";
+				sql = sql .. "order by p.dialplan_order asc ";
+				local params = {call_context = call_context, hostname = hostname};
+				if (debug["sql"]) then
+					freeswitch.consoleLog("notice", "[dialplan] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
+				end
+				dbh:query(sql, params, function(row)
+					table.insert(xml, row.dialplan_xml);
+				end);
 			end
-			sql = sql .. "and (hostname = :hostname or hostname is null) ";
-			sql = sql .. "and p.dialplan_enabled = 'true' ";
-			sql = sql .. "order by ";
-			sql = sql .. "p.dialplan_order asc ";
-			local params = {call_context = call_context, hostname = hostname};
-			if (debug["sql"]) then
-				freeswitch.consoleLog("notice", "[dialplan] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
-			end
-			local x = 0;
-			local pass
-			dbh:query(sql, params, function(row)
-				table.insert(xml, row.dialplan_xml);
-			end);
 
 		--set the xml array and then concatenate the array to a string
 			table.insert(xml, [[		</context>]]);
@@ -96,23 +144,33 @@
 			table.insert(xml, [[</document>]]);
 			XML_STRING = table.concat(xml, "\n");
 
-		--set the cache
-			if cache.support() then
-				cache.set("dialplan:" .. call_context, XML_STRING, expire["dialplan"])
-			end
+		--close the database connection
+			dbh:release();
 
-		--send the xml to the console
-			if (debug["xml_string"]) then
-				local file = assert(io.open(temp_dir .. "/dialplan-" .. call_context .. ".xml", "w"));
-				file:write(XML_STRING);
-				file:close();
+		--set the cache
+			local ok, err = cache.set(dialplan_cache_key, XML_STRING, expire["dialplan"]);
+			if debug["cache"] then
+				if ok then
+					freeswitch.consoleLog("notice", "[xml_handler] " .. dialplan_cache_key .. " stored in the cache\n");
+				else
+					freeswitch.consoleLog("warning", "[xml_handler] " .. dialplan_cache_key .. " can not be stored in the cache: " .. tostring(err) .. "\n");
+				end
 			end
 
 		--send to the console
 			if (debug["cache"]) then
-				log.notice("dialplan:"..call_context.." source: database");
+				freeswitch.consoleLog("notice", "[xml_handler] " .. dialplan_cache_key .. " source: database\n");
 			end
+	else
+		--send to the console
+			if (debug["cache"]) then
+				freeswitch.consoleLog("notice", "[xml_handler] " .. dialplan_cache_key .. " source: cache\n");
+			end
+	end --if XML_STRING
 
-		--close the database connection
-			dbh:release();
+--send the xml to the console
+	if (debug["xml_string"]) then
+		local file = assert(io.open(temp_dir .. "/" .. dialplan_cache_key .. ".xml", "w"));
+		file:write(XML_STRING);
+		file:close();
 	end

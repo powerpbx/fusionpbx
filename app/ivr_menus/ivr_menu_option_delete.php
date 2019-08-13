@@ -17,46 +17,75 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2012
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('ivr_menu_delete')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('ivr_menu_delete')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //add multi-lingual support
 	$language = new text;
 	$text = $language->get();
 
 //set the http values as variables
-	if (count($_GET)>0) {
-		$id = check_str($_GET["id"]);
-		$ivr_menu_uuid = check_str($_GET["ivr_menu_uuid"]);
-	}
+	$ivr_menu_option_uuid = $_GET["id"];
+	$ivr_menu_uuid = $_GET["ivr_menu_uuid"];
 
 //delete the ivr menu option
-	if (strlen($id)>0) {
-		//include the ivr menu class
-			require_once "resources/classes/database.php";
-			require_once "resources/classes/ivr_menu.php";
-			$ivr = new ivr_menu;
-			$ivr->domain_uuid = $_SESSION["domain_uuid"];
-			$ivr->ivr_menu_option_uuid = $id;
-			$ivr->delete();
+	if (is_uuid($ivr_menu_option_uuid) && is_uuid($ivr_menu_uuid)) {
+		//get the dialplan_uuid
+			$sql = "select * from v_ivr_menus ";
+			$sql .= "where domain_uuid = :domain_uuid ";
+			$sql .= "and ivr_menu_uuid = :ivr_menu_uuid ";
+			$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+			$parameters['ivr_menu_uuid'] = $ivr_menu_uuid;
+			$database = new database;
+			$result = $database->select($sql, $parameters);
+			if (is_array($result)) {
+				foreach ($result as &$row) {
+					$dialplan_uuid = $row["dialplan_uuid"];
+					$ivr_menu_context = $row["ivr_menu_context"];
+				}
+			}
+			unset($sql, $parameters, $result, $row);
+
+		//delete the data
+			$array['ivr_menu_options'][]['ivr_menu_option_uuid'] = $ivr_menu_option_uuid;
+			$database = new database;
+			$database->app_name = 'ivr_menus';
+			$database->app_uuid = 'a5788e9b-58bc-bd1b-df59-fff5d51253ab';
+			$database->delete($array);
+			//$message = $database->message;
+
+		//clear the cache
+			$cache = new cache;
+			$cache->delete("dialplan:".$ivr_menu_context);
+
+		//set message
+			message::add($text['message-delete']);
+
+		//redirect the user
+			header('Location: ivr_menu_edit.php?id='.$ivr_menu_uuid);
+			exit;
 	}
 
-//redirect the user
-	messages::add($text['message-delete']);
-	header('Location: ivr_menu_edit.php?id='.$ivr_menu_uuid);
+//default redirect
+	header('Location: ivr_menus.php');
+	exit;
 
 ?>

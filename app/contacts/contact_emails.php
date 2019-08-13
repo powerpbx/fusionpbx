@@ -17,22 +17,26 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2012
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
 */
-require_once "root.php";
-require_once "resources/require.php";
-require_once "resources/check_auth.php";
-if (permission_exists('contact_email_view')) {
-	//access granted
-}
-else {
-	echo "access denied";
-	exit;
-}
+
+//includes
+	require_once "root.php";
+	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
+
+//check permissions
+	if (permission_exists('contact_email_view')) {
+		//access granted
+	}
+	else {
+		echo "access denied";
+		exit;
+	}
 
 //show the content
 	echo "<table width='100%' border='0'>\n";
@@ -44,14 +48,14 @@ else {
 
 	//get the contact list
 		$sql = "select * from v_contact_emails ";
-		$sql .= "where domain_uuid = '".$_SESSION['domain_uuid']."' ";
-		$sql .= "and contact_uuid = '$contact_uuid' ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and contact_uuid = :contact_uuid ";
 		$sql .= "order by email_primary desc, email_label asc ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-		$result_count = count($result);
-		unset ($prep_statement, $sql);
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$parameters['contact_uuid'] = $contact_uuid;
+		$database = new database;
+		$result = $database->select($sql, $parameters, 'all');
+		unset($sql, $parameters);
 
 	$c = 0;
 	$row_style["0"] = "row_style0";
@@ -65,33 +69,33 @@ else {
 	echo "<th>".$text['label-email_description']."</th>\n";
 	echo "<td class='list_control_icons'>";
 	if (permission_exists('contact_email_add')) {
-		echo "<a href='contact_email_edit.php?contact_uuid=".$contact_uuid."' alt='".$text['button-add']."'>$v_link_label_add</a>";
+		echo "<a href='contact_email_edit.php?contact_uuid=".escape($contact_uuid)."' alt='".$text['button-add']."'>$v_link_label_add</a>";
 	}
 	echo "</td>\n";
 	echo "</tr>\n";
 
-	if ($result_count > 0) {
+	if (is_array($result) && @sizeof($result) != 0) {
 		foreach($result as $row) {
 			if (permission_exists('contact_email_edit')) {
-				$tr_link = "href='contact_email_edit.php?contact_uuid=".$row['contact_uuid']."&id=".$row['contact_email_uuid']."'";
+				$tr_link = "href='contact_email_edit.php?contact_uuid=".escape($row['contact_uuid'])."&id=".escape($row['contact_email_uuid'])."'";
 			}
-			echo "<tr ".$tr_link." ".(($row['email_primary']) ? "style='font-weight: bold;'" : null).">\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".$row['email_label']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]." tr_link_void'><a href='mailto:".$row['email_address']."'>".$row['email_address']."</a>&nbsp;</td>\n";
-			echo "	<td valign='top' class='row_stylebg'>".$row['email_description']."&nbsp;</td>\n";
+			echo "<tr ".$tr_link." ".((escape($row['email_primary'])) ? "style='font-weight: bold;'" : null).">\n";
+			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['email_label'])."&nbsp;</td>\n";
+			echo "	<td valign='top' class='".$row_style[$c]." tr_link_void'><a href='mailto:".escape($row['email_address'])."'>".escape($row['email_address'])."</a>&nbsp;</td>\n";
+			echo "	<td valign='top' class='row_stylebg'>".escape($row['email_description'])."&nbsp;</td>\n";
 			echo "	<td class='list_control_icons'>";
 			if (permission_exists('contact_email_edit')) {
-				echo "<a href='contact_email_edit.php?contact_uuid=".$row['contact_uuid']."&id=".$row['contact_email_uuid']."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
+				echo "<a href='contact_email_edit.php?contact_uuid=".escape($row['contact_uuid'])."&id=".escape($row['contact_email_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('contact_email_delete')) {
-				echo "<a href='contact_email_delete.php?contact_uuid=".$row['contact_uuid']."&id=".$row['contact_email_uuid']."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
+				echo "<a href='contact_email_delete.php?contact_uuid=".escape($row['contact_uuid'])."&id=".escape($row['contact_email_uuid'])."' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">$v_link_label_delete</a>";
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";
 			$c = ($c) ? 0 : 1;
-		} //end foreach
-		unset($sql, $result, $row_count);
-	} //end if results
+		}
+	}
+	unset($result, $row);
 
 	echo "</table>";
 

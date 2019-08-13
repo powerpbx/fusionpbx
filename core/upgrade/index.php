@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2018
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -77,10 +77,10 @@
 			}
 			chdir($cwd);
 			if ($update_failed) {
-				messages::add($text['message-upgrade_source_failed'], 'negative', $message_timeout);
+				message::add($text['message-upgrade_source_failed'], 'negative', $message_timeout);
 			}
 			else {
-				messages::add($text['message-upgrade_source'], null, $message_timeout);
+				message::add($text['message-upgrade_source'], null, $message_timeout);
 			}
 		}
 
@@ -90,22 +90,15 @@
 			require_once "resources/classes/schema.php";
 			$obj = new schema();
 			$_SESSION["response"]["schema"] = $obj->schema("html");
-			messages::add($text['message-upgrade_schema'], null, $message_timeout);
+			message::add($text['message-upgrade_schema'], null, $message_timeout);
 		}
 
 		// process the apps defaults
 		if ($do["apps"] && permission_exists("upgrade_apps")) {
 			require_once "resources/classes/domains.php";
 			$domain = new domains;
-			ob_start();
-			$domain->display_type = 'text';
 			$domain->upgrade();
-			$_SESSION["response"]["upgrade_apps"] = ob_get_flush();
-			if (strlen($_SESSION["response"]["upgrade_apps"]) == 0) {
-				$_SESSION["response"]["upgrade_apps"] = "No items updated or added";
-			}
-			$_SESSION["response"]["upgrade_apps"] = explode("\n", $_SESSION["response"]["upgrade_apps"]);
-			messages::add($text['message-upgrade_apps'], null, $message_timeout);
+			message::add($text['message-upgrade_apps'], null, $message_timeout);
 		}
 
 		// restore defaults of the selected menu
@@ -116,14 +109,14 @@
 			$included = true;
 			require_once("core/menu/menu_restore_default.php");
 			unset($sel_menu);
-			messages::add($text['message-upgrade_menu'], null, $message_timeout);
+			message::add($text['message-upgrade_menu'], null, $message_timeout);
 		}
 
 		// restore default permissions
 		if ($do["permissions"] && permission_exists("group_edit")) {
 			$included = true;
 			require_once("core/groups/permissions_default.php");
-			messages::add($text['message-upgrade_permissions'], null, $message_timeout);
+			message::add($text['message-upgrade_permissions'], null, $message_timeout);
 		}
 
 		header("Location: ".PROJECT_PATH."/core/upgrade/index.php");
@@ -221,13 +214,14 @@
 		echo 			"<input type='checkbox' name='do[menu]' id='do_menu' value='1' onchange=\"$('#sel_menu').fadeToggle('fast');\">";
 		echo 			"<select name='sel_menu' id='sel_menu' class='formfld' style='display: none; vertical-align: middle; margin-left: 5px;'>";
 		$sql = "select * from v_menus ";
-		$prep_statement = $db->prepare(check_sql($sql));
-		$prep_statement->execute();
-		$result = $prep_statement->fetchAll(PDO::FETCH_NAMED);
-		foreach ($result as &$row) {
-			echo "<option value='".$row["menu_uuid"]."|".$row["menu_language"]."'>".$row["menu_name"]."</option>";
+		$database = new database;
+		$result = $database->select($sql, null, 'all');
+		if (is_array($result) && sizeof($result) != 0) {
+			foreach ($result as &$row) {
+				echo "<option value='".$row["menu_uuid"]."|".$row["menu_language"]."'>".$row["menu_name"]."</option>";
+			}
 		}
-		unset ($sql, $result, $prep_statement);
+		unset ($sql, $result);
 		echo 			"</select>";
 		echo 			" &nbsp;".$text['description-upgrade_menu'];
 		echo "	</td>\n";
@@ -253,22 +247,24 @@
 	echo "</form>\n";
 
 	echo "<br /><br />";
-	foreach($_SESSION["response"] as $part => $response){
-		echo "<b>". $text["label-results"]." - ".$text["label-${part}"]."</b>";
-		echo "<br /><br />";
-		if (is_array($response)) {
-			echo "<pre>";
-			echo implode("\n", $response);
-			echo "</pre>";
+	if (is_array($_SESSION["response"])) {
+		foreach($_SESSION["response"] as $part => $response){
+			echo "<b>". $text["label-results"]." - ".$text["label-${part}"]."</b>";
+			echo "<br /><br />";
+			if (is_array($response)) {
+				echo "<pre>";
+				echo implode("\n", $response);
+				echo "</pre>";
+			}
+			else {
+				echo $response;
+			}
+			echo "<br /><br />";
 		}
-		else {
-			echo $response;
-		}
-		echo "<br /><br />";
+		unset($_SESSION["response"]);
 	}
-	unset($_SESSION["response"]);		
-
 
 //include the footer
 	require_once "resources/footer.php";
+
 ?>

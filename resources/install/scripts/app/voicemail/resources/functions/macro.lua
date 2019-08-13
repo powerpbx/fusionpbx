@@ -145,7 +145,7 @@
 				--At the tone please record your name press any key or stop talking to end the recording
 					if (name == "record_name") then
 						table.insert(actions, {app="streamFile",data="voicemail/vm-record_name1.wav"});
-						table.insert(actions, {app="tone_stream",data="L=1;%(1000, 0, 640)"});
+						table.insert(actions, {app="tone_stream",data="L=1;%(2000, 0, 640)"});
 					end
 				--To change your password press 6
 					if (name == "change_password") then
@@ -263,6 +263,16 @@
 				--Goodbye
 					if (name == "goodbye") then
 						table.insert(actions, {app="streamFile",data="voicemail/vm-goodbye.wav"});
+					end
+				--Password is not secure
+					if (name == "password_not_secure") then
+						table.insert(actions, {app="streamFile",data="voicemail/vm-password_is_not_secure.wav"});
+					end
+				--Password is below minimum length
+					if (name == "password_below_minimum") then
+						table.insert(actions, {app="streamFile",data="voicemail/vm-pin_below_minimum_length.wav"});
+						table.insert(actions, {app="streamFile",data="voicemail/vm-minimum_pin_length_is.wav"});
+						table.insert(actions, {app="streamFile",data="digits/"..param..".wav"});
 					end
 			--Tutorial
 				--Tutorial intro
