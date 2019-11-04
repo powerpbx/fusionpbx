@@ -49,7 +49,6 @@
 	$setting_invisibles = ($_SESSION["editor"]["invisibles"]["boolean"] != '') ? $_SESSION["editor"]["invisibles"]["boolean"] : 'false';
 	$setting_indenting = ($_SESSION["editor"]["indent_guides"]["boolean"] != '') ? $_SESSION["editor"]["indent_guides"]["boolean"] : 'false';
 	$setting_numbering = ($_SESSION["editor"]["line_numbers"]["boolean"] != '') ? $_SESSION["editor"]["line_numbers"]["boolean"] : 'true';
-	$setting_preview = ($_SESSION["editor"]["live_preview"]["boolean"] != '') ? $_SESSION["editor"]["live_preview"]["boolean"] : 'true';
 
 //get the html values and set them as variables
 	$handler = ($_REQUEST["handler"] != '') ? trim($_REQUEST["handler"]) : ((permission_exists('exec_switch')) ? 'switch' : null);
@@ -220,7 +219,7 @@
 
 <?php
 
-//gnerate the captcha image
+//generate the captcha image
 	$_SESSION['captcha'] = generate_password(7, 2);
 	$captcha = new captcha;
 	$captcha->code = $_SESSION['captcha'];
@@ -281,14 +280,14 @@
 	echo "					<input type='button' class='btn' style='margin-top: 0px;' title=\"".$text['button-execute']." [Ctrl+Enter]\" value=\"    ".$text['button-execute']."    \" onclick=\"$('form#frm').submit();\">";
 	echo "					<input type='button' class='btn' style='margin-top: 0px;' title=\"\" value=\"    ".$text['button-reset']."    \" onclick=\"reset_editor();\">";
 
-	if (permission_exists('exec_sql')) {
-		echo "			<span class='sql_controls' ".(($handler != 'sql') ? "style='display: none;'" : null).">";
-		//echo "				<input type='button' class='btn' alt='".$text['button-select_database']."' onclick=\"document.location.href='sql_query_db.php'\" value='".$text['button-select_database']."'>\n";
-		if (permission_exists('exec_sql_backup')) {
-			echo "			<input type='button' class='btn' alt='".$text['button-backup']."' onclick=\"document.location.href='sql_backup.php".((strlen($_REQUEST['id']) > 0) ? "?id=".$_REQUEST['id'] : null)."'\" value='".$text['button-backup']."'>\n";
-		}
-		echo "			</span>";
-	}
+	//if (permission_exists('exec_sql')) {
+	//	echo "			<span class='sql_controls' ".(($handler != 'sql') ? "style='display: none;'" : null).">";
+	//	//echo "				<input type='button' class='btn' alt='".$text['button-select_database']."' onclick=\"document.location.href='sql_query_db.php'\" value='".$text['button-select_database']."'>\n";
+	//	if (permission_exists('exec_sql_backup')) {
+	//		echo "			<input type='button' class='btn' alt='".$text['button-backup']."' onclick=\"document.location.href='sql_backup.php".((strlen($_REQUEST['id']) > 0) ? "?id=".$_REQUEST['id'] : null)."'\" value='".$text['button-backup']."'>\n";
+	//	}
+	//	echo "			</span>";
+	//}
 	echo "		</td>";
 	echo "	</tr>";
 	echo "	<tr><td colspan='2'>\n";
@@ -302,20 +301,20 @@
 	echo "<textarea name='command' id='command' style='display: none;'></textarea>";
 	echo "<table cellpadding='0' cellspacing='0' border='0' style='width: 100%;'>\n";
 	echo "	<tr>";
-	echo "		<td style='width: 210px;' valign='top' nowrap>";
+	echo "		<td style='width: 280px;' valign='top' nowrap>";
 
 	echo "			<table cellpadding='0' cellspacing='0' border='0' width='100%' height='100%'>";
-	if (permission_exists('script_editor_view') && file_exists($_SERVER["PROJECT_ROOT"]."/app/edit/")) {
+	if (permission_exists('edit_view') && file_exists($_SERVER["PROJECT_ROOT"]."/app/edit/")) {
 		echo "			<tr>";
 		echo "				<td valign='top' height='100%'>";
-		echo "					<iframe id='clip_list' src='".PROJECT_PATH."/app/edit/cliplist.php' style='border: none; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; height: calc(100% - 2px); width: calc(100% - 15px);'></iframe>\n";
+		echo "					<iframe id='clip_list' src='".PROJECT_PATH."/app/edit/clip_list.php' style='border: none; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; height: calc(100% - 2px); width: calc(100% - 15px);'></iframe>\n";
 		echo "				</td>";
 		echo "			</tr>";
 	}
 	echo "			</table>";
 
 	echo "		</td>";
-	echo "		<td valign='top' style='height: 300px;'>"
+	echo "		<td valign='top' style='height: 400px;'>"
 	?>
 	<table cellpadding='0' cellspacing='0' border='0' style='width: 100%;'>
 		<tr>
@@ -340,11 +339,8 @@
 					$modes['xml'] = 'XML';
 					$modes['sql'] = 'SQL';
 					foreach ($modes as $value => $label) {
-						if ($setting_preview == 'true') {
-							$preview = "onmouseover=\"editor.getSession().setMode(".(($value == 'php') ? "{path:'ace/mode/php', inline:true}" : "'ace/mode/' + this.value").");\"";
-						}
-						$selected = ($value == $mode) ? 'selected' : null;
-						echo "<option value='".escape($value)."' ".escape($selected)." ".escape($preview).">".escape($label)."</option>\n";
+						$selected = $value == $mode ? 'selected' : null;
+						echo "<option value='".$value."' ".$selected.">".escape($label)."</option>\n";
 					}
 					?>
 				</select>
@@ -353,14 +349,13 @@
 				<select id='size' style='height: 23px;' onchange="document.getElementById('editor').style.fontSize = this.options[this.selectedIndex].value; focus_editor();">
 					<?php
 					$sizes = explode(',','9px,10px,11px,12px,14px,16px,18px,20px');
-					$preview = ($setting_preview == 'true') ? "onmouseover=\"document.getElementById('editor').style.fontSize = this.value;\"" : null;
 					if (!in_array($setting_size, $sizes)) {
-						echo "<option value='".escape($setting_size)."' ".escape($preview).">".escape($setting_size)."</option>\n";
+						echo "<option value='".$setting_size."'>".escape($setting_size)."</option>\n";
 						echo "<option value='' disabled='disabled'></option>\n";
 					}
 					foreach ($sizes as $size) {
 						$selected = ($size == $setting_size) ? 'selected' : null;
-						echo "<option value='".escape($size)."' ".$selected." ".escape($preview).">".escape($size)."</option>\n";
+						echo "<option value='".$size."' ".$selected.">".escape($size)."</option>\n";
 					}
 					?>
 				</select>
@@ -402,12 +397,11 @@
 					$themes['Dark']['tomorrow_night_eighties']= 'Tomorrow Night 80s';
 					$themes['Dark']['twilight']= 'Twilight';
 					$themes['Dark']['vibrant_ink']= 'Vibrant Ink';
-					$preview = ($setting_preview == 'true') ? "onmouseover=\"editor.setTheme('ace/theme/' + this.value);\"" : null;
 					foreach ($themes as $optgroup => $theme) {
 						echo "<optgroup label='".$optgroup."'>\n";
 						foreach ($theme as $value => $label) {
-							$selected = (strtolower($label) == strtolower($setting_theme)) ? 'selected' : null;
-							echo "<option value='".escape($value)."' ".$selected." ".escape($preview).">".escape($label)."</option>\n";
+							$selected = strtolower($label) == strtolower($setting_theme) ? 'selected' : null;
+							echo "<option value='".$value."' ".$selected.">".escape($label)."</option>\n";
 						}
 						echo "</optgroup>\n";
 					}
@@ -416,7 +410,7 @@
 			</td>
 		</tr>
 	</table>
-	<div id='editor'><?php echo escape($command); ?></div>
+	<div id='editor'><?php echo $command; ?></div>
 
 	<?php
 	echo "		</td>";
@@ -469,7 +463,7 @@
 			switch ($handler) {
 				case 'shell':
 					if (permission_exists('exec_command') && $command_authorized) {
-						$result = escape(shell_exec($command . " 2>&1"));
+						$result = shell_exec($command . " 2>&1");
 					}
 					break;
 				case 'php':
@@ -485,7 +479,6 @@
 						$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
 						if ($fp) { 
 							$result = event_socket_request($fp, 'api '.$command);
-							$result = htmlspecialchars(utf8_encode($result), ENT_QUOTES);
 						}
 					}
 					break;
@@ -494,7 +487,7 @@
 				echo "<span id='response'>";
 				echo "<b>".$text['label-response']."</b>\n";
 				echo "<br /><br />\n";
-				echo ($handler == 'switch') ? "<textarea style='width: 100%; height: 450px; font-family: monospace; padding: 15px;' wrap='off'>".escape($result)."</textarea>\n" : "<pre>".escape($result)."</pre>";
+				echo ($handler == 'switch') ? "<textarea style='width: 100%; height: 450px; font-family: monospace; padding: 15px;' wrap='off'>".$result."</textarea>\n" : "<pre>".escape($result)."</pre>";
 				echo "</span>";
 			}
 		}

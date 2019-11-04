@@ -31,26 +31,36 @@ if ($domains_processed == 1) {
 		$group->defaults();
 
 	//create the user view combines username, organization, contact first and last name
-		$db->exec("DROP VIEW view_users;");
-		$sql = "CREATE VIEW view_users AS (\n";
+		$database = new database;
+		$database->execute("DROP VIEW view_users;", null);
+
+		$sql = "CREATE VIEW view_users AS ( \n";
 		$sql .= "	select u.domain_uuid, u.user_uuid, d.domain_name, u.username, u.user_enabled, u.add_date, \n";
-		$sql .= "	c.contact_uuid, c.contact_organization, c.contact_name_given, c.contact_name_family,\n";
-		$sql .= "	(\n";
-		$sql .= "		select\n";
-		$sql .= "		string_agg(g.group_name, ', ')\n";
-		$sql .= "		from\n";
-		$sql .= "		v_user_groups as ug,\n";
-		$sql .= "		v_groups as g\n";
-		$sql .= "		where\n";
-		$sql .= "		ug.group_uuid = g.group_uuid\n";
-		$sql .= "		and u.user_uuid = ug.user_uuid\n";
-		$sql .= "	) AS groups\n";
-		$sql .= "	from v_contacts as c\n";
-		$sql .= "	right join v_users u on u.contact_uuid = c.contact_uuid\n";
-		$sql .= "	inner join v_domains as d on d.domain_uuid = u.domain_uuid\n";
-		$sql .= "	where 1 = 1\n";
-		$sql .= "	order by u.username asc\n";
-		$sql .= ");\n";
+		$sql .= "	c.contact_uuid, c.contact_organization, c.contact_name_given, c.contact_name_family, \n";
+		$sql .= "	( \n";
+		$sql .= "		select \n";
+		$sql .= "		string_agg(g.group_name, ', ') \n";
+		$sql .= "		from \n";
+		$sql .= "		v_user_groups as ug, \n";
+		$sql .= "		v_groups as g \n";
+		$sql .= "		where \n";
+		$sql .= "		ug.group_uuid = g.group_uuid \n";
+		$sql .= "		and u.user_uuid = ug.user_uuid \n";
+		$sql .= "	) AS groups, \n";
+		$sql .= "	( \n";
+		$sql .= "		SELECT group_level \n";
+		$sql .= "		FROM v_user_groups ug, v_groups g \n";
+		$sql .= "		WHERE (ug.group_uuid = g.group_uuid) \n";
+		$sql .= "		AND (u.user_uuid = ug.user_uuid) \n"; 
+		$sql .= "		ORDER BY group_level DESC \n"; 
+		$sql .= "		LIMIT 1 \n";
+		$sql .= "	) AS group_level \n";
+		$sql .= "	from v_contacts as c \n";
+		$sql .= "	right join v_users u on u.contact_uuid = c.contact_uuid \n";
+		$sql .= "	inner join v_domains as d on d.domain_uuid = u.domain_uuid \n";
+		$sql .= "	where 1 = 1 \n";
+		$sql .= "	order by u.username asc \n";
+		$sql .= "); \n";
 		$database = new database;
 		$database->execute($sql, null);
 		unset($sql);
@@ -83,6 +93,27 @@ if ($domains_processed == 1) {
 			}
 		}
 		unset($result);
+
+	//update users email if they are all null
+		$sql = "select count(*) from v_users ";
+		$sql .= "where user_email is not null; ";
+		$database = new database;
+		$num_rows = $database->select($sql, null, 'column');
+		if ($num_rows == 0) {
+			$sql = "with users AS ( ";
+			$sql .= "	select u.domain_uuid, u.user_uuid, u.username, u.contact_uuid, e.email_address ";
+			$sql .= "	from v_users as u, v_contact_emails as e ";
+			$sql .= "	where u.contact_uuid is not null ";
+			$sql .= "	and u.contact_uuid = e.contact_uuid ";
+			$sql .= "	and e.email_primary = 1 ";
+			$sql .= ") ";
+			$sql .= "update v_users ";
+			$sql .= "set user_email = users.email_address ";
+			$sql .= "from users ";
+			$sql .= "where v_users.user_uuid = users.user_uuid;";
+			$database = new database;
+			$database->execute($sql, null);
+		}
 
 	//find rows that have a null group_uuid and set the correct group_uuid
 		$sql = "select count(*) from v_default_settings ";

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2016-2018
+	Portions created by the Initial Developer are Copyright (C) 2016-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -41,7 +41,7 @@
 
 //get number of messages to load
 	$number = preg_replace('{[\D]}', '', $_GET['number']);
-	$contact_uuid = $_GET['contact_uuid'];
+	$contact_uuid = (is_uuid($_GET['contact_uuid'])) ? $_GET['contact_uuid'] : null;
 
 //set refresh flag
 	$refresh = $_GET['refresh'] == 'true' ? true : false;
@@ -84,39 +84,42 @@
 	$parameters['message_number'] = '%'.$number;
 	$database = new database;
 	$messages = $database->select($sql, $parameters, 'all');
-	$messages = array_reverse($messages);
 	unset($sql, $parameters);
 
-//get media (if any)
-	$sql = "select ";
-	$sql .= "message_uuid, ";
-	$sql .= "message_media_uuid, ";
-	$sql .= "message_media_type, ";
-	$sql .= "length(decode(message_media_content,'base64')) as message_media_size ";
-	$sql .= "from v_message_media ";
-	$sql .= "where user_uuid = :user_uuid ";
-	$sql .= "and (domain_uuid = :domain_uuid or domain_uuid is null) ";
-	$sql .= "and ( ";
-	foreach ($messages as $index => $message) {
-		$message_uuids[] = "message_uuid = :message_uuid_".$index;
-		$parameters['message_uuid_'.$index] = $message['message_uuid'];
-	}
-	$sql .= implode(' or ', $message_uuids);
-	$sql .= ") ";
-	$sql .= "and message_media_type <> 'txt' ";
-	$parameters['user_uuid'] = $_SESSION['user_uuid'];
-	$parameters['domain_uuid'] = $domain_uuid;
-	$database = new database;
-	$rows = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters, $index);
+	if (is_array($messages) && @sizeof($messages) != 0) {
+		$messages = array_reverse($messages);
 
-//prep media array
-	if (is_array($rows) && @sizeof($rows) != 0) {
-		foreach ($rows as $index => $row) {
-			$message_media[$row['message_uuid']][$index]['uuid'] = $row['message_media_uuid'];
-			$message_media[$row['message_uuid']][$index]['type'] = $row['message_media_type'];
-			$message_media[$row['message_uuid']][$index]['size'] = $row['message_media_size'];
-		}
+		//get media (if any)
+			$sql = "select ";
+			$sql .= "message_uuid, ";
+			$sql .= "message_media_uuid, ";
+			$sql .= "message_media_type, ";
+			$sql .= "length(decode(message_media_content,'base64')) as message_media_size ";
+			$sql .= "from v_message_media ";
+			$sql .= "where user_uuid = :user_uuid ";
+			$sql .= "and (domain_uuid = :domain_uuid or domain_uuid is null) ";
+			$sql .= "and ( ";
+			foreach ($messages as $index => $message) {
+				$message_uuids[] = "message_uuid = :message_uuid_".$index;
+				$parameters['message_uuid_'.$index] = $message['message_uuid'];
+			}
+			$sql .= implode(' or ', $message_uuids);
+			$sql .= ") ";
+			$sql .= "and message_media_type <> 'txt' ";
+			$parameters['user_uuid'] = $_SESSION['user_uuid'];
+			$parameters['domain_uuid'] = $domain_uuid;
+			$database = new database;
+			$rows = $database->select($sql, $parameters, 'all');
+			unset($sql, $parameters, $index);
+
+		//prep media array
+			if (is_array($rows) && @sizeof($rows) != 0) {
+				foreach ($rows as $index => $row) {
+					$message_media[$row['message_uuid']][$index]['uuid'] = $row['message_media_uuid'];
+					$message_media[$row['message_uuid']][$index]['type'] = $row['message_media_type'];
+					$message_media[$row['message_uuid']][$index]['size'] = $row['message_media_size'];
+				}
+			}
 	}
 
 //css styles
@@ -220,23 +223,20 @@
 				//message bubble
 					echo "<span class='message-bubble message-bubble-".($message['message_direction'] == 'inbound' ? 'em' : 'me')."'>";
 						//contact image em
-							if (
-								$message['message_direction'] == 'inbound' &&
-								is_array($_SESSION['tmp']['messages']['contact_em'][$contact_uuid]) &&
-								@sizeof($_SESSION['tmp']['messages']['contact_em'][$contact_uuid]) != 0
-								) {
-								echo "<div class='message-bubble-image-em'>\n";
-								echo "	<img class='message-bubble-image-em'><br />\n";
-								echo "</div>\n";
+							if ($message['message_direction'] == 'inbound') {
+								if (is_array($_SESSION['tmp']['messages']['contact_em'][$contact_uuid]) && @sizeof($_SESSION['tmp']['messages']['contact_em'][$contact_uuid]) != 0) {
+									echo "<div class='message-bubble-image-em'>\n";
+									echo "	<img class='message-bubble-image-em'><br />\n";
+									echo "</div>\n";
+								}
 							}
 						//contact image me
-							else if (
-								is_array($_SESSION['tmp']['messages']['contact_me']) &&
-								@sizeof($_SESSION['tmp']['messages']['contact_me']) != 0
-								) {
-								echo "<div class='message-bubble-image-me'>\n";
-								echo "	<img class='message-bubble-image-me'><br />\n";
-								echo "</div>\n";
+							else {
+								if (is_array($_SESSION['tmp']['messages']['contact_me']) && @sizeof($_SESSION['tmp']['messages']['contact_me']) != 0) {
+									echo "<div class='message-bubble-image-me'>\n";
+									echo "	<img class='message-bubble-image-me'><br />\n";
+									echo "</div>\n";
+								}
 							}
 						echo "<div style='display: table;'>\n";
 						//message
@@ -294,7 +294,7 @@
 			echo "</table>\n";
 			echo "<table cellpadding='0' cellspacing='0' border='0' width='100%' style='margin-top: 15px;'>\n";
 			echo "	<tr>\n";
-			echo "		<td align='left' width='50%'><input type='reset' class='btn' value='".$text['button-clear']."' onclick=\"$('#message_text').focus();\"></td>\n";
+			echo "		<td align='left' width='50%'><input type='reset' class='btn' value='".$text['button-clear']."' onclick=\"$('#message_text').trigger('focus');\"></td>\n";
 			echo "		<td align='center'><span id='thread_refresh_state'><img src='resources/images/refresh_active.gif' style='width: 16px; height: 16px; border: none; cursor: pointer;' onclick=\"refresh_thread_stop('".$number."','".$contact_uuid."');\" alt=\"".$text['label-refresh_pause']."\" title=\"".$text['label-refresh_pause']."\"></span></td>\n";
 			echo "		<td align='right' width='50%'><input type='submit' class='btn' value='".$text['button-send']."' title=\"".$text['label-ctrl_enter']."\"></td>\n";
 			echo "	</td>\n";
@@ -317,7 +317,7 @@
 			echo "					document.getElementById('message_compose').reset();\n";
 			if (!http_user_agent('mobile')) {
 				echo "				if ($('#message_new_layer').is(':hidden')) {\n";
-				echo "					$('#message_text').focus();\n";
+				echo "					$('#message_text').trigger('focus');\n";
 				echo "				}\n";
 			}
 			echo "					refresh_thread('".$number."', '".$contact_uuid."', 'true');\n";

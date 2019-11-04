@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2016-2018
+	Portions created by the Initial Developer are Copyright (C) 2016-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -82,8 +82,16 @@
 				$numbers[] = $number_to;
 			}
 			switch ($message['message_direction']) {
-				case 'inbound': $contact[$number_from]['contact_uuid'] = $message['contact_uuid']; break;
-				case 'outbound': $contact[$number_to]['contact_uuid'] = $message['contact_uuid']; break;
+				case 'inbound':
+					if (!is_uuid($contact[$number_from]['contact_uuid'])) {
+						$contact[$number_from]['contact_uuid'] = $message['contact_uuid'];
+					}
+					break;
+				case 'outbound':
+					if (!is_uuid($contact[$number_to]['contact_uuid'])) {
+						$contact[$number_to]['contact_uuid'] = $message['contact_uuid'];
+					}
+					break;
 			}
 			unset($number_from, $number_to);
 		}
@@ -131,7 +139,16 @@
 		}
 	}
 	unset($sql, $parameters, $rows, $row);
-	$numbers = array_diff($numbers, $destinations);
+
+	if (
+		is_array($numbers) &&
+		@sizeof($numbers) != 0 &&
+		is_array($destinations) &&
+		@sizeof($destinations) != 0 &&
+		!is_null(array_diff($numbers, $destinations))
+		) {
+		$numbers = array_diff($numbers, $destinations);
+	}
 
 //get contact (primary attachment) images and cache them
 	if (is_array($numbers) && @sizeof($numbers) != 0) {
@@ -183,12 +200,12 @@
 				}
 			//contact name/number
 				if ($contact[$number]['contact_name_given'] != '' || $contact[$number]['contact_name_family'] != '') {
-					echo "<div style='float: right; margin-top: 8px; margin-right: ".($selected ? '-1' : '4')."px;' title=\"".$text['label-view_contact']."\"><a href='/app/contacts/contact_edit.php?id=".$contact[$number]['contact_uuid']."' target='_blank'><i class='glyphicon glyphicon-user'></i></a></div>\n";
+					echo "<div style='float: right; margin-top: 8px; margin-right: ".($selected ? '-1' : '4')."px;' title=\"".$text['label-view_contact']."\"><a href='/app/contacts/contact_edit.php?id=".$contact[$number]['contact_uuid']."' target='_blank'><i class='fas fa-user'></i></a></div>\n";
 					echo "<div style='display: table;'>\n";
 					echo "	<strong style='display: inline-block; margin: 8px 0 5px 0; white-space: nowrap;'>".escape($contact[$number]['contact_name_given'].' '.$contact[$number]['contact_name_family']).'</strong><br>';
-					echo "	<span style='font-size: 80%; white-space: nowrap;'><a href='callto:".escape($number)."'><i class='glyphicon glyphicon-phone' style='margin-right: 5px;'></i>".escape(format_phone($number)).'</a></span><br>';
+					echo "	<span style='font-size: 80%; white-space: nowrap;'><a href='callto:".escape($number)."'><i class='fas fa-phone-alt' style='margin-right: 5px;'></i>".escape(format_phone($number)).'</a></span><br>';
 					if (valid_email($contact[$number]['contact_email'])) {
-						echo "<span style='font-size: 80%; white-space: nowrap;'><a href='mailto:".escape($contact[$number]['contact_email'])."'><i class='glyphicon glyphicon-envelope' style='margin-right: 5px;'></i>".$text['label-send_email']."</a></span><br>";
+						echo "<span style='font-size: 80%; white-space: nowrap;'><a href='mailto:".escape($contact[$number]['contact_email'])."'><i class='fas fa-envelope' style='margin-right: 5px;'></i>".$text['label-send_email']."</a></span><br>";
 					}
 					if ($selected) {
 						$contact_name = escape($contact[$number]['contact_name_given'].' '.$contact[$number]['contact_name_family']);
@@ -206,9 +223,6 @@
 			echo "</td></tr>\n";
 		}
 		echo "</table>\n";
-		echo "<center>\n";
-		echo "	<span id='contacts_refresh_state'><img src='resources/images/refresh_active.gif' style='width: 16px; height: 16px; border: none; margin-top: 3px; cursor: pointer;' onclick=\"refresh_contacts_stop();\" alt=\"".$text['label-refresh_pause']."\" title=\"".$text['label-refresh_pause']."\"></span> ";
-		echo "</center>\n";
 
 		echo "<script>\n";
 		foreach ($numbers as $number) {
@@ -218,5 +232,12 @@
 		}
 		echo "</script>\n";
 	}
+	else {
+		echo "<div style='padding: 15px;'><center>&middot;&middot;&middot;</center>";
+	}
+
+	echo "<center>\n";
+	echo "	<span id='contacts_refresh_state'><img src='resources/images/refresh_active.gif' style='width: 16px; height: 16px; border: none; margin-top: 3px; cursor: pointer;' onclick=\"refresh_contacts_stop();\" alt=\"".$text['label-refresh_pause']."\" title=\"".$text['label-refresh_pause']."\"></span> ";
+	echo "</center>\n";
 
 ?>

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2018
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -124,6 +124,7 @@
 	}
 	$page = $_GET['page'];
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
+	list($paging_controls_mini, $rows_per_page, $var_3) = paging($num_rows, $param, $rows_per_page, true);
 	list($paging_controls, $rows_per_page, $var3) = paging($num_rows, $param, $rows_per_page);
 	$offset = $rows_per_page * $page;
 
@@ -192,9 +193,9 @@
 	echo "		<form method='get' action=''>\n";
 	echo "			<td width='50%' style='vertical-align: top; text-align: right; white-space: nowrap;'>\n";
 
-	echo "				<input type='button' class='btn' value='".$text['button-inbound']."' onclick=\"window.location='destinations.php?type=inbound';\">\n";
-	echo "				<input type='button' class='btn' value='".$text['button-outbound']."' onclick=\"window.location='destinations.php?type=outbound';\">\n";
-	echo "				<input type='button' class='btn' value='".$text['button-local']."' onclick=\"window.location='destinations.php?type=local';\">\n";
+	echo "				<input type='button' class='btn' value='".$text['button-inbound']."' onclick=\"window.location='destinations.php?type=inbound".($_GET['show'] == 'all' ? '&show=all' : null).($search != '' ? "&search=".urlencode($search) : null)."';\">\n";
+	echo "				<input type='button' class='btn' value='".$text['button-outbound']."' onclick=\"window.location='destinations.php?type=outbound".($_GET['show'] == 'all' ? '&show=all' : null).($search != '' ? "&search=".urlencode($search) : null)."';\">\n";
+	echo "				<input type='button' class='btn' value='".$text['button-local']."' onclick=\"window.location='destinations.php?type=local".($_GET['show'] == 'all' ? '&show=all' : null).($search != '' ? "&search=".urlencode($search) : null)."';\">\n";
 	echo "				&nbsp;\n";
 	if (permission_exists('destination_import')) {
 		echo "				<input type='button' class='btn' alt='".$text['button-import']."' onclick=\"window.location='destination_imports.php'\" value='".$text['button-import']."'>\n";
@@ -205,12 +206,15 @@
 			echo "		<input type='hidden' name='show' value='all'>";
 		}
 		else {
-			echo "		<input type='button' class='btn' value='".$text['button-show_all']."' onclick=\"window.location='destinations.php?show=all&type=$destination_type';\">\n";
+			echo "		<input type='button' class='btn' value='".$text['button-show_all']."' onclick=\"window.location='destinations.php?type=".urlencode($destination_type)."&show=all".($search != '' ? "&search=".urlencode($search) : null)."';\">\n";
 		}
 	}
 
 	echo "				<input type='text' class='txt' style='width: 150px; margin-left: 15px;' name='search' id='search' value='".escape($search)."'>\n";
-	echo "				<input type='submit' class='btn' name='submit' value='".$text['button-search']."'>\n";
+	echo "				<input type='submit' class='btn' value='".$text['button-search']."'>\n";
+	if ($paging_controls_mini != '') {
+		echo "			<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
+	}
 	echo "			</td>\n";
 	echo "		</form>\n";
 	echo "	</tr>\n";
@@ -232,8 +236,12 @@
 	}
 	echo th_order_by('destination_type', $text['label-destination_type'], $order_by, $order, $param);
 	echo th_order_by('destination_number', $text['label-destination_number'], $order_by, $order, $param);
-	echo  "<th>". $text['label-detail_action']."</th>";
-	echo th_order_by('destination_context', $text['label-destination_context'], $order_by, $order, $param);
+	if (!$_GET['show'] == "all") {
+		echo  "<th>". $text['label-detail_action']."</th>";
+	}
+	if (permission_exists("destination_context")) {
+		echo th_order_by('destination_context', $text['label-destination_context'], $order_by, $order, $param);
+	}
 	if (permission_exists('outbound_caller_id_select')) {
 		echo th_order_by('destination_caller_id_name', $text['label-destination_caller_id_name'], $order_by, $order, $param);
 		echo th_order_by('destination_caller_id_number', $text['label-destination_caller_id_number'], $order_by, $order, $param);
@@ -274,9 +282,13 @@
 			}
 			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['destination_type'])."&nbsp;</td>\n";
 			echo "	<td valign='top' class='".$row_style[$c]."'>".escape(format_phone($row['destination_number']))."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($action_name)."&nbsp;</td>\n";
+			if (!$_GET['show'] == "all") {
+				echo "	<td valign='top' class='".$row_style[$c]."'>".$action_name."&nbsp;</td>\n";
+			}
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".$row['destination_number_regex']."&nbsp;</td>\n";
-			echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['destination_context'])."&nbsp;</td>\n";
+			if (permission_exists("destination_context")) {
+				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['destination_context'])."&nbsp;</td>\n";
+			}
 			//echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['fax_uuid'])."&nbsp;</td>\n";
 			if (permission_exists('outbound_caller_id_select')) {
 				echo "	<td valign='top' class='".$row_style[$c]."'>".escape($row['destination_caller_id_name'])."&nbsp;</td>\n";
@@ -294,7 +306,7 @@
 				echo "<a href='destination_edit.php?id=".escape($row['destination_uuid'])."' alt='".$text['button-edit']."'>$v_link_label_edit</a>";
 			}
 			if (permission_exists('destination_delete')) {
-				echo "<button type='submit' class='btn btn-default list_control_icon' name=\"destinations[$x][action]\" alt='".$text['button-delete']."' value='delete'><span class='glyphicon glyphicon-remove'></span></button>";
+				echo "<button type='submit' class='btn btn-default list_control_icon' name=\"destinations[$x][action]\" alt='".$text['button-delete']."' value='delete'><span class='fas fa-minus'></span></button>";
 			}
 			echo "	</td>\n";
 			echo "</tr>\n";

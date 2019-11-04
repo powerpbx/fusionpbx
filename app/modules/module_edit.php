@@ -70,6 +70,14 @@
 				$module_uuid = $_POST["module_uuid"];
 			}
 
+		//validate the token
+			$token = new token;
+			if (!$token->validate($_SERVER['PHP_SELF'])) {
+				message::add($text['message-invalid_token'],'negative');
+				header('Location: modules.php');
+				exit;
+			}
+
 		//check for all required data
 			$msg = '';
 			if (strlen($module_label) == 0) { $msg .= $text['message-required'].$text['label-label']."<br>\n"; }
@@ -152,6 +160,10 @@
 		unset($sql, $parameters, $row);
 	}
 
+//create token
+	$object = new token;
+	$token = $object->create($_SERVER['PHP_SELF']);
+
 //show the header
 	require_once "resources/header.php";
 	if ($action == "add") {
@@ -216,8 +228,11 @@
 	echo "    ".$text['label-module_category']."\n";
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
-	$table_name = 'v_modules'; $field_name = 'module_category'; $sql_where_optional = ''; $field_current_value = $module_category;
-	echo html_select_other($db, $table_name, $field_name, $sql_where_optional, $field_current_value);
+	$table_name = 'v_modules';
+	$field_name = 'module_category';
+	$sql_where_optional = '';
+	$field_current_value = $module_category;
+	echo html_select_other($table_name, $field_name, $sql_where_optional, $field_current_value);
 	echo "<br />\n";
 	echo "\n";
 	echo "</td>\n";
@@ -287,6 +302,7 @@
 	if ($action == "update") {
 		echo "		<input type='hidden' name='module_uuid' value='".escape($module_uuid)."'>\n";
 	}
+	echo "			<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 	echo "			<br>";
 	echo "			<input type='submit' name='submit' class='btn' value='".$text['button-save']."'>\n";
 	echo "		</td>\n";

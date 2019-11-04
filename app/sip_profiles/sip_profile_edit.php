@@ -58,6 +58,8 @@
 		$sip_profile_hostname = $_POST["sip_profile_hostname"];
 		$sip_profile_enabled = $_POST["sip_profile_enabled"];
 		$sip_profile_description = $_POST["sip_profile_description"];
+		$sip_profile_domains = $_POST["sip_profile_domains"];
+		$sip_profile_settings = $_POST["sip_profile_settings"];
 	}
 
 //process the user data and save it to the database
@@ -66,6 +68,14 @@
 		//get the uuid from the POST
 			if ($action == "update") {
 				$sip_profile_uuid = $_POST["sip_profile_uuid"];
+			}
+
+		//validate the token
+			$token = new token;
+			if (!$token->validate($_SERVER['PHP_SELF'])) {
+				message::add($text['message-invalid_token'],'negative');
+				header('Location: sip_profiles.php');
+				exit;
 			}
 
 		//check for all required data
@@ -91,47 +101,53 @@
 		//add the sip_profile_uuid
 			if (!is_uuid($_POST["sip_profile_uuid"])) {
 				$sip_profile_uuid = uuid();
-				$_POST["sip_profile_uuid"] = $sip_profile_uuid;
-			}
-
-		//cleanup the array
-			foreach ($_POST["sip_profile_domains"] as $index => $row) {
-				//populate sip profile uuid
-					if (!is_uuid($row['sip_profile_uuid'])) {
-						$_POST["sip_profile_domains"][$index]['sip_profile_uuid'] = $sip_profile_uuid;
-					}
-				//unset the empty row
-					if (strlen($row["sip_profile_domain_name"]) == 0) {
-						unset($_POST["sip_profile_domains"][$index]);
-					}
-					if (strlen($row["sip_profile_domain_alias"]) == 0) {
-						unset($_POST["sip_profile_domains"][$index]);
-					}
-					if (strlen($row["sip_profile_domain_parse"]) == 0) {
-						unset($_POST["sip_profile_domains"][$index]);
-					}
-			}
-
-		//cleanup the array
-			foreach ($_POST["sip_profile_settings"] as $index => $row) {
-				//populate sip profile uuid
-					if (!is_uuid($row['sip_profile_uuid'])) {
-						$_POST["sip_profile_settings"][$index]['sip_profile_uuid'] = $sip_profile_uuid;
-					}
-				//unset the empty row
-					if (strlen($row["sip_profile_setting_name"]) == 0) {
-						unset($_POST["sip_profile_settings"][$index]);
-					}
-					//if (strlen($row["sip_profile_setting_value"]) == 0) {
-					//	unset($_POST["sip_profile_settings"][$index]);
-					//}
-					if (strlen($row["sip_profile_setting_enabled"]) == 0) {
-						unset($_POST["sip_profile_settings"][$index]);
-					}
 			}
 
 		//prepare the array
-			$array['sip_profiles'][] = $_POST;
+			$array['sip_profiles'][0]['sip_profile_uuid'] = $sip_profile_uuid;
+			$array['sip_profiles'][0]['sip_profile_name'] = $sip_profile_name;
+			$array['sip_profiles'][0]['sip_profile_hostname'] = $sip_profile_hostname;
+			$array['sip_profiles'][0]['sip_profile_enabled'] = $sip_profile_enabled;
+			$array['sip_profiles'][0]['sip_profile_description'] = $sip_profile_description;
+			$y = 0;
+			foreach ($sip_profile_domains as $row) {
+				if (strlen($row['sip_profile_domain_uuid']) > 0) {
+					if (is_uuid($row['sip_profile_domain_uuid'])) {
+						$sip_profile_domain_uuid = $row['sip_profile_domain_uuid'];
+					}
+					else {
+						$sip_profile_domain_uuid = uuid();
+					}
+					if (strlen($row["sip_profile_domain_alias"]) > 0) {
+						$array['sip_profiles'][0]['sip_profile_domains'][$y]["sip_profile_uuid"] = $sip_profile_uuid;
+						$array['sip_profiles'][0]['sip_profile_domains'][$y]["sip_profile_domain_uuid"] = $sip_profile_domain_uuid;
+						$array['sip_profiles'][0]['sip_profile_domains'][$y]["sip_profile_domain_name"] = $row["sip_profile_domain_name"];
+						$array['sip_profiles'][0]['sip_profile_domains'][$y]["sip_profile_domain_alias"] = $row["sip_profile_domain_alias"];
+						$array['sip_profiles'][0]['sip_profile_domains'][$y]["sip_profile_domain_parse"] = $row["sip_profile_domain_parse"];
+					}
+					$y++;
+				}
+			}
+			$y = 0;
+			foreach ($sip_profile_settings as $row) {
+				if (strlen($row['sip_profile_setting_uuid']) > 0) {
+					if (is_uuid($row['sip_profile_setting_uuid'])) {
+						$sip_profile_setting_uuid = $row['sip_profile_setting_uuid'];
+					}
+					else {
+						$sip_profile_setting_uuid = uuid();
+					}
+					if (strlen($row["sip_profile_setting_name"]) > 0) {
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_uuid"] = $sip_profile_uuid;
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_setting_uuid"] = $sip_profile_setting_uuid;
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_setting_name"] = $row["sip_profile_setting_name"];
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_setting_value"] = $row["sip_profile_setting_value"];
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_setting_enabled"] = $row["sip_profile_setting_enabled"];
+						$array['sip_profiles'][0]['sip_profile_settings'][$y]["sip_profile_setting_description"] = $row["sip_profile_setting_description"];
+					}
+					$y++;
+				}
+			}
 
 		//grant temporary permissions
 			$p = new permissions;
@@ -173,7 +189,7 @@
 			if ($action == "update") {
 				message::add($text['message-update']);
 			}
-			header('Location: sip_profile_edit.php?id='.escape($sip_profile_uuid));
+			header('Location: sip_profile_edit.php?id='.urlencode($sip_profile_uuid));
 			exit;
 	}
 
@@ -228,6 +244,10 @@
 	$sip_profile_domains[$x]['sip_profile_domain_alias'] = '';
 	$sip_profile_domains[$x]['sip_profile_domain_parse'] = '';
 
+//create token
+	$object = new token;
+	$token = $object->create($_SERVER['PHP_SELF']);
+
 //show the header
 	require_once "resources/header.php";
 	
@@ -254,7 +274,7 @@
 		|| permission_exists('inbound_route_add')
 		|| permission_exists('outbound_route_add')
 		|| permission_exists('time_condition_add')) {
-		echo "	<input type='button' class='btn' name='' alt='".$text['button-copy']."' onclick=\"var name = prompt('".$text['label-new_sip_profile_name']."'); if (name != null) { window.location='sip_profile_copy.php?id=".$sip_profile_uuid."&name=' + name; }\" value='".$text['button-copy']."'>\n";
+		echo "	<input type='button' class='btn' name='' alt='".$text['button-copy']."' onclick=\"var name = prompt('".$text['label-new_sip_profile_name']."'); if (name != null) { window.location='sip_profile_copy.php?id=".urlencode($sip_profile_uuid)."&name=' + name; }\" value='".$text['button-copy']."'>\n";
 	}
 	echo "	<input type='submit' class='btn' value='".$text['button-save']."'>";
 	echo "</td>\n";
@@ -291,8 +311,8 @@
 		if (is_uuid($row["sip_profile_uuid"])) {
 			$sip_profile_uuid = $row["sip_profile_uuid"];
 		}
-		echo "				<input type='hidden' name='sip_profile_domains[$x][sip_profile_domain_uuid]' value=\"".$sip_profile_domain_uuid."\">\n";
-		echo "				<input type='hidden' name='sip_profile_domains[$x][sip_profile_uuid]' value=\"".$sip_profile_uuid."\">\n";
+		echo "				<input type='hidden' name='sip_profile_domains[$x][sip_profile_domain_uuid]' value=\"".escape($sip_profile_domain_uuid)."\">\n";
+		echo "				<input type='hidden' name='sip_profile_domains[$x][sip_profile_uuid]' value=\"".escape($sip_profile_uuid)."\">\n";
 		echo "				<td class=\"vtablerow\" style=\"\" onclick=\"label_to_form('label_sip_profile_domain_name_$x','sip_profile_domain_name_$x');\" nowrap=\"nowrap\">\n";
 		echo "					&nbsp; <label id='label_sip_profile_domain_name_$x'>".escape($row["sip_profile_domain_name"])."</label>\n";
 		echo "					<input id='sip_profile_domain_name_$x' class='formfld' style='display: none;' type='text' name='sip_profile_domains[$x][sip_profile_domain_name]' maxlength='255' value=\"".escape($row["sip_profile_domain_name"])."\">\n";
@@ -336,7 +356,7 @@
 		echo "				</td>\n";
 		echo "				<td class='list_control_icons' style='width: 25px;'>\n";
 		if (strlen($row["sip_profile_domain_name"]) > 0) {
-			echo "				<a href=\"sip_profile_domain_delete.php?id=".escape($row["sip_profile_domain_uuid"])."&amp;sip_profile_domain_uuid=".escape($row["sip_profile_domain_uuid"])."&amp;a=delete\" alt='delete' onclick=\"return confirm('Do you really want to delete this?')\"><button type='button' class='btn btn-default list_control_icon'><span class='glyphicon glyphicon-remove'></span></button></a>\n";
+			echo "				<a href=\"sip_profile_domain_delete.php?id=".urlencode($row["sip_profile_domain_uuid"])."&amp;sip_profile_domain_uuid=".urlencode($row["sip_profile_domain_uuid"])."&amp;a=delete\" alt='delete' onclick=\"return confirm('Do you really want to delete this?')\">".$v_link_label_delete."</a>\n";
 		}
 		echo "				</td>\n";
 		echo "			</tr>\n";
@@ -403,7 +423,7 @@
 		echo "				</td>\n";
 		echo "				<td class='list_control_icons' style='width: 25px;'>\n";
 		if (strlen($row["sip_profile_setting_name"]) > 0) {
-			echo "					<a href=\"sip_profile_setting_delete.php?id=".escape($row["sip_profile_setting_uuid"])."&amp;sip_profile_uuid=".escape($sip_profile_uuid)."&amp;a=delete\" alt='delete' onclick=\"return confirm('Do you really want to delete this?')\"><button type='button' class='btn btn-default list_control_icon'><span class='glyphicon glyphicon-remove'></span></button></a>\n";
+			echo "					<a href=\"sip_profile_setting_delete.php?id=".escape($row["sip_profile_setting_uuid"])."&amp;sip_profile_uuid=".urlencode($sip_profile_uuid)."&amp;a=delete\" alt='delete' onclick=\"return confirm('Do you really want to delete this?')\">".$v_link_label_delete."</a>\n";
 		}
 		echo "				</td>\n";
 		echo "			</tr>\n";
@@ -472,10 +492,11 @@
 	echo "	<tr>\n";
 	echo "		<td colspan='2' align='right'>\n";
 	if ($action == "update") {
-		echo "				<input type='hidden' name='sip_profile_uuid' value='".escape($sip_profile_uuid)."'>\n";
+		echo "			<input type='hidden' name='sip_profile_uuid' value='".escape($sip_profile_uuid)."'>\n";
 	}
-	echo "				<br>\n";
-	echo "				<input type='submit' class='btn' value='".$text['button-save']."'>\n";
+	echo "			<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
+	echo "			<br>\n";
+	echo "			<input type='submit' class='btn' value='".$text['button-save']."'>\n";
 	echo "		</td>\n";
 	echo "	</tr>";
 	echo "</table>";

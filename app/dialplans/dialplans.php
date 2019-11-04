@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2017
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -160,11 +160,13 @@
 	if (strlen($app_uuid) > 0 && is_uuid($app_uuid)) { $param = "&app_uuid=".$app_uuid; }
 	$page = $_GET['page'];
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
+	list($paging_controls_mini, $rows_per_page, $var_3) = paging($num_rows, $param, $rows_per_page, true);
 	list($paging_controls, $rows_per_page, $var_3) = paging($num_rows, $param, $rows_per_page);
 	$offset = $rows_per_page * $page;
 
 //get the list of dialplans
-	$sql = str_replace('count(*)', '*', $sql);
+	$sql = "select * from v_dialplans ";
+	$sql .= $sql_where;
 	$sql .= ($order_by != '' ? order_by($order_by, $order) : 'order by dialplan_order asc, dialplan_name asc ');
 	$sql .= limit_offset($rows_per_page, $offset);
 	$database = new database;
@@ -235,6 +237,9 @@
 		echo "		<input type='hidden' class='txt' name='order' value='".escape($order)."'>";
 	}
 	echo "		<input type='submit' class='btn' name='submit' value='".$text['button-search']."'>";
+	if ($paging_controls_mini != '') {
+		echo "		<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
+	}
 	echo "		</form>\n";
 	echo "	</td>\n";
 	echo "	</tr>\n";
@@ -273,7 +278,7 @@
 	echo "<table class='tr_hover' width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 	echo "<tr>\n";
 	if (permission_exists('dialplan_delete') && @sizeof($dialplans) != 0) {
-		echo "<th style='width: 30px; text-align: center; padding: 3px 0px 0px 0px;' width='1'><input type='checkbox' style='margin: 0px 0px 0px 2px;' onchange=\"(this.checked) ? check('all') : check('none');\"></th>";
+		echo "<th style='width: 30px; text-align: center; padding: 3px 0px 0px 0px;' width='1'><input type='checkbox' id='chk_all' style='margin: 0px 0px 0px 2px;' onchange=\"(this.checked) ? check('all') : check('none');\"></th>";
 	}
 	if ($_GET['show'] == "all" && permission_exists('destination_all')) {
 		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order, $param);
@@ -343,7 +348,7 @@
 			}
 			if ($_GET['show'] == "all" && permission_exists('dialplan_all')) {
 				if (strlen($_SESSION['domains'][$row['domain_uuid']]['domain_name']) > 0) {
-					$domain = escape($_SESSION['domains'][$row['domain_uuid']]['domain_name']);
+					$domain = $_SESSION['domains'][$row['domain_uuid']]['domain_name'];
 				}
 				else {
 					$domain = $text['label-global'];
@@ -401,7 +406,6 @@
 			$c = $c == 0 ? 1 : 0;
 		}
 	}
-	unset($dialplans, $row);
 
 	echo "<tr>\n";
 	echo "<td colspan='9'>\n";
@@ -442,15 +446,18 @@
 	}
 	echo "<br><br>";
 
-	if (sizeof($dialplan_ids) > 0) {
-		echo "<script>\n";
-		echo "	function check(what) {\n";
-		foreach ($dialplan_ids as $checkbox_id) {
-			echo "document.getElementById('".escape($checkbox_id)."').checked = (what == 'all') ? true : false;\n";
+		if (!empty($dialplan_ids) && sizeof($dialplan_ids) > 0) {
+			echo "<script>\n";
+			echo "	function check(what) {\n";
+			echo "		document.getElementById('chk_all').checked = (what == 'all') ? true : false;\n";
+			foreach ($dialplan_ids as $checkbox_id) {
+				echo "document.getElementById('$checkbox_id').checked = (what == 'all') ? true : false;\n";
+			}
+			echo "	}\n";
+			echo "</script>\n";
 		}
-		echo "	}\n";
-		echo "</script>\n";
-	}
+
+	unset($dialplans, $row);
 
 //include the footer
 	require_once "resources/footer.php";

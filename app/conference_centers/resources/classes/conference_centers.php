@@ -1,34 +1,37 @@
 <?php
 /*
- FusionPBX
- Version: MPL 1.1
+FusionPBX
+Version: MPL 1.1
 
- The contents of this file are subject to the Mozilla Public License Version
- 1.1 (the "License"); you may not use this file except in compliance with
- the License. You may obtain a copy of the License at
- http://www.mozilla.org/MPL/
+The contents of this file are subject to the Mozilla Public License Version
+1.1 (the "License"); you may not use this file except in compliance with
+the License. You may obtain a copy of the License at
+http://www.mozilla.org/MPL/
 
- Software distributed under the License is distributed on an "AS IS" basis,
- WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- for the specific language governing rights and limitations under the
- License.
+Software distributed under the License is distributed on an "AS IS" basis,
+WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+for the specific language governing rights and limitations under the
+License.
 
- The Original Code is FusionPBX
+The Original Code is FusionPBX
 
- The Initial Developer of the Original Code is
- Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2018
- the Initial Developer. All Rights Reserved.
+The Initial Developer of the Original Code is
+Mark J Crane <markjcrane@fusionpbx.com>
+Portions created by the Initial Developer are Copyright (C) 2008-2019
+the Initial Developer. All Rights Reserved.
 
- Contributor(s):
- Mark J Crane <markjcrane@fusionpbx.com>
- Luis Daniel Lucio Quiroz <dlucio@okay.com.mx>
+Contributor(s):
+Mark J Crane <markjcrane@fusionpbx.com>
+Luis Daniel Lucio Quiroz <dlucio@okay.com.mx>
 */
 
-//define the conference center class
+//define the conference centers class
+if (!class_exists('conference_centers')) {
 	class conference_centers {
 
-		public $db;
+		/**
+		* define the variables
+		*/
 		public $domain_uuid;
 		public $meeting_uuid;
 		public $order_by;
@@ -41,16 +44,30 @@
 		public $created_by;
 
 		/**
+		 * declare private variables
+		 */
+		/*
+		private $app_name;
+		private $app_uuid;
+		private $permission_prefix;
+		private $list_page;
+		private $table;
+		private $uuid_prefix;
+		private $toggle_field;
+		private $toggle_values;
+		*/
+
+		/**
 		 * Called when the object is created
 		 */
 		public function __construct() {
-			//connect to the database if not connected
-			if (!$this->db) {
-				require_once "resources/classes/database.php";
-				$database = new database;
-				$database->connect();
-				$this->db = $database->db;
-			}
+
+			//assign private variables
+			/*
+				$this->app_name = 'conference_centers';
+				$this->app_uuid = '8d083f5a-f726-42a8-9ffa-8d28f848f10e';
+			*/
+
 		}
 
 		/**
@@ -72,7 +89,7 @@
 				if (permission_exists("conference_room_view_all")) {
 					$not_admin = 0;
 				}
-				$sql = "select count(*) as num_rows from v_conference_rooms as r, v_meetings as p ";
+				$sql = "select count(*) from v_conference_rooms as r, v_meetings as p ";
 				if ($not_admin) {
 					$sql .= "v_meeting_users as u, ";
 				}
@@ -101,7 +118,6 @@
 		 * get the list of conference rooms
 		 */
 		public function rooms() {
-
 			//get variables used to control the order
 				$order_by = $this->order_by;
 				$order = $this->order;
@@ -114,7 +130,6 @@
 			//validate the order
 				switch ($order) {
 					case 'asc':
-						break;
 					case 'desc':
 						break;
 					default:
@@ -157,7 +172,8 @@
 				}
 				if (strlen($this->order_by) == 0) {
 					$sql .= "order by r.description, r.meeting_uuid asc ";
-				} else {
+				}
+				else {
 					$sql .= "order by $order_by $order ";
 				}
 				$sql .= "limit :rows_per_page offset :offset ";
@@ -196,9 +212,8 @@
 						//set the previous uuid
 							$previous = $row["conference_room_uuid"];
 					}
-					unset($conference_rooms);
 				}
-				unset ($parameters, $sql);
+				unset($sql, $parameters, $conference_rooms);
 				return $result;
 		}
 
@@ -213,22 +228,21 @@
 
 				//get call recording from database
 					if (is_uuid($_GET['id'])) {
-						$conference_session_uuid = check_str($_GET['id']);
-					}
-					if ($conference_session_uuid != '') {
+						$conference_session_uuid = $_GET['id'];
 						$sql = "select recording from v_conference_sessions ";
 						$sql .= "where conference_session_uuid = :conference_session_uuid ";
-						//$sql .= "and domain_uuid = '".$domain_uuid."' \n";
+						//$sql .= "and domain_uuid = :domain_uuid ";
 						$parameters['conference_session_uuid'] = $conference_session_uuid;
+						//$parameters['domain_uuid'] = $domain_uuid;
 						$database = new database;
 						$conference_sessions = $database->select($sql, $parameters, 'all');
 						if (is_array($conference_sessions)) {
-							foreach($conference_sessions as &$row) {
+							foreach ($conference_sessions as &$row) {
 								$recording = $row['recording'];
 								break;
 							}
 						}
-						unset ($sql, $prep_statement, $conference_sessions);
+						unset($sql, $parameters, $conference_sessions);
 					}
 
 				//set the path for the directory
@@ -239,23 +253,23 @@
 					$record_name = basename($recording);
 
 				//download the file
-					if (file_exists($record_path . '/' . $record_name . '.wav')) {
-						$record_name = $record_name . '.wav';
+					if (file_exists($record_path.'/'.$record_name.'.wav')) {
+						$record_name = $record_name.'.wav';
 					}
 					else {
-						if (file_exists($record_path . '/' . $record_name . '.mp3')) {
-							$record_name = $record_name . '.mp3';
+						if (file_exists($record_path.'/'.$record_name.'.mp3')) {
+							$record_name = $record_name.'.mp3';
 						}
 					}
 
 				//download the file
-					if (file_exists($record_path . '/' . $record_name)) {
+					if (file_exists($record_path.'/'.$record_name)) {
 						//content-range
 						//if (isset($_SERVER['HTTP_RANGE']))  {
 						//	range_download($full_recording_path);
 						//}
 						ob_clean();
-						$fd = fopen($record_path . '/' . $record_name, "rb");
+						$fd = fopen($record_path.'/'.$record_name, "rb");
 						if ($_GET['t'] == "bin") {
 							header("Content-Type: application/force-download");
 							header("Content-Type: application/octet-stream");
@@ -274,19 +288,293 @@
 						header('Content-Disposition: attachment; filename="'.$record_name.'"');
 						header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 						header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
-						// header("Content-Length: " . filesize($full_recording_path));
+						// header("Content-Length: ".filesize($full_recording_path));
 						ob_clean();
 						fpassthru($fd);
 					}
 
 				//if base64, remove temp recording file
 					//if ($_SESSION['conference']['storage_type']['text'] == 'base64' && $row['conference_recording_base64'] != '') {
-					//	@unlink($record_path . '/' . $record_name);
+					//	@unlink($record_path.'/'.$record_name);
 					//}
 			}
 		} //end download method
 
-	}
+		/**
+		 * delete records
+		 */
+		/*
+		public function delete_conference_centers($records) {
+
+			//assign private variables
+				$this->permission_prefix = 'conference_center_';
+				$this->list_page = 'conference_centers.php';
+				$this->table = 'conference_centers';
+				$this->uuid_prefix = 'conference_center_';
+
+			if (permission_exists($this->permission_prefix.'delete')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//delete multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//build the delete array
+							foreach ($records as $x => $record) {
+								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+
+									//get the dialplan uuid
+										$sql = "select dialplan_uuid from v_conference_centers ";
+										$sql .= "where domain_uuid = :domain_uuid ";
+										$sql .= "and conference_center_uuid = :conference_center_uuid ";
+										$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+										$parameters['conference_center_uuid'] = $conference_center_uuid;
+										$database = new database;
+										$dialplan_uuid = $database->select($sql, $parameters, 'column');
+										unset($sql, $parameters);
+
+									//create array
+										$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
+										$array[$this->table][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+										$array['dialplan_details'][$x]['dialplan_uuid'] = $dialplan_uuid;
+										$array['dialplan_details'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+										$array['dialplans'][$x]['dialplan_uuid'] = $dialplan_uuid;
+										$array['dialplans'][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+								}
+							}
+
+						//delete the checked rows
+							if (is_array($array) && @sizeof($array) != 0) {
+
+								//grant temporary permissions
+									$p = new permissions;
+									$p->add('dialplan_detail_delete', 'temp');
+									$p->add('dialplan_delete', 'temp');
+
+								//execute delete
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->delete($array);
+									unset($array);
+
+								//revoke temporary permissions
+									$p->delete('dialplan_detail_delete', 'temp');
+									$p->delete('dialplan_delete', 'temp');
+
+								//clear the cache
+									$cache = new cache;
+									$cache->delete("dialplan:".$_SESSION["context"]);
+
+								//syncrhonize configuration
+									save_dialplan_xml();
+
+								//apply settings reminder
+									$_SESSION["reload_xml"] = true;
+
+								//set message
+									message::add($text['message-delete']);
+							}
+							unset($records);
+					}
+			}
+		}
+		*/
+
+		/**
+		 * toggle records
+		 */
+		/*
+		public function toggle_conference_centers($records) {
+
+			//assign private variables
+				$this->permission_prefix = 'conference_center_';
+				$this->list_page = 'conference_centers.php';
+				$this->table = 'conference_centers';
+				$this->uuid_prefix = 'conference_center_';
+				$this->toggle_field = 'conference_center_enabled';
+				$this->toggle_values = ['true','false'];
+
+			if (permission_exists($this->permission_prefix.'edit')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//toggle the checked records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//get current toggle state
+							foreach($records as $x => $record) {
+								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									$record_uuids[] = $this->uuid_prefix."uuid = '".$record['uuid']."'";
+								}
+							}
+							if (is_array($record_uuids) && @sizeof($record_uuids) != 0) {
+								$sql = "select ".$this->uuid_prefix."uuid as uuid, ".$this->toggle_field." as toggle, dialplan_uuid from v_".$this->table." ";
+								$sql .= "where (domain_uuid = :domain_uuid or domain_uuid is null) ";
+								$sql .= "and ( ".implode(' or ', $record_uuids)." ) ";
+								$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+								$database = new database;
+								$rows = $database->select($sql, $parameters, 'all');
+								if (is_array($rows) && @sizeof($rows) != 0) {
+									foreach ($rows as $row) {
+										$conference_centers[$row['uuid']]['state'] = $row['toggle'];
+										$conference_centers[$row['uuid']]['dialplan_uuid'] = $row['dialplan_uuid'];
+									}
+								}
+								unset($sql, $parameters, $rows, $row);
+							}
+
+						//build update array
+							$x = 0;
+							foreach($conference_centers as $uuid => $conference_center) {
+								$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $uuid;
+								$array[$this->table][$x][$this->toggle_field] = $conference_center['state'] == $this->toggle_values[0] ? $this->toggle_values[1] : $this->toggle_values[0];
+								$array['dialplans'][$x]['dialplan_uuid'] = $conference_center['dialplan_uuid'];
+								$array['dialplans'][$x]['dialplan_enabled'] = $conference_center['state'] == $this->toggle_values[0] ? $this->toggle_values[1] : $this->toggle_values[0];
+								$x++;
+							}
+
+						//save the changes
+							if (is_array($array) && @sizeof($array) != 0) {
+
+								//grant temporary permissions
+									$p = new permissions;
+									$p->add("dialplan_edit", "temp");
+
+								//save the array
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->save($array);
+									unset($array);
+
+								//revoke temporary permissions
+									$p->delete("dialplan_edit", "temp");
+
+								//syncrhonize configuration
+									save_dialplan_xml();
+
+								//apply settings reminder
+									$_SESSION["reload_xml"] = true;
+
+								//clear the cache
+									$cache = new cache;
+									$cache->delete("dialplan:".$_SESSION["context"]);
+
+								//set message
+									message::add($text['message-toggle']);
+
+							}
+							unset($records, $conference_centers, $conference_center);
+					}
+
+			}
+		}
+		*/
+
+		/**
+		 * copy records
+		 */
+		/*
+		public function copy_conference_centers($records) {
+
+			//assign private variables
+				$this->permission_prefix = 'conference_center_';
+				$this->list_page = 'conference_centers.php';
+				$this->table = 'conference_centers';
+				$this->uuid_prefix = 'conference_center_';
+
+			if (permission_exists($this->permission_prefix.'add')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//copy the checked records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//get checked records
+							foreach($records as $x => $record) {
+								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									$record_uuids[] = $this->uuid_prefix."uuid = '".$record['uuid']."'";
+								}
+							}
+
+						//create insert array from existing data
+							if (is_array($record_uuids) && @sizeof($record_uuids) != 0) {
+								$sql = "select * from v_".$this->table." ";
+								$sql .= "where (domain_uuid = :domain_uuid or domain_uuid is null) ";
+								$sql .= "and ( ".implode(' or ', $record_uuids)." ) ";
+								$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+								$database = new database;
+								$rows = $database->select($sql, $parameters, 'all');
+								if (is_array($rows) && @sizeof($rows) != 0) {
+									foreach ($rows as $x => $row) {
+
+										//copy data
+											$array[$this->table][$x] = $row;
+
+										//overwrite
+											$array[$this->table][$x][$this->uuid_prefix.'uuid'] = uuid();
+											$array[$this->table][$x]['_description'] = trim($row['_description'].' ('.$text['label-copy'].')');
+
+									}
+								}
+								unset($sql, $parameters, $rows, $row);
+							}
+
+						//save the changes and set the message
+							if (is_array($array) && @sizeof($array) != 0) {
+
+								//save the array
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->save($array);
+									unset($array);
+
+								//set message
+									message::add($text['message-copy']);
+
+							}
+							unset($records);
+					}
+
+			}
+		}
+		*/
+
+
+	} //class
+}
 
 //example conference center
 	/*

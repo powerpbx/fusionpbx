@@ -43,9 +43,6 @@
 	$language = new text;
 	$text = $language->get();
 
-//increase the exucution time
-	ini_set('max_execution_time', 7200);
-
 //get the music_on_hold array
 	$sql = "select * from v_music_on_hold ";
 	$sql .= "where ( ";
@@ -60,12 +57,11 @@
 	$streams = $database->select($sql, $parameters, 'all');
 
 //download music on hold file
-	if (
-		$_GET['action'] == "download"
+	if ($_GET['action'] == "download"
 		&& is_uuid($_GET['id'])
 		&& is_array($streams)
-		&& @sizeof($streams) != 0
-		) {
+		&& @sizeof($streams) != 0) {
+
 		//get the uuid
 			$stream_uuid = $_GET['id'];
 
@@ -78,15 +74,20 @@
 					break;
 				}
 			}
-		
+
 		//replace the sounds_dir variable in the path
 			$stream_path = str_replace('$${sounds_dir}', $_SESSION['switch']['sounds']['dir'], $stream_path);
+			$stream_path = str_replace('..', '', $stream_path);
 
-		//get the file
-			$stream_file = base64_decode($_GET['file']);
+		//get the file and sanitize it
+			$stream_file = basename($_GET['file']);
+			$search = array('..', '/', ':');
+			$stream_file = str_replace($search, '', $stream_file);
+
+		//join the path and file name
 			$stream_full_path = path_join($stream_path, $stream_file);
 
-		//dowload the file
+		//download the file
 			session_cache_limiter('public');
 			if (file_exists($stream_full_path)) {
 				$fd = fopen($stream_full_path, "rb");
@@ -114,13 +115,11 @@
 	}
 
 //upload music on hold file
-	if (
-		$_POST['action'] == 'upload'
+	if ($_POST['action'] == 'upload'
 		&& is_array($_FILES)
 		&& is_uploaded_file($_FILES['file']['tmp_name'])
 		&& is_array($streams)
-		&& @sizeof($streams) != 0
-		) {
+		&& @sizeof($streams) != 0) {
 
 		//determine name
 			if ($_POST['name_new'] != '') {
@@ -262,16 +261,14 @@
 	}
 
 //delete the music on hold file
-	if (
-		$_GET['action'] == "delete"
+	if ($_GET['action'] == "delete"
 		&& is_uuid($_GET['id'])
 		&& is_array($streams)
-		&& @sizeof($streams) != 0
-		) {
+		&& @sizeof($streams) != 0) {
 
 		//get submitted values
 			$stream_uuid = $_GET['id'];
-			$stream_file = base64_decode($_GET['file']);
+			$stream_file = $_GET['file'];
 
 		//get the record
 			foreach($streams as $row) {
@@ -284,13 +281,21 @@
 				}
 			}
 
+		//replace the sounds_dir variable in the path
+			$stream_path = str_replace('$${sounds_dir}', $_SESSION['switch']['sounds']['dir'], $stream_path);
+
 		//check permissions
 			if (($stream_domain_uuid == '' && permission_exists('music_on_hold_domain')) ||
 				($stream_domain_uuid != '' && permission_exists('music_on_hold_delete'))) {
 
 				//remove specified file
 					if ($stream_file != '') {
-						@unlink(path_join($stream_path, $stream_file));
+						//define path
+							$stream_full_path = path_join($stream_path, $stream_file);
+						//sanitize path
+							$stream_full_path = str_replace('../', '', $stream_full_path);
+						//delete file
+							@unlink($stream_full_path);
 					}
 				//remove all audio files
 					else {
@@ -400,9 +405,9 @@
 
 		echo "				</select>";
 
-		echo "				<button type='button' id='btn_new' class='btn btn-default list_control_icon' style='margin-left: 3px;' onclick=\"name_mode('new');\"><span class='glyphicon glyphicon-plus'></span></button>";
+		echo "				<button type='button' id='btn_new' class='btn btn-default list_control_icon' style='margin-left: 3px;' onclick=\"name_mode('new');\"><span class='fas fa-plus'></span></button>";
 		echo "				<input class='formfld' style='width: 100px; display: none;' type='text' name='name_new' id='name_new' maxlength='255' value=''>";
-		echo "				<button type='button' id='btn_select' class='btn btn-default list_control_icon' style='display: none; margin-left: 3px;' onclick=\"name_mode('select');\"><span class='glyphicon glyphicon-list-alt'></span></button>";
+		echo "				<button type='button' id='btn_select' class='btn btn-default list_control_icon' style='display: none; margin-left: 3px;' onclick=\"name_mode('select');\"><span class='fas fa-list'></span></button>";
 		echo "			</td>\n";
 		echo "		</tr>\n";
 		echo "	</table>\n";
@@ -500,29 +505,29 @@
 					$stream_icons = array();
 					$i = 0;
 					if (permission_exists('music_on_hold_path')) {
-						$stream_icons[$i]['glyphicon'] = 'glyphicon-folder-open';
+						$stream_icons[$i]['icon'] = 'fa-folder-open';
 						$stream_icons[$i]['title'] = $row['music_on_hold_name'];
 						$i++;
 					}
 					if ($row['music_on_hold_shuffle'] == 'true') {
-						$stream_icons[$i]['glyphicon'] = 'glyphicon-random';
+						$stream_icons[$i]['icon'] = 'fa-random';
 						$stream_icons[$i]['title'] = $text['label-shuffle'];
 						$i++;
 					}
 					if ($row['music_on_hold_chime_list'] != '') {
-						$stream_icons[$i]['glyphicon'] = 'glyphicon-bell';
+						$stream_icons[$i]['icon'] = 'fa-bell';
 						$stream_icons[$i]['title'] = $text['label-chime_list'].': '.$row['music_on_hold_chime_list'];
 						$i++;
 					}
 					if ($row['music_on_hold_channels'] == '2') {
-						$stream_icons[$i]['glyphicon'] = 'glyphicon-headphones';
+						$stream_icons[$i]['icon'] = 'fa-headphones';
 						$stream_icons[$i]['title'] = $text['label-stereo'];
 						$stream_icons[$i]['margin'] = 6;
 						$i++;
 					}
 					if (is_array($stream_icons) && sizeof($stream_icons) > 0) {
 						foreach ($stream_icons as $stream_icon) {
-							$icons .= "<span class='glyphicon ".$stream_icon['glyphicon']." icon_glyphicon_body' title='".escape($stream_icon['title'])."' style='width: 12px; height: 12px; margin-left: ".(($stream_icon['margin'] != '') ? $stream_icon['margin'] : 8)."px; vertical-align: text-top; cursor: help;'></span>";
+							$icons .= "<span class='fas ".$stream_icon['icon']." icon_body' title='".escape($stream_icon['title'])."' style='width: 12px; height: 12px; margin-left: ".(($stream_icon['margin'] != '') ? $stream_icon['margin'] : 8)."px; vertical-align: text-top; cursor: help;'></span>";
 						}
 					}
 
@@ -533,7 +538,7 @@
 					else {
 						$stream_details = ($music_on_hold_rate/1000).' kHz / '.$icons;
 					}
-			
+
 				//show the table header
 					echo "	<tr>\n";
 					echo "		<th class='listhdr'>".$stream_details."</th>\n";
@@ -580,16 +585,16 @@
 								echo "<tr ".$tr_link.">\n";
 								echo "	<td class='".$row_style[$c]."'>".escape($stream_file)."</td>\n";
 								echo "	<td valign='top' class='".$row_style[$c]." row_style_slim tr_link_void'>";
-								echo 		"<audio id='recording_audio_".$row_uuid."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".$row_uuid."')\" onended=\"recording_reset('".$row_uuid."');\" src='?action=download&id=".escape($row['music_on_hold_uuid'])."&file=".base64_encode($stream_file)."' type='".escape($stream_file_type)."'></audio>";
+								echo 		"<audio id='recording_audio_".$row_uuid."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".$row_uuid."')\" onended=\"recording_reset('".$row_uuid."');\" src='?action=download&id=".escape($row['music_on_hold_uuid'])."&file=".urlencode($stream_file)."' type='".escape($stream_file_type)."'></audio>";
 								echo 		"<span id='recording_button_".$row_uuid."' onclick=\"recording_play('".$row_uuid."')\" title='".$text['label-play']." / ".$text['label-pause']."'>".$v_link_label_play."</span>";
 								echo 		"<span onclick=\"recording_stop('".$row_uuid."')\" title='".$text['label-stop']."'>".$v_link_label_stop."</span>";
 								echo "	</td>\n";
 								echo "	<td valign='top' class='".$row_style[$c]."' style='text-align: right; white-space: nowrap;'>".escape($stream_file_size)."</td>\n";
 								echo "	<td valign='top' class='".$row_style[$c]."' style='text-align: right; white-space: nowrap;'>".escape($stream_file_date)."</td>\n";
 								echo "	<td valign='top' class='".((!permission_exists('music_on_hold_domain')) ? 'list_control_icon' : 'list_control_icons')."'>\n";
-								echo 		"<a href='?action=download&id=".escape($row['music_on_hold_uuid'])."&file=".base64_encode($stream_file)."' title='".$text['label-download']."'>".$v_link_label_download."</a>";
+								echo 		"<a href='?action=download&id=".escape($row['music_on_hold_uuid'])."&file=".urlencode($stream_file)."' title='".$text['label-download']."'>".$v_link_label_download."</a>";
 								if ( (!is_uuid($domain_uuid) && permission_exists('music_on_hold_domain')) || (is_uuid($domain_uuid) && permission_exists('music_on_hold_delete')) ) {
-									echo 	"<a href='?action=delete&id=".escape($row['music_on_hold_uuid'])."&file=".base64_encode($stream_file)."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
+									echo 	"<a href='?action=delete&id=".urlencode($row['music_on_hold_uuid'])."&file=".urlencode($stream_file)."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>";
 								}
 								echo "	</td>\n";
 								echo "</tr>\n";

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2018
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -74,7 +74,7 @@
 	echo "		</td>\n";
 	echo "		<td valign='top' style='text-align: right; white-space: nowrap;'>\n";
 	if ($_SESSION['theme']['menu_style']['text'] != 'side') {
-		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=".$_SESSION['user_uuid']."'>".$_SESSION["username"]."</a>";
+		echo "		".$text['label-welcome']." <a href='".PROJECT_PATH."/core/users/user_edit.php?id=user'>".$_SESSION["username"]."</a>";
 	}
 	echo "		</td>\n";
 	echo "	</tr>\n";
@@ -564,10 +564,10 @@
 					if (is_array($assigned_extensions) && sizeof($assigned_extensions) != 0) {
 						$x = 0;
 						foreach ($assigned_extensions as $assigned_extension_uuid => $assigned_extension) {
-							$sql_where_array[] = "extension_uuid = extension_uuid_".$x;
-							$sql_where_array[] = "caller_id_number = caller_id_number_".$x;
-							$sql_where_array[] = "destination_number = destination_number_1_".$x;
-							$sql_where_array[] = "destination_number = destination_number_2_".$x;
+							$sql_where_array[] = "extension_uuid = :extension_uuid_".$x;
+							$sql_where_array[] = "caller_id_number = :caller_id_number_".$x;
+							$sql_where_array[] = "destination_number = :destination_number_1_".$x;
+							$sql_where_array[] = "destination_number = :destination_number_2_".$x;
 							$parameters['extension_uuid_'.$x] = $assigned_extension_uuid;
 							$parameters['caller_id_number_'.$x] = $assigned_extension;
 							$parameters['destination_number_1_'.$x] = $assigned_extension;
@@ -1066,7 +1066,7 @@
 
 			//memory available
 				if (stristr(PHP_OS, 'Linux')) {
-					$result = trim(shell_exec('free -hw | grep \'Mem:\' | cut -d\' \' -f 58-64'));
+					$result = trim(shell_exec('free -hw | grep \'Mem:\' | cut -d\' \' -f 55-64'));
 					if ($result != '') {
 						$hud[$n]['html'] .= "<tr class='tr_link_void'>\n";
 						$hud[$n]['html'] .= "<td valign='top' class='".$row_style[$c]." hud_text'>".$text['label-memory_available']."</td>\n";
@@ -1213,7 +1213,7 @@
 			echo "	<div class='row' style='padding: 6px;'>";
 			echo "		<div class='col-md-12 hud_box' style='padding: 0;'>";
 			echo 			$block['html'];
-			echo "			<span class='hud_expander' onclick=\"$('#hud_'+".$index."+'_details').slideToggle('fast');\"><span class='glyphicon glyphicon-option-horizontal'></span></span>";
+			echo "			<span class='hud_expander' onclick=\"$('#hud_'+".$index."+'_details').slideToggle('fast');\"><span class='fas fa-ellipsis-h'></span></span>";
 			echo "		</div>";
 			echo "	</div>";
 			echo "</div>";
