@@ -86,7 +86,7 @@
 		}
 	}
 
-//get order and order by and sanatize the values
+//get order and order by
 	$order_by = $_GET["order_by"];
 	$order = $_GET["order"];
 
@@ -97,6 +97,7 @@
 		$sql_search .= "lower(bridge_name) like :search ";
 		$sql_search .= "or lower(bridge_destination) like :search ";
 		$sql_search .= "or lower(bridge_enabled) like :search ";
+		$sql_search .= "or lower(bridge_description) like :search ";
 		$sql_search .= ") ";
 		$parameters['search'] = '%'.$search.'%';
 	}
@@ -124,8 +125,7 @@
 	if ($_GET['show'] == "all" && permission_exists('bridge_all')) {
 		$param .= "&show=all";
 	}
-	$page = $_GET['page'];
-	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
+	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
 	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
 	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
 	$offset = $rows_per_page * $page;
@@ -174,7 +174,7 @@
 	echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search','style'=>($search != '' ? 'display: none;' : null)]);
 	echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_reset','link'=>'bridges.php','style'=>($search == '' ? 'display: none;' : null)]);
 	if ($paging_controls_mini != '') {
-		echo "	<span style='margin-left: 15px;'>".$paging_controls_mini."</span>";
+		echo 	"<span style='margin-left: 15px;'>".$paging_controls_mini."</span>";
 	}
 	echo "		</form>\n";
 	echo "	</div>\n";
@@ -207,9 +207,9 @@
 	}
 	echo "</tr>\n";
 
-	if (is_array($bridges)) {
+	if (is_array($bridges) && @sizeof($bridges) != 0) {
 		$x = 0;
-		foreach($bridges as $row) {
+		foreach ($bridges as $row) {
 			if (permission_exists('bridge_edit')) {
 				$list_row_url = "bridge_edit.php?id=".urlencode($row['bridge_uuid']);
 			}
@@ -225,10 +225,10 @@
 			}
 			echo "	<td>";
 			if (permission_exists('bridge_edit')) {
-				echo "	<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['bridge_name'])."</a>\n";
+				echo "<a href='".$list_row_url."' title=\"".$text['button-edit']."\">".escape($row['bridge_name'])."</a>";
 			}
 			else {
-				echo "	".escape($row['bridge_name'])."\n";
+				echo escape($row['bridge_name']);
 			}
 			echo "	</td>\n";
 			echo "	<td>".escape($row['bridge_destination'])."</td>\n";

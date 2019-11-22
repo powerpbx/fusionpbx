@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2012
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -101,7 +101,7 @@
 //prepare to page the results
 	$sql = "select count(*) from view_call_block ";
 	$sql .= "where domain_uuid = :domain_uuid ";
-	if (!permission_exists('call_block_all') && count($_SESSION['user']['extension']) > 0) {
+	if (!permission_exists('call_block_all') && is_array($_SESSION['user']['extension'] && count($_SESSION['user']['extension']) > 0)) {
 		$sql .= "and extension_uuid in (";
 		$x = 0;
 		foreach ($_SESSION['user']['extension'] as $field) {
@@ -131,7 +131,7 @@
 //get the list
 	$sql = "select * from view_call_block ";
 	$sql .= "where domain_uuid = :domain_uuid ";
-	if (!permission_exists('call_block_all') && count($_SESSION['user']['extension']) > 0) {
+	if (!permission_exists('call_block_all') && is_array($_SESSION['user']['extension'] && count($_SESSION['user']['extension']) > 0)) {
 		$sql .= "and extension_uuid in (";
 		$x = 0;
 		foreach ($_SESSION['user']['extension'] as $field) {
@@ -179,7 +179,7 @@
 	echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search','style'=>($search != '' ? 'display: none;' : null)]);
 	echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_reset','link'=>'call_block.php','style'=>($search == '' ? 'display: none;' : null)]);
 	if ($paging_controls_mini != '') {
-		echo "	<span style='margin-left: 15px;'>".$paging_controls_mini."</span>";
+		echo 	"<span style='margin-left: 15px;'>".$paging_controls_mini."</span>";
 	}
 	echo "		</form>\n";
 	echo "	</div>\n";

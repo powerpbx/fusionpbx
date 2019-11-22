@@ -95,7 +95,7 @@
 			$device_label = $_POST["device_label"];
 			$device_user_uuid = $_POST["device_user_uuid"];
 			$device_username = $_POST["device_username"];
-			$device_username = $_POST["device_username"];
+			$device_password = $_POST["device_password"];
 			$device_vendor = $_POST["device_vendor"];
 			$device_uuid_alternate = $_POST["device_uuid_alternate"];
 			$device_model = $_POST["device_model"];
@@ -160,7 +160,7 @@
 
 		//check for all required data
 			$msg = '';
-			if (strlen($device_mac_address) == 0) { $msg .= $text['message-required'].$text['label-extension']."<br>\n"; }
+			if (strlen($device_mac_address) == 0) { $msg .= $text['message-required'].$text['label-device_mac_address']."<br>\n"; }
 			//if (strlen($device_label) == 0) { $msg .= "Please provide: Label<br>\n"; }
 			//if (strlen($device_vendor) == 0) { $msg .= "Please provide: Vendor<br>\n"; }
 			//if (strlen($device_model) == 0) { $msg .= "Please provide: Model<br>\n"; }
@@ -225,6 +225,7 @@
 					$array['devices'][0]['device_label'] = $device_label;
 					$array['devices'][0]['device_user_uuid'] = $device_user_uuid;
 					$array['devices'][0]['device_username'] = $device_username;
+					$array['devices'][0]['device_password'] = $device_password;
 					$array['devices'][0]['device_vendor'] = $device_vendor;
 					$array['devices'][0]['device_uuid_alternate'] = $device_uuid_alternate;
 					$array['devices'][0]['device_model'] = $device_model;
