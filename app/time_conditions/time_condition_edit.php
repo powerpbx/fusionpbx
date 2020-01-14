@@ -555,7 +555,7 @@
 			$sql .= "	) ";
 			$sql .= "	or ( ";
 			$sql .= "		dialplan_detail_tag = 'action' ";
-			$sql .= "		and dialplan_detail_data not like 'preset=%' ";
+			//$sql .= "		and dialplan_detail_data not like 'preset=%' ";
 			$sql .= "	) ";
 			$sql .= ") ";
 			$sql .= "order by dialplan_detail_group asc, dialplan_detail_order asc";
@@ -582,6 +582,26 @@
 				}
 			}
 
+		//find the selected presets
+			if (is_array($available_presets)) {
+				foreach ($available_presets as $preset_number => &$preset) {
+					if (is_array($preset)) {
+						foreach ($preset as $preset_name => $preset_variables) {
+							$preset_checked[$preset_name] = 'false';
+							if (is_array($dialplan_details)) {
+								foreach ($dialplan_details as $row) {
+									if ($row['dialplan_detail_tag'] == 'action') {
+										if ($row['dialplan_detail_data'] == 'preset='.$preset_name) {
+											$preset_checked[$preset_name] = 'true';
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 		//loop through available presets (if any)
 			if (is_array($available_presets)) {
 				foreach ($available_presets as $preset_number => $preset) {
@@ -599,6 +619,7 @@
 									}
 									//if all preset variables found, then condition is a preset
 									if ($matches == sizeof($preset_variables)) {
+										
 										$current_presets[$preset_number] = $group_id;
 									}
 								}
@@ -607,7 +628,6 @@
 					}
 				}
 			}
-
 	}
 
 //set the defaults
@@ -618,6 +638,7 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //include the header
+	$document['title'] = $text['title-time_condition'];
 	require_once "resources/header.php";
 
 ?>
@@ -772,9 +793,9 @@
 								sel_stop.options[sel_stop.options.length] = new Option(((h != 0) ? ((h >= 12) ? ((h == 12) ? h : (h - 12)) + ':' + pad(m, 2) + ' PM' : h + ':' + pad(m, 2) + ' AM') : '12:' + pad(m, 2) + ' AM'), pad(h, 2)  + ':' + pad(m, 2));
 							}
 						}
-						h = 23;
-						m = 59;
-						sel_stop.options[sel_stop.options.length] = new Option(((h != 0) ? ((h >= 12) ? ((h == 12) ? h : (h - 12)) + ':' + pad(m, 2) + ' PM' : h + ':' + pad(m, 2) + ' AM') : '12:' + pad(m, 2) + ' AM'), pad(h, 2)  + ':' + pad(m, 2));
+						//h = 23;
+						//m = 59;
+						//sel_stop.options[sel_stop.options.length] = new Option(((h != 0) ? ((h >= 12) ? ((h == 12) ? h : (h - 12)) + ':' + pad(m, 2) + ' PM' : h + ':' + pad(m, 2) + ' AM') : '12:' + pad(m, 2) + ' AM'), pad(h, 2)  + ':' + pad(m, 2));
 						break;
 
 				}
@@ -880,7 +901,7 @@ echo "<form method='post' name='frm' action='' onsubmit=\"return check_submit();
 echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 echo "	<tr>\n";
 echo "		<td align='left' valign='top'>\n";
-echo "			<span class='title'>".$text['title-time_conditions']."</span>";
+echo "			<span class='title'>".$text['title-time_condition']."</span>";
 echo "			<br /><br />\n";
 echo "		</td>\n";
 echo "		<td align='right' valign='top'>\n";
@@ -960,6 +981,7 @@ function add_custom_condition($destination, $group_id, $dialplan_action = '') {
 	echo "	".$text['description-settings'];
 	echo "</td>\n";
 	echo "</tr>\n";
+
 }
 
 if ($action == 'update') {
@@ -1031,12 +1053,12 @@ if ($action == 'update') {
 		echo "	".$text['label-presets']."\n";
 		echo "</td>\n";
 		echo "<td class='vtable' align='left'>\n";
-
 		if (is_array($available_presets)) {
 			foreach ($available_presets as $preset_number => $preset) {
 				if (is_array($preset)) {
 					foreach ($preset as $preset_name => $preset_variables) {
-						$checked = (is_array($current_presets) && $current_presets[$preset_number] != '') ? "checked='checked'" : null;
+						$checked = (is_array($current_presets) && $preset_checked[$preset_name] == 'true') ? "checked='checked'" : null;
+
 						$preset_group_id = ($checked) ? $current_presets[$preset_number] : $preset_group_id = $preset_number * 5 + 100;
 						if (strlen($text['label-preset_'.$preset_name]) > 0) {
 							$label_preset_name = $text['label-preset_'.$preset_name];
@@ -1064,6 +1086,7 @@ if ($action == 'update') {
 						echo "	</table>";
 						echo "	<br />";
 						echo "</div>";
+/*****/
 						if ($action == 'update' && is_array($current_presets) && $current_presets[$preset_number] != '') {
 							//add (potentially customized) preset conditions and populate
 							if (is_array($current_conditions[$preset_group_id])) {
@@ -1121,6 +1144,7 @@ if ($action == 'update') {
 								}
 							}
 						}
+/**/
 					}
 				}
 			}

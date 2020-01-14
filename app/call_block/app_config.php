@@ -13,6 +13,7 @@
 		$apps[$x]['description']['de-at'] = "Ein Werkzeug um eingehende Rufnummern zu sperren.";
 		$apps[$x]['description']['de-ch'] = "";
 		$apps[$x]['description']['de-de'] = "Ein Werkzeug um eingehende Rufnummern zu sperren.";
+		$apps[$x]['description']['el-gr'] = "Εργαλείο για αποκλεισμό εισερχόμενων κλήσεων από συγκεκριμένους αριθμούς.";
 		$apps[$x]['description']['es-cl'] = "Una herramineta para bloquear números entrantes";
 		$apps[$x]['description']['es-mx'] = "";
 		$apps[$x]['description']['fr-ca'] = "Outil pour bloquer des numéros d'appelant.";
@@ -72,6 +73,9 @@
 		$apps[$x]['permissions'][$y]['name'] = "call_block_voicemail";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "view_call_block";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 
 	//schema details
 		$y=0;
@@ -105,11 +109,13 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_name";
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "blocked_caller_name";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the name.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_number";
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "blocked_caller_number";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the full phone number.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_count";
@@ -141,6 +147,7 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'call_block_description';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the description.';
 
 ?>

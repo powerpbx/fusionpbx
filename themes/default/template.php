@@ -37,17 +37,17 @@ echo "<link rel='stylesheet' type='text/css' href='<!--{project_path}-->/resourc
 
 //link to custom css file
 	if ($_SESSION['theme']['custom_css']['text'] != '') {
-		echo "<link rel='stylesheet' type='text/css' href='".escape($_SESSION['theme']['custom_css']['text'])."'>\n\n";
+		echo "<link rel='stylesheet' type='text/css' href='".$_SESSION['theme']['custom_css']['text']."'>\n\n";
 	}
 //output custom css
 	if ($_SESSION['theme']['custom_css_code']['text'] != '') {
 		echo "<style>\n";
-		echo escape($_SESSION['theme']['custom_css_code']['text']);
+		echo $_SESSION['theme']['custom_css_code']['text'];
 		echo "</style>\n\n";
 	}
 
 //set fav icon
-	$favicon = (isset($_SESSION['theme']['favicon']['text'])) ? escape($_SESSION['theme']['favicon']['text']) : '<!--{project_path}-->/themes/default/favicon.ico';
+	$favicon = (isset($_SESSION['theme']['favicon']['text'])) ? $_SESSION['theme']['favicon']['text'] : '<!--{project_path}-->/themes/default/favicon.ico';
 	echo "<link rel='icon' href='".$favicon."'>\n";
 
 echo "<title><!--{title}--></title>\n";
@@ -328,10 +328,10 @@ echo "<script language='JavaScript' type='text/javascript' src='<!--{project_pat
 			if (recording_audio.paused) {
 				recording_audio.volume = 1;
 				recording_audio.play();
-				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_pause']['text']; ?>'></span>";
+				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_pause']['text']; ?> fa-fw'></span>";
 				audio_clock = setInterval(function () { update_progress(recording_id); }, 20);
 
-				$("[id*=recording_button]").not("[id*=recording_button_"+recording_id+"]").html("<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?>'></span>");
+				$("[id*=recording_button]").not("[id*=recording_button_"+recording_id+"]").html("<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?> fa-fw'></span>");
 				$("[id*=recording_progress_bar]").not("[id*=recording_progress_bar_"+recording_id+"]").css('display', 'none');
 
 				$('audio').each(function(){$('#menu_side_container').width()
@@ -343,7 +343,7 @@ echo "<script language='JavaScript' type='text/javascript' src='<!--{project_pat
 			}
 			else {
 				recording_audio.pause();
-				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?>'></span>";
+				document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?> fa-fw'></span>";
 				clearInterval(audio_clock);
 			}
 		}
@@ -360,7 +360,7 @@ echo "<script language='JavaScript' type='text/javascript' src='<!--{project_pat
 			if (document.getElementById('recording_progress_bar_'+recording_id)) {
 				document.getElementById('recording_progress_bar_'+recording_id).style.display='none';
 			}
-			document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?>'></span>";
+			document.getElementById('recording_button_'+recording_id).innerHTML = "<span class='<?php echo $_SESSION['theme']['button_icon_play']['text']; ?> fa-fw'></span>";
 			clearInterval(audio_clock);
 		}
 
@@ -378,11 +378,21 @@ echo "<script language='JavaScript' type='text/javascript' src='<!--{project_pat
 		}
 
 	//handle action bar style on scroll
-		window.addEventListener('scroll', action_bar_scroll , false);
-		function action_bar_scroll() {
-			if (document.getElementById('action_bar')) {
-				if (this.scrollY > 20) { document.getElementById('action_bar').classList.add('scroll'); }
-				if (this.scrollY < 20) { document.getElementById('action_bar').classList.remove('scroll'); }
+		window.addEventListener('scroll', function(){
+			action_bar_scroll('action_bar', 20);
+		}, false);
+		function action_bar_scroll(action_bar_id, scroll_position, function_sticky, function_inline) {
+			if (document.getElementById(action_bar_id)) {
+				//sticky
+					if (this.scrollY > scroll_position) {
+						document.getElementById(action_bar_id).classList.add('scroll');
+						if (typeof function_sticky === 'function') { function_sticky(); }
+					}
+				//inline
+					if (this.scrollY < scroll_position) {
+						document.getElementById(action_bar_id).classList.remove('scroll');
+						if (typeof function_inline === 'function') { function_inline(); }
+					}
 			}
 		}
 
@@ -411,21 +421,35 @@ echo "<script language='JavaScript' type='text/javascript' src='<!--{project_pat
 		}
 
 	//list functions
-		function list_all_toggle() {
+		function list_all_toggle(modifier) {
 			var inputs = document.getElementsByTagName('input');
-			var checkbox_checked = document.getElementById('checkbox_all').checked;
-			for (var i = 0, max = inputs.length; i < max; i++) {
-				if (inputs[i].type === 'checkbox') {
-					inputs[i].checked = checkbox_checked;
-				}
-			}
-			if (checkbox_checked) {
-				document.getElementById('btn_check_all').style.display = 'none';
-				document.getElementById('btn_check_none').style.display = '';
+			if (modifier !== undefined) {
+				var checkbox_checked = document.getElementById('checkbox_all_'+modifier).checked;
 			}
 			else {
-				document.getElementById('btn_check_all').style.display = '';
-				document.getElementById('btn_check_none').style.display = 'none';
+				var checkbox_checked = document.getElementById('checkbox_all').checked;
+			}
+			for (var i = 0, max = inputs.length; i < max; i++) {
+				if (modifier !== undefined) {
+					if (inputs[i].type === 'checkbox' && inputs[i].className === 'checkbox_'+modifier) {
+						inputs[i].checked = checkbox_checked;
+					}
+				}
+				else {
+					if (inputs[i].type === 'checkbox') {
+						inputs[i].checked = checkbox_checked;
+					}
+				}
+			}
+			if (document.getElementById('btn_check_all') && document.getElementById('btn_check_none')) {
+				if (checkbox_checked) {
+					document.getElementById('btn_check_all').style.display = 'none';
+					document.getElementById('btn_check_none').style.display = '';
+				}
+				else {
+					document.getElementById('btn_check_all').style.display = '';
+					document.getElementById('btn_check_none').style.display = 'none';
+				}
 			}
 		}
 
@@ -648,7 +672,7 @@ if (!$default_login) {
 							$menu_brand_image = ($_SESSION['theme']['menu_brand_image']['text'] != '') ? escape($_SESSION['theme']['menu_brand_image']['text']) : PROJECT_PATH."/themes/default/images/logo.png";
 							echo "			<a href='".$menu_brand_link."'>";
 							echo "				<img id='menu_brand_image' class='navbar-logo' src='".$menu_brand_image."' title=\"".escape($menu_brand_text)."\">";
-							if ($_SESSION['theme']['menu_brand_image_hover']['text'] != '') {
+							if (isset($_SESSION['theme']['menu_brand_image_hover']['text']) && $_SESSION['theme']['menu_brand_image_hover']['text'] != '') {
 								echo 			"<img id='menu_brand_image_hover' class='navbar-logo' style='display: none;' src='".$_SESSION['theme']['menu_brand_image_hover']['text']."' title=\"".escape($menu_brand_text)."\">";
 							}
 							echo 			"</a>\n";
@@ -676,7 +700,7 @@ if (!$default_login) {
 				}
 				$mod_a_2 = ($menu_parent['menu_item_link'] != '' && !$submenu) ? $menu_parent['menu_item_link'] : '#';
 				$mod_a_3 = ($menu_parent['menu_item_category'] == 'external') ? "target='_blank' " : null;
-				if ($_SESSION['theme']['menu_main_icons']['boolean'] != 'false') {
+				if (isset($_SESSION['theme']['menu_main_icons']['boolean']) && $_SESSION['theme']['menu_main_icons']['boolean'] == 'true') {
 					if ($menu_parent['menu_item_icon'] != '' && substr_count($menu_parent['menu_item_icon'], 'fa-') > 0) {
 						$menu_main_icon = "<span class='fas ".$menu_parent['menu_item_icon']."' title=\"".escape($menu_parent['menu_language_title'])."\"></span>\n";
 					}
@@ -698,15 +722,6 @@ if (!$default_login) {
 						$mod_a_2 = $menu_sub['menu_item_link'];
 						if ($mod_a_2 == '') {
 							$mod_a_2 = '#';
-						}
-						else if (($menu_sub['menu_item_category'] == 'internal') || (($menu_sub['menu_item_category'] == 'external') && substr($mod_a_2,0,1) == '/')) {
-							// accomodate adminer auto-login, if enabled
-								if (substr($mod_a_2,0,22) == '/app/adminer/index.php') {
-									global $db_type;
-									$mod_a_2 .= '?'.(($db_type == 'mysql') ? 'server' : $db_type).'&db=fusionpbx&ns=public';
-									$mod_a_2 .= ($_SESSION['adminer']['auto_login']['boolean'] == 'true') ? "&username=auto" : null;
-								}
-							$mod_a_2 = PROJECT_PATH.$mod_a_2;
 						}
 						$mod_a_3 = ($menu_sub['menu_item_category'] == 'external') ? "target='_blank' " : null;
 						if ($_SESSION['theme']['menu_sub_icons']['boolean'] != 'false') {
@@ -748,17 +763,18 @@ if (!$default_login) {
 			echo "</nav>\n";
 	}
 
-
-	//determine menu configuration
-		$menu = new menu;
-		$menu->db = $db;
-		$menu->menu_uuid = $_SESSION['domain']['menu']['uuid'];
-		$menu_array = $menu->menu_array();
-		unset($menu);
-
+	//get the menu array and save it to the session
+		if (!isset($_SESSION['menu']['array'])) {
+			$menu = new menu;
+			$menu->menu_uuid = $_SESSION['domain']['menu']['uuid'];
+			$_SESSION['menu']['array'] = $menu->menu_array();
+			unset($menu);
+		}
+	//get the menu style and position
 		$menu_style = ($_SESSION['theme']['menu_style']['text'] != '') ? $_SESSION['theme']['menu_style']['text'] : 'fixed';
 		$menu_position = ($_SESSION['theme']['menu_position']['text'] != '') ? $_SESSION['theme']['menu_position']['text'] : 'top';
 
+	//show the menu style
 		switch ($menu_style) {
 			case 'inline':
 				$logo_align = ($_SESSION['theme']['logo_align']['text'] != '') ? $_SESSION['theme']['logo_align']['text'] : 'left';
@@ -769,14 +785,14 @@ if (!$default_login) {
 					echo "<a href='".((PROJECT_PATH != '') ? PROJECT_PATH : '/')."'><img src='".$logo."' style='padding: 15px 20px; ".$logo_style."'></a>";
 				}
 
-				show_menu($menu_array, $menu_style, $menu_position);
+				show_menu($_SESSION['menu']['array'], $menu_style, $menu_position);
 				break;
 			case 'static':
 				echo "<div class='container-fluid' style='padding: 0;' align='center'>\n";
-				show_menu($menu_array, $menu_style, $menu_position);
+				show_menu($_SESSION['menu']['array'], $menu_style, $menu_position);
 				break;
 			case 'fixed':
-				show_menu($menu_array, $menu_style, $menu_position);
+				show_menu($_SESSION['menu']['array'], $menu_style, $menu_position);
 				echo "<div class='container-fluid' style='padding: 0;' align='center'>\n";
 				break;
 			case 'side':
@@ -826,8 +842,8 @@ if (!$default_login) {
 					}
 
 					//main menu items
-						if (is_array($menu_array) && sizeof($menu_array) != 0) {
-							foreach ($menu_array as $menu_index_main => $menu_item_main) {
+						if (is_array($_SESSION['menu']['array']) && sizeof($_SESSION['menu']['array']) != 0) {
+							foreach ($_SESSION['menu']['array'] as $menu_index_main => $menu_item_main) {
 								echo "	<a class='menu_side_item_main' ".($menu_item_main['menu_item_link'] != '' ? "href='".$menu_item_main['menu_item_link']."'" : "onclick=\"menu_side_expand(); $('#sub_".$menu_item_main['menu_item_uuid']."').slideToggle(180, function() { if (!$(this).is(':hidden')) { $('.menu_side_sub').not($(this)).slideUp(180); } });\"")." title=\"".$menu_item_main['menu_language_title']."\">";
 								if ($menu_item_main['menu_item_icon'] != '') {
 									echo "<i class='fas ".$menu_item_main['menu_item_icon']." fa-fw' style='z-index: 99800; margin-right: 8px;'></i>";
@@ -880,16 +896,13 @@ if (!$default_login) {
 		echo "	<!--{body}-->\n";
 		echo "</div>\n";
 		echo "<div id='footer'>\n";
-		echo "	<span class='footer'>".($_SESSION['theme']['footer']['text'] != '' ? $_SESSION['theme']['footer']['text'] : "&copy; ".$text['theme-label-copyright']." 2008 - ".date("Y")." <a href='http://www.fusionpbx.com' class='footer' target='_blank'>fusionpbx.com</a> ".$text['theme-label-all_rights_reserved'])."</span>\n";
+		echo "	<span class='footer'>".(isset($_SESSION['theme']['footer']['text']) && $_SESSION['theme']['footer']['text'] != '' ? $_SESSION['theme']['footer']['text'] : "&copy; ".$text['theme-label-copyright']." 2008 - ".date("Y")." <a href='http://www.fusionpbx.com' class='footer' target='_blank'>fusionpbx.com</a> ".$text['theme-label-all_rights_reserved'])."</span>\n";
 		echo "</div>\n";
 
 		echo "</div>\n"; //initial div from switch statement above
-
 }
-
-// default login being used
 else {
-
+	// default login being used
 	if ($_SESSION['theme']['logo_login']['text'] != '') {
 		$logo = $_SESSION['theme']['logo_login']['text'];
 	}
@@ -909,7 +922,6 @@ else {
 	echo "</div>\n";
 
 	unset($_SESSION['background_image']);
-
 }
 
 echo "</body>\n";

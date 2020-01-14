@@ -49,40 +49,31 @@
 		$profiles = $_POST['profiles'];
 	}
 
-//copy the device profiles
-	if (permission_exists('device_profile_add')) {
-		if ($action == 'copy' && is_array($profiles) && @sizeof($profiles) != 0) {
-			//copy
-				$obj = new device;
-				$obj->copy_profiles($profiles);
-			//redirect
-				header('Location: device_profiles.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
+//process the http post data by action
+	if ($action != '' && is_array($profiles) && @sizeof($profiles) != 0) {
+		switch ($action) {
+			case 'copy':
+				if (permission_exists('device_profile_add')) {
+					$obj = new device;
+					$obj->copy_profiles($profiles);
+				}
+				break;
+			case 'toggle':
+				if (permission_exists('device_profile_edit')) {
+					$obj = new device;
+					$obj->toggle_profiles($profiles);
+				}
+				break;
+			case 'delete':
+				if (permission_exists('device_profile_delete')) {
+					$obj = new device;
+					$obj->delete_profiles($profiles);
+				}
+				break;
 		}
-	}
 
-//toggle the device profiles
-	if (permission_exists('device_profile_edit')) {
-		if ($action == 'toggle' && is_array($profiles) && @sizeof($profiles) != 0) {
-			//toggle
-				$obj = new device;
-				$obj->toggle_profiles($profiles);
-			//redirect
-				header('Location: device_profiles.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
-	}
-
-//delete the device profiles
-	if (permission_exists('device_profile_delete')) {
-		if ($action == 'delete' && is_array($profiles) && @sizeof($profiles) != 0) {
-			//delete
-				$obj = new device;
-				$obj->delete_profiles($profiles);
-			//redirect
-				header('Location: device_profiles.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
+		header('Location: device_profiles.php'.($search != '' ? '?search='.urlencode($search) : null));
+		exit;
 	}
 
 //get variables used to control the order
@@ -135,6 +126,7 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //include the header
+	$document['title'] = $text['title-device_profiles'];
 	require_once "resources/header.php";
 
 //show the content

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2018
+	Portions created by the Initial Developer are Copyright (C) 2008-2019
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -50,40 +50,31 @@
 		$call_flows = $_POST['call_flows'];
 	}
 
-//copy the call flows
-	if (permission_exists('call_flow_add')) {
-		if ($action == 'copy' && is_array($call_flows) && @sizeof($call_flows) != 0) {
-			//copy
-				$obj = new call_flows;
-				$obj->copy($call_flows);
-			//redirect
-				header('Location: call_flows.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
+//process the http post data by action
+	if ($action != '' && is_array($call_flows) && @sizeof($call_flows) != 0) {
+		switch ($action) {
+			case 'copy':
+				if (permission_exists('call_flow_add')) {
+					$obj = new call_flows;
+					$obj->copy($call_flows);
+				}
+				break;
+			case 'toggle':
+				if (permission_exists('call_flow_edit')) {
+					$obj = new call_flows;
+					$obj->toggle($call_flows);
+				}
+				break;
+			case 'delete':
+				if (permission_exists('call_flow_delete')) {
+					$obj = new call_flows;
+					$obj->delete($call_flows);
+				}
+				break;
 		}
-	}
 
-//toggle the call flows
-	if (permission_exists('call_flow_edit')) {
-		if ($action == 'toggle' && is_array($call_flows) && @sizeof($call_flows) != 0) {
-			//toggle
-				$obj = new call_flows;
-				$obj->toggle($call_flows);
-			//redirect
-				header('Location: call_flows.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
-	}
-
-//delete the call flows
-	if (permission_exists('call_flow_delete')) {
-		if ($action == 'delete' && is_array($call_flows) && @sizeof($call_flows) != 0) {
-			//delete
-				$obj = new call_flows;
-				$obj->delete($call_flows);
-			//redirect
-				header('Location: call_flows.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
+		header('Location: call_flows.php'.($search != '' ? '?search='.urlencode($search) : null));
+		exit;
 	}
 
 //get variables used to control the order
@@ -167,7 +158,7 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
-	echo $text['title_description-call_flows']."\n";
+	echo $text['description-call_flows']."\n";
 	echo "<br /><br />\n";
 
 	echo "<form id='form_list' method='post'>\n";

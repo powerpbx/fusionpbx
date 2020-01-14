@@ -13,6 +13,7 @@
 		$apps[$x]['description']['de-at'] = "Warteschlangen um eingehende Anrufe zu verwalten und diese an verfügbare Agenten weiterzuleiten.";
 		$apps[$x]['description']['de-ch'] = "";
 		$apps[$x]['description']['de-de'] = "Warteschlangen um eingehende Anrufe zu verwalten und diese an verfügbare Agenten weiterzuleiten.";
+		$apps[$x]['description']['el-gr'] = "Ουρές για διαχείριση εισερχόμενων κλήσεων και δρομολόγησης των κλήσεων σε διαθέσιμους τηλεφωνητές/τηλεφωνήτριες.";
 		$apps[$x]['description']['es-cl'] = "Colas pra administar las llamadas entrantes y enviarlas a los agentes disponibles";
 		$apps[$x]['description']['es-mx'] = "";
 		$apps[$x]['description']['fr-ca'] = "Queues pour envoyer les appels entrants vers les agents disponibles.";
@@ -283,6 +284,7 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "queue_name";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "queue_extension";
@@ -367,6 +369,7 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "queue_description";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 
 		$y++;

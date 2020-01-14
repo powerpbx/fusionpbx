@@ -27,9 +27,9 @@
 //includes
 	require_once "root.php";
 	require_once "resources/require.php";
+	require_once "resources/check_auth.php";
 
 //check permissions
-	require_once "resources/check_auth.php";
 	if (permission_exists('sip_profile_add') || permission_exists('sip_profile_edit')) {
 		//access granted
 	}
@@ -161,11 +161,12 @@
 			$database->save($array);
 			$message = $database->message;
 
-			//get the hostname
-			$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
-			if ($fp) {
-				$switch_cmd = "switchname";
-				$sip_profile_hostname = event_socket_request($fp, 'api '.$switch_cmd);
+		//get the hostname
+			if ($sip_profile_hostname == '') {
+				$fp = event_socket_create($_SESSION['event_socket_ip_address'], $_SESSION['event_socket_port'], $_SESSION['event_socket_password']);
+				if ($fp) {
+					$sip_profile_hostname = event_socket_request($fp, 'api switchname');
+				}
 			}
 
 		//revoke temporary permissions
@@ -249,6 +250,7 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //show the header
+	$document['title'] = $text['title-sip_profile'];
 	require_once "resources/header.php";
 	
 //label to form input
@@ -270,10 +272,12 @@
 	echo "<td align='left' width='30%' nowrap='nowrap' valign='top'><b>".$text['title-sip_profile']."</b><br><br></td>\n";
 	echo "<td width='70%' align='right' valign='top'>\n";
 	echo "	<input type='button' class='btn' name='' alt='".$text['button-back']."' onclick=\"window.location='sip_profiles.php'\" value='".$text['button-back']."'>";
-	if (permission_exists('dialplan_add')
+	if ($action == 'update' && (
+		permission_exists('dialplan_add')
 		|| permission_exists('inbound_route_add')
 		|| permission_exists('outbound_route_add')
-		|| permission_exists('time_condition_add')) {
+		|| permission_exists('time_condition_add')
+		)) {
 		echo "	<input type='button' class='btn' name='' alt='".$text['button-copy']."' onclick=\"var name = prompt('".$text['label-new_sip_profile_name']."'); if (name != null) { window.location='sip_profile_copy.php?id=".urlencode($sip_profile_uuid)."&name=' + name; }\" value='".$text['button-copy']."'>\n";
 	}
 	echo "	<input type='submit' class='btn' value='".$text['button-save']."'>";

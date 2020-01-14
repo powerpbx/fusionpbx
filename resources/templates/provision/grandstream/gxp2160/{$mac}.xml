@@ -6504,7 +6504,7 @@
     <!-- # Configuration Via Keypad Menu. 0 - Unrestricted, 1 - Basic settings only, 2 - Constraint mode, 3 - Locked Mode. Default is 0 -->
     <!-- # Number: 0, 1, 2, 3 -->
     <!-- # Mandatory -->
-    <P1357>0</P1357>
+    <P1357>{$grandstream_config_via_keypad}</P1357>
 
     <!-- # Validate Server Certificates. 0 - No, 1 - Yes. Default is 0 -->
     <!-- # Number: 0, 1 -->
@@ -6651,9 +6651,7 @@
     <!-- # For example: directory.grandstream.com/engineering -->
     <!-- # String -->
 {if isset($grandstream_phonebook_xml_server_path)}
-    <P331>{$grandstream_phonebook_xml_server_path}{$mac}/</P331>
-{elseif isset($grandstream_phonebook_xml_server_path)}
-    <P331>{$grandstream_phonebook_xml_server_path}</P331>
+    <P331>{$grandstream_phonebook_xml_server_path}/{$mac}</P331>
 {else}
     <P331></P331>
 {/if}

@@ -61,6 +61,27 @@ $text['title_description-conference_centers']['ru-ru'] = "Конференс-ц�
 $text['title_description-conference_centers']['sv-se'] = "Konferenscenter är en grupp med konferensrum. De kan sorteras på kostnadscenter, geografisk placering eller andra kriterier.";
 $text['title_description-conference_centers']['uk-ua'] = "Конференц-центри є група конференц-залів. Вони можуть бути організовані МВЗ, географічно або інших критеріїв.";
 
+$text['title_description-conference_rooms']['en-us'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['ar-eg'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['de-at'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['de-ch'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['de-de'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['es-cl'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['es-mx'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['fr-ca'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['fr-fr'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['he-il'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['it-it'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['nl-nl'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['pl-pl'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['pt-br'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['pt-pt'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['ro-ro'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['ru-ru'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['sv-se'] = "Conference Rooms are individual meeting places within a Conference Center.";
+$text['title_description-conference_rooms']['uk-ua'] = "Conference Rooms are individual meeting places within a Conference Center.";
+
+
 $text['label-conference_center_name']['en-us'] = "Name";
 $text['label-conference_center_name']['ar-eg'] = "";
 $text['label-conference_center_name']['de-at'] = "Name"; //copied from de-de
@@ -1480,5 +1501,25 @@ $text['button-rooms']['ro-ro'] = "";
 $text['button-rooms']['ru-ru'] = "Комнаты";
 $text['button-rooms']['sv-se'] = "Rum";
 $text['button-rooms']['uk-ua'] = "Кімнати";
+
+$text['button-view_active']['en-us'] = "View Active";
+$text['button-view_active']['ar-eg'] = "";
+$text['button-view_active']['de-at'] = "Aktive anzeigen"; //copied from de-de
+$text['button-view_active']['de-ch'] = "Aktive anzeigen"; //copied from de-de
+$text['button-view_active']['de-de'] = "Aktive anzeigen";
+$text['button-view_active']['es-cl'] = "Ver Activo";
+$text['button-view_active']['es-mx'] = "Ver Activo"; //copied from es-cl
+$text['button-view_active']['fr-ca'] = "Voir Active"; //copied from fr-fr
+$text['button-view_active']['fr-fr'] = "Voir Active";
+$text['button-view_active']['he-il'] = "";
+$text['button-view_active']['it-it'] = "Mostra Attive";
+$text['button-view_active']['nl-nl'] = "Toon aktieve ruimten";
+$text['button-view_active']['pl-pl'] = "";
+$text['button-view_active']['pt-br'] = "Ver Ativo"; //copied from pt-pt
+$text['button-view_active']['pt-pt'] = "Ver Ativo";
+$text['button-view_active']['ro-ro'] = "";
+$text['button-view_active']['ru-ru'] = "Просмотр Активных";
+$text['button-view_active']['sv-se'] = "Visa Aktiva";
+$text['button-view_active']['uk-ua'] = "";
 
 ?>

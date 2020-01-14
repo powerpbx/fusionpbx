@@ -47,40 +47,31 @@
 		$call_blocks = $_POST['call_blocks'];
 	}
 
-//copy the call blocks
-	if (permission_exists('call_block_add')) {
-		if ($action == 'copy' && is_array($call_blocks) && @sizeof($call_blocks) != 0) {
-			//copy
-				$obj = new call_block;
-				$obj->copy($call_blocks);
-			//redirect
-				header('Location: call_block.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
+//process the http post data by action
+	if ($action != '' && is_array($call_blocks) && @sizeof($call_blocks) != 0) {
+		switch ($action) {
+			case 'copy':
+				if (permission_exists('call_block_add')) {
+					$obj = new call_block;
+					$obj->copy($call_blocks);
+				}
+				break;
+			case 'toggle':
+				if (permission_exists('call_block_edit')) {
+					$obj = new call_block;
+					$obj->toggle($call_blocks);
+				}
+				break;
+			case 'delete':
+				if (permission_exists('call_block_delete')) {
+					$obj = new call_block;
+					$obj->delete($call_blocks);
+				}
+				break;
 		}
-	}
 
-//toggle the call blocks
-	if (permission_exists('call_block_edit')) {
-		if ($action == 'toggle' && is_array($call_blocks) && @sizeof($call_blocks) != 0) {
-			//toggle
-				$obj = new call_block;
-				$obj->toggle($call_blocks);
-			//redirect
-				header('Location: call_block.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
-	}
-
-//delete the call blocks
-	if (permission_exists('call_block_delete')) {
-		if ($action == 'delete' && is_array($call_blocks) && @sizeof($call_blocks) != 0) {
-			//delete
-				$obj = new call_block;
-				$obj->delete($call_blocks);
-			//redirect
-				header('Location: call_block.php'.($search != '' ? '?search='.urlencode($search) : null));
-				exit;
-		}
+		header('Location: call_block.php'.($search != '' ? '?search='.urlencode($search) : null));
+		exit;
 	}
 
 //get variables used to control the order
@@ -156,6 +147,7 @@
 	$token = $object->create($_SERVER['PHP_SELF']);
 
 //include the header
+	$document['title'] = $text['title-call-block'];
 	require_once "resources/header.php";
 
 //show the content
@@ -203,11 +195,11 @@
 	echo th_order_by('extension', $text['label-extension'], $order_by, $order);
 	echo th_order_by('call_block_name', $text['label-name'], $order_by, $order);
 	echo th_order_by('call_block_number', $text['label-number'], $order_by, $order);
-	echo th_order_by('call_block_count', $text['label-count'], $order_by, $order, '', "class='center'");
+	echo th_order_by('call_block_count', $text['label-count'], $order_by, $order, '', "class='center hide-sm-dn'");
 	echo th_order_by('call_block_action', $text['label-action'], $order_by, $order);
 	echo th_order_by('call_block_enabled', $text['label-enabled'], $order_by, $order, null, "class='center'");
-	echo th_order_by('date_added', $text['label-date-added'], $order_by, $order);
-	echo "	<th class='hide-md-dn'>".$text['label-description']."</th>\n";
+	echo th_order_by('date_added', $text['label-date-added'], $order_by, $order, null, "class='shrink no-wrap'");
+	echo "<th class='hide-md-dn pct-20'>".$text['label-description']."</th>\n";
 	if (permission_exists('call_block_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
 	}
@@ -231,29 +223,19 @@
 				echo $text['label-all'];
 			}
 			else {
-				echo "<a href='".$list_row_url."'>".escape($row['extension'])."</a>";
+				echo escape($row['extension']);
 			}
 			echo "	</td>\n";
-
+			echo "	<td>".escape($row['call_block_name'])."</td>\n";
 			echo "	<td>";
 			if (permission_exists('call_block_edit')) {
-				echo "<a href='".$list_row_url."'>".escape($row['call_block_name'])."</a>";
+				echo "<a href='".$list_row_url."'>".escape(format_phone($row['call_block_number']))."</a>";
 			}
 			else {
-				echo escape($row['call_block_name']);
+				echo escape(format_phone($row['call_block_number']));
 			}
 			echo "	</td>\n";
-
-			echo "	<td>";
-			if (permission_exists('call_block_edit')) {
-				echo "<a href='".$list_row_url."'>".escape($row['call_block_number'])."</a>";
-			}
-			else {
-				echo escape($row['call_block_number']);
-			}
-			echo "	</td>\n";
-
-			echo "	<td class='center'>".escape($row['call_block_count'])."</td>\n";
+			echo "	<td class='center hide-sm-dn'>".escape($row['call_block_count'])."</td>\n";
 			echo "	<td>".$text['label-'.$row['call_block_app']]." ".escape($row['call_block_data'])."</td>\n";
 			if (permission_exists('call_block_edit')) {
 				echo "	<td class='no-link center'>";
@@ -264,7 +246,7 @@
 				echo $text['label-'.$row['call_block_enabled']];
 			}
 			echo "	</td>\n";
-			echo "	<td>".date("j M Y H:i:s".(defined('TIME_24HR') && TIME_24HR == 1 ? 'a' : null), $row['date_added'])."</td>\n";
+			echo "	<td class='no-wrap'>".date('j M Y', $row['date_added'])." <span class='hide-sm-dn'>".date(($_SESSION['domain']['time_format']['text'] == '12h' ? 'h:i:s a' : 'H:i:s'), $row['date_added'])."</span></td>\n";
 			echo "	<td class='description overflow hide-md-dn'>".escape($row['call_block_description'])."</td>\n";
 			if (permission_exists('call_block_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 				echo "	<td class='action-button'>";
