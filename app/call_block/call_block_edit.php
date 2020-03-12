@@ -151,77 +151,82 @@
 						}
 					}
 
-				if ($action == "add") {
-					$array['call_block'][0]['call_block_uuid'] = uuid();
-					$array['call_block'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
-					if (is_uuid($extension_uuid)) {
-						$array['call_block'][0]['extension_uuid'] = $extension_uuid;
+				//if user doesn't have call block all then use the assigned extension_uuid
+					if (!permission_exists('call_block_all')) {
+						$extension_uuid = $_SESSION['user']['extension'][0]['extension_uuid'];
 					}
-					$array['call_block'][0]['call_block_name'] = $call_block_name;
-					$array['call_block'][0]['call_block_number'] = $call_block_number;
-					$array['call_block'][0]['call_block_count'] = 0;
-					$array['call_block'][0]['call_block_app'] = $call_block_app;
-					$array['call_block'][0]['call_block_data'] = $call_block_data;
-					$array['call_block'][0]['call_block_enabled'] = $call_block_enabled;
-					$array['call_block'][0]['date_added'] = time();
-					$array['call_block'][0]['call_block_description'] = $call_block_description;
 
-					$database = new database;
-					$database->app_name = 'call_block';
-					$database->app_uuid = '9ed63276-e085-4897-839c-4f2e36d92d6c';
-					$database->save($array);
-					$response = $database->message;
-					unset($array);
+				//save the data to the database
+					if ($action == "add") {
+						$array['call_block'][0]['call_block_uuid'] = uuid();
+						$array['call_block'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
+						if (is_uuid($extension_uuid)) {
+							$array['call_block'][0]['extension_uuid'] = $extension_uuid;
+						}
+						$array['call_block'][0]['call_block_name'] = $call_block_name;
+						$array['call_block'][0]['call_block_number'] = $call_block_number;
+						$array['call_block'][0]['call_block_count'] = 0;
+						$array['call_block'][0]['call_block_app'] = $call_block_app;
+						$array['call_block'][0]['call_block_data'] = $call_block_data;
+						$array['call_block'][0]['call_block_enabled'] = $call_block_enabled;
+						$array['call_block'][0]['date_added'] = time();
+						$array['call_block'][0]['call_block_description'] = $call_block_description;
 
-					message::add($text['label-add-complete']);
-					header("Location: call_block.php");
-					return;
-				}
+						$database = new database;
+						$database->app_name = 'call_block';
+						$database->app_uuid = '9ed63276-e085-4897-839c-4f2e36d92d6c';
+						$database->save($array);
+						$response = $database->message;
+						unset($array);
 
-				if ($action == "update") {
-					$sql = "select c.call_block_number, d.domain_name ";
-					$sql .= "from v_call_block as c ";
-					$sql .= "join v_domains as d on c.domain_uuid = d.domain_uuid ";
-					$sql .= "where c.domain_uuid = :domain_uuid ";
-					$sql .= "and c.call_block_uuid = :call_block_uuid ";
-					$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-					$parameters['call_block_uuid'] = $call_block_uuid;
-					$database = new database;
-					$result = $database->select($sql, $parameters);
-					if (is_array($result) && sizeof($result) != 0) {
-						//set the domain_name
-						$domain_name = $result[0]["domain_name"];
-
-						//clear the cache
-						$cache = new cache;
-						$cache->delete("app:call_block:".$domain_name.":".$call_block_number);
+						message::add($text['label-add-complete']);
+						header("Location: call_block.php");
+						return;
 					}
-					unset($sql, $parameters);
+					if ($action == "update") {
+						$sql = "select c.call_block_number, d.domain_name ";
+						$sql .= "from v_call_block as c ";
+						$sql .= "join v_domains as d on c.domain_uuid = d.domain_uuid ";
+						$sql .= "where c.domain_uuid = :domain_uuid ";
+						$sql .= "and c.call_block_uuid = :call_block_uuid ";
+						$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+						$parameters['call_block_uuid'] = $call_block_uuid;
+						$database = new database;
+						$result = $database->select($sql, $parameters);
+						if (is_array($result) && sizeof($result) != 0) {
+							//set the domain_name
+							$domain_name = $result[0]["domain_name"];
 
-					$array['call_block'][0]['call_block_uuid'] = $call_block_uuid;
-					$array['call_block'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
-					if (is_uuid($extension_uuid)) {
-						$array['call_block'][0]['extension_uuid'] = $extension_uuid;
+							//clear the cache
+							$cache = new cache;
+							$cache->delete("app:call_block:".$domain_name.":".$call_block_number);
+						}
+						unset($sql, $parameters);
+
+						$array['call_block'][0]['call_block_uuid'] = $call_block_uuid;
+						$array['call_block'][0]['domain_uuid'] = $_SESSION['domain_uuid'];
+						if (is_uuid($extension_uuid)) {
+							$array['call_block'][0]['extension_uuid'] = $extension_uuid;
+						}
+						$array['call_block'][0]['call_block_name'] = $call_block_name;
+						$array['call_block'][0]['call_block_number'] = $call_block_number;
+						$array['call_block'][0]['call_block_app'] = $call_block_app;
+						$array['call_block'][0]['call_block_data'] = $call_block_data;
+						$array['call_block'][0]['call_block_enabled'] = $call_block_enabled;
+						$array['call_block'][0]['date_added'] = time();
+						$array['call_block'][0]['call_block_description'] = $call_block_description;
+
+						$database = new database;
+						$database->app_name = 'call_block';
+						$database->app_uuid = '9ed63276-e085-4897-839c-4f2e36d92d6c';
+						$database->save($array);
+						$response = $database->message;
+						unset($array);
+
+						message::add($text['label-update-complete']);
+						header("Location: call_block.php");
+						return;
 					}
-					$array['call_block'][0]['call_block_name'] = $call_block_name;
-					$array['call_block'][0]['call_block_number'] = $call_block_number;
-					$array['call_block'][0]['call_block_app'] = $call_block_app;
-					$array['call_block'][0]['call_block_data'] = $call_block_data;
-					$array['call_block'][0]['call_block_enabled'] = $call_block_enabled;
-					$array['call_block'][0]['date_added'] = time();
-					$array['call_block'][0]['call_block_description'] = $call_block_description;
-
-					$database = new database;
-					$database->app_name = 'call_block';
-					$database->app_uuid = '9ed63276-e085-4897-839c-4f2e36d92d6c';
-					$database->save($array);
-					$response = $database->message;
-					unset($array);
-
-					message::add($text['label-update-complete']);
-					header("Location: call_block.php");
-					return;
-				}
 			}
 	}
 
@@ -248,13 +253,15 @@
 	}
 
 //get the extensions
-	$sql = "select extension_uuid, extension, number_alias, user_context, description from v_extensions ";
-	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "and enabled = 'true' ";
-	$sql .= "order by extension asc ";
-	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-	$database = new database;
-	$extensions = $database->select($sql, $parameters);
+	if (permission_exists('call_block_all')) {
+		$sql = "select extension_uuid, extension, number_alias, user_context, description from v_extensions ";
+		$sql .= "where domain_uuid = :domain_uuid ";
+		$sql .= "and enabled = 'true' ";
+		$sql .= "order by extension asc ";
+		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$database = new database;
+		$extensions = $database->select($sql, $parameters);
+	}
 
 //get the extensions
 	$sql = "select voicemail_uuid, voicemail_id, voicemail_description ";
@@ -275,7 +282,7 @@
 	require_once "resources/header.php";
 
 //show the content
-	echo "<form method='post' name='frm'>\n";
+	echo "<form method='post' name='frm' id='frm'>\n";
 
 	echo "<div class='action_bar' id='action_bar'>\n";
 	echo "	<div class='heading'>";
@@ -288,11 +295,11 @@
 
 	echo 	"</div>\n";
 	echo "	<div class='actions'>\n";
-	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'collapse'=>'hide-xs','style'=>'margin-right: 15px;','link'=>'call_block.php']);
+	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','collapse'=>'hide-xs','style'=>'margin-right: 15px;','link'=>'call_block.php']);
 	if ($action == 'update' && permission_exists('call_block_delete')) {
-		echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'action','value'=>'delete','collapse'=>'hide-xs','style'=>'margin-right: 15px;','onclick'=>"if (confirm('".$text['confirm-delete']."')) { document.getElementById('frm').submit(); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'action','value'=>'delete','collapse'=>'hide-xs','style'=>'margin-right: 15px;','onclick'=>"if (confirm('".$text['confirm-delete']."')) { document.getElementById('frm').submit(); } else { this.blur(); return false; }"]);
 	}
-	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'collapse'=>'hide-xs']);
+	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','collapse'=>'hide-xs']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -358,8 +365,8 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	function call_block_action_select($label = false) {
-		global $text, $call_block_app, $call_block_data, $extensions, $voicemails;
-		echo "<select class='formfld' name='call_block_action'>\n";
+		global $select_margin, $text, $call_block_app, $call_block_data, $extensions, $voicemails;
+		echo "<select class='formfld' style='".$select_margin."' name='call_block_action'>\n";
 		if ($label) {
 			echo "	<option value='' disabled='disabled'>".$text['label-action']."</option>\n";
 		}
@@ -501,21 +508,25 @@
 		echo "<div class='action_bar' id='action_bar_sub'>\n";
 		echo "	<div class='heading'><b id='heading_sub'>".$text['heading-recent_calls']."</b></div>\n";
 		echo "	<div class='actions'>\n";
-		echo button::create(['type'=>'button','id'=>'action_bar_sub_button_back','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'collapse'=>'hide-xs','style'=>'margin-right: 15px; display: none;','link'=>'call_block.php']);
-		if (permission_exists('call_block_all')) {
-			echo 	"<select class='formfld' name='extension_uuid'>\n";
-			echo "		<option value='' disabled='disabled'>".$text['label-extension']."</option>\n";
-			echo "		<option value='' selected='selected'>".$text['label-all']."</option>\n";
-			if (is_array($extensions) && sizeof($extensions) != 0) {
-				foreach ($extensions as $row) {
-					$selected = $extension_uuid == $row['extension_uuid'] ? "selected='selected'" : null;
-					echo "	<option value='".urlencode($row["extension_uuid"])."' ".$selected.">".escape($row['extension'])." ".escape($row['description'])."</option>\n";
+		echo button::create(['type'=>'button','id'=>'action_bar_sub_button_back','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'collapse'=>'hide-xs','style'=>'display: none;','link'=>'call_block.php']);
+		if ($result) {
+			$select_margin = 'margin-left: 15px;';
+			if (permission_exists('call_block_all')) {
+				echo 	"<select class='formfld' style='".$select_margin."' name='extension_uuid'>\n";
+				echo "		<option value='' disabled='disabled'>".$text['label-extension']."</option>\n";
+				echo "		<option value='' selected='selected'>".$text['label-all']."</option>\n";
+				if (is_array($extensions) && sizeof($extensions) != 0) {
+					foreach ($extensions as $row) {
+						$selected = $extension_uuid == $row['extension_uuid'] ? "selected='selected'" : null;
+						echo "	<option value='".urlencode($row["extension_uuid"])."' ".$selected.">".escape($row['extension'])." ".escape($row['description'])."</option>\n";
+					}
 				}
+				echo "	</select>";
+				unset($select_margin);
 			}
-			echo "	</select>";
+			call_block_action_select(true);
+			echo button::create(['type'=>'button','label'=>$text['button-block'],'icon'=>'ban','collapse'=>'hide-xs','onclick'=>"if (confirm('".$text['confirm-block']."')) { list_form_submit('form_list'); } else { this.blur(); return false; }"]);
 		}
-		call_block_action_select(true);
-		echo button::create(['type'=>'button','label'=>$text['button-block'],'icon'=>'ban','collapse'=>'hide-xs','onclick'=>"if (confirm('".$text['confirm-block']."')) { list_form_submit('form_list'); } else { this.blur(); return false; }"]);
 		echo 	"</div>\n";
 		echo "	<div style='clear: both;'></div>\n";
 		echo "</div>\n";

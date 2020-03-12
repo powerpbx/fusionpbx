@@ -39,6 +39,11 @@ if (!class_exists('contacts')) {
 		private $uuid_prefix;
 
 		/**
+		 * declare public variables
+		 */
+		public $contact_uuid;
+
+		/**
 		 * called when the object is created
 		 */
 		public function __construct() {
@@ -132,6 +137,147 @@ if (!class_exists('contacts')) {
 
 								//set message
 									message::add($text['message-delete']);
+							}
+							unset($records);
+					}
+			}
+		}
+
+		public function delete_properties($records) {
+			//add multi-lingual support
+				$language = new text;
+				$text = $language->get();
+
+			//validate the token
+				$token = new token;
+				if (!$token->validate($_SERVER['PHP_SELF'])) {
+					message::add($text['message-invalid_token'],'negative');
+					header('Location: '.$this->list_page);
+					exit;
+				}
+
+			//delete multiple records
+				if (is_array($records) && @sizeof($records) != 0) {
+
+					//check permissions and build the delete array
+						$x = 0;
+						foreach ($records as $property_name => $properties) {
+							$database = new database;
+							if (permission_exists($database->singular($property_name).'_delete')) {
+								if (is_array($properties) && @sizeof($properties) != 0) {
+									foreach ($properties as $property) {
+										if ($property['checked'] == 'true' && is_uuid($property['uuid'])) {
+											$array[$property_name][$x][$database->singular($property_name).'_uuid'] = $property['uuid'];
+											$array[$property_name][$x]['contact_uuid'] = $this->contact_uuid;
+											$array[$property_name][$x]['domain_uuid'] = $_SESSION['domain_uuid'];
+											$x++;
+										}
+									}
+								}
+							}
+						}
+
+					//delete the checked rows
+						if (is_array($array) && @sizeof($array) != 0) {
+							//execute delete
+								$database = new database;
+								$database->app_name = $this->app_name;
+								$database->app_uuid = $this->app_uuid;
+								$database->delete($array);
+								unset($array);
+						}
+						unset($records);
+				}
+		}
+
+		public function delete_users($records) {
+			//assign private variables
+				$this->permission_prefix = 'contact_user_';
+				$this->table = 'contact_users';
+				$this->uuid_prefix = 'contact_user_';
+
+			if (permission_exists($this->permission_prefix.'delete')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//delete multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//filter out unchecked ivr menu options, build delete array
+							$x = 0;
+							foreach ($records as $record) {
+								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
+									$array[$this->table][$x]['contact_uuid'] = $this->contact_uuid;
+									$x++;
+								}
+							}
+
+						//delete the checked rows
+							if (is_array($array) && @sizeof($array) != 0) {
+								//execute delete
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->delete($array);
+									unset($array);
+							}
+							unset($records);
+					}
+			}
+		}
+
+		public function delete_groups($records) {
+			//assign private variables
+				$this->permission_prefix = 'contact_group_';
+				$this->table = 'contact_groups';
+				$this->uuid_prefix = 'contact_group_';
+
+			if (permission_exists($this->permission_prefix.'delete')) {
+
+				//add multi-lingual support
+					$language = new text;
+					$text = $language->get();
+
+				//validate the token
+					$token = new token;
+					if (!$token->validate($_SERVER['PHP_SELF'])) {
+						message::add($text['message-invalid_token'],'negative');
+						header('Location: '.$this->list_page);
+						exit;
+					}
+
+				//delete multiple records
+					if (is_array($records) && @sizeof($records) != 0) {
+
+						//filter out unchecked ivr menu options, build delete array
+							$x = 0;
+							foreach ($records as $record) {
+								if ($record['checked'] == 'true' && is_uuid($record['uuid'])) {
+									$array[$this->table][$x][$this->uuid_prefix.'uuid'] = $record['uuid'];
+									$array[$this->table][$x]['contact_uuid'] = $this->contact_uuid;
+									$x++;
+								}
+							}
+
+						//delete the checked rows
+							if (is_array($array) && @sizeof($array) != 0) {
+								//execute delete
+									$database = new database;
+									$database->app_name = $this->app_name;
+									$database->app_uuid = $this->app_uuid;
+									$database->delete($array);
+									unset($array);
 							}
 							unset($records);
 					}

@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2016
+	Portions created by the Initial Developer are Copyright (C) 2008-2020
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -278,6 +278,10 @@
 					message::add($text['message-upload_completed']);
 			}
 
+		//clear the cache
+			$cache = new cache;
+			$cache->delete("configuration:local_stream.conf");
+
 		//require_once "app/music_on_hold/resources/classes/switch_music_on_hold.php";
 			$music = new switch_music_on_hold;
 			$music->reload();
@@ -339,7 +343,7 @@
 		echo 	"<input type='hidden' name='".$token['name']."' value='".$token['hash']."'>\n";
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','onclick'=>"$(this).fadeOut(250, function(){ $('span#form_upload').fadeIn(250); });"]);
 		echo 	"<span id='form_upload' style='display: none;'>";
-		echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_upload_reset','onclick'=>"$('span#form_upload').fadeOut(250, function(){ name_mode('select'); document.getElementById('form_upload').reset(); $('#btn_add').fadeIn(250) });"]);
+		echo button::create(['label'=>$text['button-cancel'],'icon'=>$_SESSION['theme']['button_icon_cancel'],'type'=>'button','id'=>'btn_upload_cancel','onclick'=>"$('span#form_upload').fadeOut(250, function(){ name_mode('select'); document.getElementById('form_upload').reset(); $('#btn_add').fadeIn(250) });"]);
 		//name (category)
 			echo 	"<select name='name' id='name_select' class='formfld' style='width: auto;'>\n";
 			echo "		<option value='' selected='selected' disabled='disabled'>".$text['label-category']."</option>\n";
@@ -399,7 +403,7 @@
 		echo 	"</form>";
 	}
 	if (permission_exists('music_on_hold_delete') && $streams) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
 	}
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
@@ -463,7 +467,7 @@
 				//set the rate label
 					$stream_rate = $auto_rate ? $text['option-default'] : ($music_on_hold_rate/1000).' kHz';
 					if (permission_exists('music_on_hold_edit')) {
-						$stream_details = "<a href='music_on_hold_edit.php?id=".urlencode($row['music_on_hold_uuid'])."'>".$stream_rate.'</a> '.$icons;
+						$stream_details = "<a href='music_on_hold_edit.php?id=".urlencode($row['music_on_hold_uuid'])."' class='default-color'>".$stream_rate.'</a> '.$icons;
 					}
 					else {
 						$stream_details = $stream_rate.' '.$icons;
@@ -480,7 +484,8 @@
 					echo "	<tr class='list-header'>\n";
 					if (permission_exists('music_on_hold_delete')) {
 						echo "	<th class='checkbox'>\n";
-						echo "		<input type='checkbox' id='checkbox_all_".$row['music_on_hold_uuid']."' name='moh[".$row['music_on_hold_uuid']."][checked]' value='true' onclick=\"list_all_toggle('".$row['music_on_hold_uuid']."');\">\n";
+						echo "		<input type='checkbox' id='checkbox_all_".$row['music_on_hold_uuid']."' name='checkbox_all' onclick=\"list_all_toggle('".$row['music_on_hold_uuid']."'); document.getElementById('checkbox_all_".$row['music_on_hold_uuid']."_hidden').value = this.checked ? 'true' : 'false';\">\n";
+						echo "		<input type='hidden' id='checkbox_all_".$row['music_on_hold_uuid']."_hidden' name='moh[".$row['music_on_hold_uuid']."][checked]' value='true' onclick=\"list_all_toggle('".$row['music_on_hold_uuid']."');\">\n";
 						echo "	</th>\n";
 					}
 					echo "		<th class='pct-50'>".$stream_details."</th>\n";
@@ -519,7 +524,7 @@
 							echo "	<td class='button center no-link no-wrap'>";
 							echo 		"<audio id='recording_audio_".$row_uuid."' style='display: none;' preload='none' ontimeupdate=\"update_progress('".$row_uuid."')\" onended=\"recording_reset('".$row_uuid."');\" src='?action=download&id=".escape($row['music_on_hold_uuid'])."&file=".urlencode($stream_file)."' type='".escape($stream_file_type)."'></audio>";
 							echo button::create(['type'=>'button','title'=>$text['label-play'].' / '.$text['label-pause'],'icon'=>$_SESSION['theme']['button_icon_play'],'id'=>'recording_button_'.$row_uuid,'onclick'=>"recording_play('".$row_uuid."');"]);
-// 							echo button::create(['type'=>'button','title'=>$text['label-stop'],'icon'=>$_SESSION['theme']['button_icon_stop'],'onclick'=>"recording_stop('".$row_uuid."'); this.blur(); return false;"]);
+ 							//echo button::create(['type'=>'button','title'=>$text['label-stop'],'icon'=>$_SESSION['theme']['button_icon_stop'],'onclick'=>"recording_stop('".$row_uuid."'); this.blur(); return false;"]);
 							echo button::create(['type'=>'button','title'=>$text['label-download'],'icon'=>$_SESSION['theme']['button_icon_download'],'link'=>"?action=download&id=".urlencode($row['music_on_hold_uuid'])."&file=".urlencode($stream_file)]);
 							echo "	</td>\n";
 							echo "	<td class='right no-wrap hide-xs'>".escape($stream_file_size)."</td>\n";
