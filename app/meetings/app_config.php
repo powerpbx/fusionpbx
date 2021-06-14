@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Add, edit, delete, and search users. ";
+		$apps[$x]['description']['en-gb'] = "Add, edit, delete, and search users. ";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "";
 		$apps[$x]['description']['de-ch'] = "";
@@ -82,11 +83,11 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "primary";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "moderator_pin";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the moderator PIN number.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "participant_pin";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the participant PIN number.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "enabled";

@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Conferences is used to setup conference rooms with a name, description, and optional pin number.";
+		$apps[$x]['description']['en-gb'] = "Conferences is used to setup conference rooms with a name, description, and optional pin number.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Konferenzen wird verwendet, um Konferenzräume mit Namen, Beschreibung und optionaler PIN bereit zu stellen.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -35,8 +36,10 @@
 		$apps[$x]['destinations'][$y]['name'] = "conferences";
 		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and conference_enabled = 'true' ";
 		$apps[$x]['destinations'][$y]['order_by'] = "conference_name asc";
+		$apps[$x]['destinations'][$y]['field']['conference_uuid'] = "conference_uuid";
 		$apps[$x]['destinations'][$y]['field']['name'] = "conference_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "conference_extension";
+		$apps[$x]['destinations'][$y]['field']['extension'] = "conference_extension";
 		$apps[$x]['destinations'][$y]['field']['description'] = "conference_description";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
@@ -76,6 +79,10 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "conference_user_delete";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "conference_destinations";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 

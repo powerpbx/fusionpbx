@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Copyright (C) 2019 All Rights Reserved.
+	Copyright (C) 2020 All Rights Reserved.
 
 	Contributor(s):
 	Mark J Crane <markjcrane@fusionpbx.com>
@@ -366,7 +366,7 @@
 	if ($action == 'update') {
 		$button_margin = 'margin-left: 15px;';
 		if (permission_exists('device_profile_add')) {
-			echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','style'=>$button_margin,'link'=>'device_profile_copy.php?id='.urlencode($device_profile_uuid),'onclick'=>"if (!confirm('".$text['confirm-copy']."')) { this.blur(); return false; }"]);
+			echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','style'=>$button_margin,'onclick'=>"modal_open('modal-copy','btn_copy');"]);
 			unset($button_margin);
 		}
 		if (
@@ -374,7 +374,7 @@
 			permission_exists('device_profile_key_delete') ||
 			permission_exists('device_profile_setting_delete')
 			) {
-			echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','id'=>'btn_delete','name'=>'action','value'=>'delete','style'=>$button_margin,'onclick'=>"if (!confirm('".$text['confirm-delete']."')) { this.blur(); return false; }"]);
+			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$button_margin,'onclick'=>"modal_open('modal-delete','btn_delete');"]);
 			unset($button_margin);
 		}
 	}
@@ -382,6 +382,18 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($action == 'update' && permission_exists('device_profile_add')) {
+		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','link'=>'device_profile_copy.php?id='.urlencode($device_profile_uuid),'onclick'=>"modal_close();"])]);
+	}
+	if (
+		$action == 'update' && (
+		permission_exists('device_profile_delete') ||
+		permission_exists('device_profile_key_delete') ||
+		permission_exists('device_profile_setting_delete')
+		)) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'delete','onclick'=>"modal_close();"])]);
+	}
 
 	echo $text['description-device_profiles']."\n";
 	echo "<br /><br />\n";
@@ -477,21 +489,25 @@
 		echo "			<td class='formfld'>\n";
 		echo "				<select class='formfld' name='device_profile_keys[$x][profile_key_category]'>\n";
 		echo "					<option value='line' ".($row['profile_key_category'] == "line" ? "selected='selected'" : null).">".$text['label-line']."</option>\n";
-		if ($row['device_key_vendor'] !== "polycom") { 
+		if ($row['profile_key_vendor'] !== "polycom") { 
 			echo "					<option value='memory' ".($row['profile_key_category'] == "memory" ? "selected='selected'" : null).">".$text['label-memory']."</option>\n";
 		}
 		echo "					<option value='programmable' ".($row['profile_key_category'] == "programmable" ? "selected='selected'" : null).">".$text['label-programmable']."</option>\n";
-		if ($row['device_key_vendor'] !== "polycom") { 
-			if (strlen($row['device_key_vendor']) == 0) {
-				echo "					<option value='expansion' ".($row['profile_key_category'] == "expansion" ? "selected='selected'" : null).">".$text['label-expansion']." 1</option>\n";
+		if ($row['profile_key_vendor'] !== "polycom") { 
+			if (strlen($row['profile_key_vendor']) == 0) {
+				echo "					<option value='expansion' ".($row['profile_key_category'] == "expansion" ? "selected='selected'" : null).">".$text['label-expansion']."</option>\n";
+				echo "					<option value='expansion-1' ".($row['profile_key_category'] == "expansion-1" ? "selected='selected'" : null).">".$text['label-expansion']." 1</option>\n";
 				echo "					<option value='expansion-2' ".($row['profile_key_category'] == "expansion-2" ? "selected='selected'" : null).">".$text['label-expansion']." 2</option>\n";
 				echo "					<option value='expansion-3' ".($row['profile_key_category'] == "expansion-3" ? "selected='selected'" : null).">".$text['label-expansion']." 3</option>\n";
 				echo "					<option value='expansion-4' ".($row['profile_key_category'] == "expansion-4" ? "selected='selected'" : null).">".$text['label-expansion']." 4</option>\n";
 				echo "					<option value='expansion-5' ".($row['profile_key_category'] == "expansion-5" ? "selected='selected'" : null).">".$text['label-expansion']." 5</option>\n";
 				echo "					<option value='expansion-6' ".($row['profile_key_category'] == "expansion-6" ? "selected='selected'" : null).">".$text['label-expansion']." 6</option>\n";
 			}
+			elseif (strtolower($row['profile_key_vendor']) == "grandstream") {
+				echo "	<option value='expansion' ".($row['profile_key_category'] == "expansion" || $row['profile_key_category'] == "expansion" ? "selected='selected'" : null).">".$text['label-expansion']."</option>\n";
+			}
 			else {
-				if (strtolower($row['device_key_vendor']) == "cisco" || strtolower($row['device_key_vendor']) == "yealink") {
+				if (strtolower($row['profile_key_vendor']) == "cisco" || strtolower($row['profile_key_vendor']) == "yealink") {
 					echo "	<option value='expansion-1' ".($row['profile_key_category'] == "expansion-1" || $row['profile_key_category'] == "expansion" ? "selected='selected'" : null).">".$text['label-expansion']." 1</option>\n";
 					echo "	<option value='expansion-2' ".($row['profile_key_category'] == "expansion-2" ? "selected='selected'" : null).">".$text['label-expansion']." 2</option>\n";
 					echo "	<option value='expansion-3' ".($row['profile_key_category'] == "expansion-3" ? "selected='selected'" : null).">".$text['label-expansion']." 3</option>\n";

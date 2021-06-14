@@ -125,19 +125,6 @@
 	$groups = $database->select($sql, $parameters, 'all');
 	unset($sql, $parameters);
 
-//get permission counts for each group
-	if (is_array($groups) && @sizeof($groups) != 0) {
-		$sql = "select group_uuid, count(group_permission_uuid) as permission_count from v_group_permissions group by group_uuid";
-		$database = new database;
-		$result = $database->select($sql, null, 'all');
-		if (is_array($result) && @sizeof($result) != 0) {
-			foreach ($result as $row) {
-				$group_permissions[$row['group_uuid']] = $row['permission_count'];
-			}
-		}
-		unset($sql);
-	}
-
 //create token
 	$object = new token;
 	$token = $object->create($_SERVER['PHP_SELF']);
@@ -156,13 +143,13 @@
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','link'=>'group_edit.php']);
 	}
 	if (permission_exists('group_add') && $groups) {
-		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','onclick'=>"if (confirm('".$text['confirm-copy']."')) { list_action_set('copy'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 	}
 	if (permission_exists('group_edit') && $groups) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','onclick'=>"if (confirm('".$text['confirm-toggle']."')) { list_action_set('toggle'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'name'=>'btn_toggle','onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
 	}
 	if (permission_exists('group_delete') && $groups) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
 	if (permission_exists('group_all')) {
@@ -183,6 +170,16 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('group_add') && $groups) {
+		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('group_edit') && $groups) {
+		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('group_delete') && $groups) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
 
 	echo $text['description-groups']."\n";
 	echo "<br /><br />\n";
@@ -235,8 +232,8 @@
 				echo "	".escape($row['group_name']);
 			}
 			echo "	</td>\n";
-			echo "	<td class='no-link no-wrap pr-15'><a href='group_permissions.php?group_uuid=".urlencode($row['group_uuid'])."'>".$text['label-group_permissions']." (".($group_permissions[$row['group_uuid']] ?: 0).")</a></td>\n";
-			echo "	<td class='no-link no-wrap'><a href='groupmembers.php?group_uuid=".urlencode($row['group_uuid'])."'>".$text['label-group_members']." (".$row['group_members'].")</a></td>\n";
+			echo "	<td class='no-link no-wrap pr-15'><a href='group_permissions.php?group_uuid=".urlencode($row['group_uuid'])."'>".$text['label-group_permissions']." (".$row['group_permissions'].")</a></td>\n";
+			echo "	<td class='no-link no-wrap'><a href='group_members.php?group_uuid=".urlencode($row['group_uuid'])."'>".$text['label-group_members']." (".$row['group_members'].")</a></td>\n";
 			echo "	<td class='center'>".escape($row['group_level'])."</td>\n";
 			if (permission_exists('group_edit')) {
 				echo "	<td class='no-link center'>\n";

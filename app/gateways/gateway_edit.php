@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2019
+	Portions created by the Initial Developer are Copyright (C) 2008-2020
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -94,6 +94,8 @@
 		$retry_seconds = $_POST["retry_seconds"];
 		$extension = $_POST["extension"];
 		$ping = $_POST["ping"];
+		$ping_min = $_POST["ping_min"];
+		$ping_max = $_POST["ping_max"];
 		$channels = $_POST["channels"];
 		$caller_id_in_from = $_POST["caller_id_in_from"];
 		$supress_cng = $_POST["supress_cng"];
@@ -178,6 +180,8 @@
 					$array['gateways'][$x]["retry_seconds"] = $retry_seconds;
 					$array['gateways'][$x]["extension"] = $extension;
 					$array['gateways'][$x]["ping"] = $ping;
+					$array['gateways'][$x]["ping_min"] = $ping_min;
+					$array['gateways'][$x]["ping_max"] = $ping_max;
 					$array['gateways'][$x]["channels"] = $channels;
 					$array['gateways'][$x]["caller_id_in_from"] = $caller_id_in_from;
 					$array['gateways'][$x]["supress_cng"] = $supress_cng;
@@ -279,6 +283,8 @@
 			$retry_seconds = $row["retry_seconds"];
 			$extension = $row["extension"];
 			$ping = $row["ping"];
+			$ping_min = $row["ping_min"];
+			$ping_max = $row["ping_max"];
 			$channels = $row["channels"];
 			$caller_id_in_from = $row["caller_id_in_from"];
 			$supress_cng = $row["supress_cng"];
@@ -336,12 +342,16 @@
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'gateways.php']);
 	if ($action == "update" && permission_exists('gateway_add')) {
-		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','style'=>'margin-left: 15px;','link'=>'gateway_copy.php?id='.urlencode($gateway_uuid),'onclick'=>"if (!confirm('".$text['confirm-copy']."')){ this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 	}
 	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($action == "update" && permission_exists('gateway_add')) {
+		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','link'=>'gateway_copy.php?id='.urlencode($gateway_uuid),'onclick'=>"modal_close();"])]);
+	}
 
 	echo $text['description-gateway-edit']."\n";
 	echo "<br /><br />\n";
@@ -699,6 +709,28 @@
 	echo "    <input class='formfld' type='number' name='ping' maxlength='255' min='1' max='65535' step='1' value=\"".escape($ping)."\">\n";
 	echo "<br />\n";
 	echo $text['description-ping']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-ping_min']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "    <input class='formfld' type='number' name='ping_min' maxlength='255' min='1' max='65535' step='1' value=\"".escape($ping_min)."\">\n";
+	echo "<br />\n";
+	echo $text['description-ping_min']."\n";
+	echo "</td>\n";
+	echo "</tr>\n";
+
+	echo "<tr>\n";
+	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
+	echo "    ".$text['label-ping_max']."\n";
+	echo "</td>\n";
+	echo "<td class='vtable' align='left'>\n";
+	echo "    <input class='formfld' type='number' name='ping_max' maxlength='255' min='1' max='65535' step='1' value=\"".escape($ping_max)."\">\n";
+	echo "<br />\n";
+	echo $text['description-ping_max']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
 

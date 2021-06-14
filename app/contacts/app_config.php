@@ -5,10 +5,11 @@
 		$apps[$x]['uuid'] = "04481e0e-a478-c559-adad-52bd4174574c";
 		$apps[$x]['category'] = "CRM";
 		$apps[$x]['subcategory'] = "";
-		$apps[$x]['version'] = "1.0";
+		$apps[$x]['version'] = "1.1";
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['contact_url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Provides a place to store contact information for individuals and organizations.";
+		$apps[$x]['description']['en-gb'] = "Provides a place to store contact information for individuals and organizations.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Bietet einen Ort um Kontaktinformationen von Personen und Firmen zu speichern.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -854,11 +855,15 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "user_uuid";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "time_start";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Start";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "time_stop";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Stop";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "time_description";
@@ -923,7 +928,6 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = 'foreign';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = 'v_users';
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = 'user_uuid';
-
 
 	//default settings
 		$y=0;

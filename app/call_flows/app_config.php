@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Direct calls between two destinations by calling a feature code.";
+		$apps[$x]['description']['en-gb'] = "Direct calls between two destinations by calling a feature code.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Anrufe zwischen zwei Ziele anhand eines Funktions-Codes steuern.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -33,11 +34,13 @@
 		$apps[$x]['destinations'][$y]['type'] = "sql";
 		$apps[$x]['destinations'][$y]['label'] = "call_flows";
 		$apps[$x]['destinations'][$y]['name'] = "call_flows";
-		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' ";
+		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and call_flow_enabled = 'true' ";
 		$apps[$x]['destinations'][$y]['order_by'] = "call_flow_name asc";
-		$apps[$x]['destinations'][$y]['field']['context'] = "call_flow_context";
+		$apps[$x]['destinations'][$y]['field']['call_flow_uuid'] = "call_flow_uuid";
 		$apps[$x]['destinations'][$y]['field']['name'] = "call_flow_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "call_flow_extension";
+		$apps[$x]['destinations'][$y]['field']['extension'] = "call_flow_extension";
+		$apps[$x]['destinations'][$y]['field']['context'] = "call_flow_context";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${name}";
@@ -165,6 +168,11 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "call_flow_anti_data";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the alernate application data.";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "call_flow_enabled";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Select whether to enable or disable the call flow";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "call_flow_description";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";

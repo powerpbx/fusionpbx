@@ -56,6 +56,7 @@
 	if (is_array($_POST)) {
 		$group_uuid = $_POST["group_uuid"];
 		$group_name = $_POST["group_name"];
+		$group_name_previous = $_POST["group_name_previous"];
 		$domain_uuid = $_POST["domain_uuid"];
 		$group_level = $_POST["group_level"];
 		$group_protected = $_POST["group_protected"];
@@ -136,6 +137,22 @@
 			$database->app_uuid = '2caf27b0-540a-43d5-bb9b-c9871a1e4f84';
 			$database->save($array);
 
+		//update group name in group permissions if group name changed
+			if ($group_name != $group_name_previous) {
+				$sql = "update v_group_permissions ";
+				$sql .= "set group_name = :group_name ";
+				$sql .= "where group_name = :group_name_previous ";
+				$sql .= "and group_uuid = :group_uuid ";
+				$parameters['group_name'] = $group_name;
+				$parameters['group_name_previous'] = $group_name_previous;
+				$parameters['group_uuid'] = $group_uuid;
+				$database = new database;
+				$database->app_name = 'Group Manager';
+				$database->app_uuid = '2caf27b0-540a-43d5-bb9b-c9871a1e4f84';
+				$database->execute($sql, $parameters);
+				unset($sql, $parameters, $database);
+			}
+
 		//redirect the user
 			if (isset($action)) {
 				if ($action == "add") {
@@ -147,7 +164,7 @@
 				header('Location: group_edit.php?id='.urlencode($group_uuid));
 				return;
 			}
-	} //(is_array($_POST) && strlen($_POST["persistformvar"]) == 0)
+	}
 
 //pre-populate the form
 	if (is_array($_GET) && $_POST["persistformvar"] != "true") {
@@ -192,22 +209,29 @@
 		unset($button_margin);
 	}
 	if (permission_exists('group_member_view')) {
-		echo button::create(['type'=>'button','label'=>$text['button-members'],'icon'=>'users','style'=>$button_margin,'link'=>'groupmembers.php?group_uuid='.urlencode($group_uuid)]);
+		echo button::create(['type'=>'button','label'=>$text['button-members'],'icon'=>'users','style'=>$button_margin,'link'=>'group_members.php?group_uuid='.urlencode($group_uuid)]);
 		unset($button_margin);
 	}
 	$button_margin = 'margin-left: 15px;';
 	if ($action == 'update' && permission_exists('group_add')) {
-		echo button::create(['type'=>'submit','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','name'=>'action','value'=>'copy','style'=>$button_margin,'onclick'=>"if (confirm('".$text['confirm-copy']."')) { document.getElementById('frm').submit(); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','style'=>$button_margin,'onclick'=>"modal_open('modal-copy','btn_copy');"]);
 		unset($button_margin);
 	}
 	if ($action == 'update' && permission_exists('group_delete')) {
-		echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'action','value'=>'delete','style'=>$button_margin,'onclick'=>"if (confirm('".$text['confirm-delete']."')) { document.getElementById('frm').submit(); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$button_margin,'onclick'=>"modal_open('modal-delete','btn_delete');"]);
 		unset($button_margin);
 	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($action == 'update' && permission_exists('group_add')) {
+		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'copy','onclick'=>"modal_close();"])]);
+	}
+	if ($action == 'update' && permission_exists('group_delete')) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'delete','onclick'=>"modal_close();"])]);
+	}
 
 	echo $text['description-groups']."\n";
 	echo "<br /><br />\n";
@@ -220,6 +244,7 @@
 	echo "</td>\n";
 	echo "<td width='70%' class='vtable' style='position: relative;' align='left'>\n";
 	echo "	<input class='formfld' type='text' name='group_name' maxlength='255' value='".escape($group_name)."'>\n";
+	echo "	<input type='hidden' name='group_name_previous' value='".escape($group_name)."'>\n";
 	echo "<br />\n";
 	echo $text['description-group_name']."\n";
 	echo "</td>\n";

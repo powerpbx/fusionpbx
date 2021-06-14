@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Operator panel shows the status.";
+		$apps[$x]['description']['en-gb'] = "Operator panel shows the status.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Das Bedienfeld zeigt den Status an.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -55,5 +56,24 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "operator_panel_on_demand";
+
+	//default settings
+		$y=0;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "569280f2-a433-4eaf-9c08-945efdc6cf8f";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "operator_panel";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "refresh";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "1500";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the refresh rate in seconds (<=120) or milliseconds (>=500).";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "0c273cad-1ee4-48d9-9336-08bc8260579a";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "operator_panel";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "group_extensions";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set if extensions are grouped by call_group when viewing all extensions.";
+		$y++;
 
 ?>

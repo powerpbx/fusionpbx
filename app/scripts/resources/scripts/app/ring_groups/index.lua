@@ -1,5 +1,5 @@
 --	Part of FusionPBX
---	Copyright (C) 2010-2019 Mark J Crane <markjcrane@fusionpbx.com>
+--	Copyright (C) 2010-2020 Mark J Crane <markjcrane@fusionpbx.com>
 --	All rights reserved.
 --
 --	Redistribution and use in source and binary forms, with or without
@@ -25,6 +25,7 @@
 --
 --	Contributor(s):
 --	Mark J Crane <markjcrane@fusionpbx.com>
+--  Gill Abada <gill.abada@gmail.com>
 
 --include the log
 	log = require "resources.functions.log".ring_group
@@ -34,7 +35,6 @@
 	dbh = Database.new('system');
 
 --include json library
-	--debug["sql"] = true;
 	local json
 	if (debug["sql"]) then
 		json = require "resources.functions.lunajson"
@@ -47,10 +47,12 @@
 	require "resources.functions.file_exists";
 	require "resources.functions.channel_utils"
 	require "resources.functions.format_ringback"
+	require "resources.functions.send_presence";
 
 --- include libs
 	local route_to_bridge = require "resources.functions.route_to_bridge"
 	local play_file   = require "resources.functions.play_file"
+	local send_mail = require 'resources.functions.send_mail'
 
 --define the session hangup
 	function session_hangup_hook()
@@ -159,6 +161,7 @@
 		call_direction = session:getVariable("call_direction");
 		accountcode = session:getVariable("accountcode");
 		local_ip_v4 = session:getVariable("local_ip_v4")
+		hold_music = session:getVariable("hold_music");
 	end
 
 --set caller id
@@ -232,6 +235,7 @@
 		ring_group_caller_id_number = row["ring_group_caller_id_number"];
 		ring_group_cid_name_prefix = row["ring_group_cid_name_prefix"];
 		ring_group_cid_number_prefix = row["ring_group_cid_number_prefix"];
+		ring_group_call_forward_enabled = row["ring_group_call_forward_enabled"];
 		ring_group_follow_me_enabled = row["ring_group_follow_me_enabled"];
 		missed_call_app = row["ring_group_missed_call_app"];
 		missed_call_data = row["ring_group_missed_call_data"];
@@ -243,10 +247,19 @@
 
 --set the recording file name
 	if (session:ready()) then
-		record_name = session:getVariable("record_name");
-		if (not record_name) then
+		--record_name = session:getVariable("record_name");
+		--sip_from_user = session:getVariable("sip_from_user");
+		--sip_to_user = session:getVariable("sip_to_user");
+
+		--record_name = record_name:gsub("${caller_id_name}", caller_id_name);
+		--record_name = record_name:gsub("${caller_id_number}", caller_id_number);
+		--record_name = record_name:gsub("${sip_from_user}", sip_from_user);
+		--record_name = record_name:gsub("${sip_to_user}", sip_to_user);
+		--record_name = record_name:gsub("${dialed_user}", ring_group_extension);
+
+		--if (not record_name) then
 			record_name = uuid .. "." .. record_ext;
-		end
+		--end
 	end
 
 ---set the call_timeout to a higher value to prevent the early timeout of the ring group
@@ -292,6 +305,9 @@
 		--send missed call email
 		if (missed_call_app ~= nil and missed_call_data ~= nil) then
 			if (missed_call_app == "email") then
+				--prepare the email address
+					mail_to = missed_call_data;
+
 				--set the sounds path for the language, dialect and voice
 					default_language = session:getVariable("default_language");
 					default_dialect = session:getVariable("default_dialect");
@@ -311,17 +327,26 @@
 					if (debug["sql"]) then
 						freeswitch.consoleLog("notice", "[voicemail] SQL: " .. sql .. "; params:" .. json.encode(params) .. "\n");
 					end
+					dbh = Database.new('system');
 					dbh:query(sql, params, function(row)
 						subject = row["template_subject"];
 						body = row["template_body"];
 					end);
 
 				--prepare the headers
-					headers = '{"X-FusionPBX-Domain-UUID":"'..domain_uuid..'",';
-					headers = headers..'"X-FusionPBX-Domain-Name":"'..domain_name..'",';
-					headers = headers..'"X-FusionPBX-Call-UUID":"'..uuid..'",';
-					headers = headers..'"X-FusionPBX-Email-Type":"missed"}';
+					local headers = {
+						["X-FusionPBX-Domain-UUID"] = domain_uuid;
+						["X-FusionPBX-Domain-Name"] = domain_name;
+						["X-FusionPBX-Call-UUID"]   = uuid;
+						["X-FusionPBX-Email-Type"]  = 'missed';
+					}
 
+				--remove quotes from caller id name and number
+					caller_id_name = caller_id_name:gsub("'", "&#39;");
+					caller_id_name = caller_id_name:gsub([["]], "&#34;");
+					caller_id_number = caller_id_number:gsub("'", "&#39;");
+					caller_id_number = caller_id_number:gsub([["]], "&#34;");
+			
 				--prepare the subject
 					subject = subject:gsub("${caller_id_name}", caller_id_name);
 					subject = subject:gsub("${caller_id_number}", caller_id_number);
@@ -344,17 +369,17 @@
 					body = body:gsub("&nbsp;", " ");
 					body = body:gsub("\n", "");
 					body = body:gsub("\n", "");
-					body = body:gsub("'", "&#39;");
-					body = body:gsub([["]], "&#34;");
 					body = trim(body);
 
 				--send the email
-					cmd = "luarun email.lua "..missed_call_data.." "..missed_call_data.." "..headers.." '"..subject.."' '"..body.."'";
 					if (debug["info"]) then
-						freeswitch.consoleLog("notice", "[missed call] cmd: " .. cmd .. "\n");
+						freeswitch.consoleLog("notice", "[missed call]: "..mail_to.." '"..subject.."' '"..body.."'\n");
 					end
-					api = freeswitch.API();
-					result = api:executeString(cmd);
+
+					send_mail(headers,
+						mail_to,
+						{subject, body}
+					);
 			end
 		end
 	end
@@ -388,8 +413,33 @@
 
 --process the ring group
 	if (ring_group_forward_enabled == "true" and string.len(ring_group_forward_destination) > 0) then
+
+		--set the outbound caller id
+			if (caller_is_local == 'true' and outbound_caller_id_name ~= nil) then
+				caller_id_name = outbound_caller_id_name;
+			end
+			if (caller_is_local == 'true' and outbound_caller_id_number ~= nil) then
+				caller_id_number = outbound_caller_id_number;
+			end
+			if (ring_group_caller_id_name ~= nil and ring_group_caller_id_name ~= '') then
+				caller_id_name = ring_group_caller_id_name;
+			end
+			if (ring_group_caller_id_number ~= nil and ring_group_caller_id_number ~= '') then
+				caller_id_number = ring_group_caller_id_number;
+			end
+
 		--forward the ring group
-			session:setVariable("toll_allow", ring_group_forward_toll_allow);
+			if (caller_id_name) then
+				session:setVariable("effective_caller_id_name", caller_id_name);
+				session:setVariable("outbound_caller_id_name", caller_id_name);
+			end
+			if (caller_id_number) then
+				session:setVariable("effective_caller_id_number", caller_id_number);
+				session:setVariable("outbound_caller_id_number", caller_id_number);
+			end
+			if (ring_group_forward_toll_allow) then
+				session:setVariable("toll_allow", ring_group_forward_toll_allow);
+			end
 			session:execute("transfer", ring_group_forward_destination.." XML "..context);
 	else
 		--get the strategy of the ring group, if random, we use random() to order the destinations
@@ -411,7 +461,7 @@
 					if (database["type"] == "mysql") then
 						sql_order = 'rand()'
 					else
-						sql_order = 'random()' --both postgresql and sqlite uses random() instead of rand()
+						sql_order = 'random() * 1000000' --both postgresql and sqlite uses random() instead of rand()
 					end
 				else
 					sql_order='d.destination_delay, d.destination_number asc'
@@ -455,7 +505,11 @@
 				end
 
 				--follow the forwards
-				count, destination_number, toll_allow = get_forward_all(0, row.destination_number, leg_domain_name);
+				if (ring_group_call_forward_enabled == "true") then
+					count, destination_number, toll_allow = get_forward_all(0, row.destination_number, leg_domain_name);
+				else
+					destination_number = row.destination_number;
+				end
 
 				--update values
 				row['destination_number'] = destination_number
@@ -523,7 +577,7 @@
 						--dbh:query(sql, params, function(row);
 
 						--get the follow me destinations
-						if (follow_me_uuid ~= nil) then
+						if (follow_me_uuid ~= nil and row.is_follow_me_destination ~= "true") then
 							sql = "select d.domain_uuid, d.domain_name, f.follow_me_destination as destination_number, ";
 							sql = sql .. "f.follow_me_delay as destination_delay, f.follow_me_timeout as destination_timeout, ";
 							sql = sql .. "f.follow_me_prompt as destination_prompt ";
@@ -550,7 +604,7 @@
 
 								--Calculate the destination_timeout for follow-me destinations.
 								--The call should honor ring group timeouts with rg delays, follow-me timeouts and follow-me delays factored in.
-								--Destinations with a timeout of 0 or negative numbers should be ignored. 
+								--Destinations with a timeout of 0 or negative numbers should be ignored.
 								if (tonumber(field.destination_timeout) < (tonumber(row.destination_timeout) - tonumber(field.destination_delay))) then
 									new_destination_timeout = field.destination_timeout;
 								else
@@ -577,6 +631,7 @@
 								destinations[new_key]['group_confirm_file'] = row.group_confirm_file;
 								destinations[new_key]['toll_allow'] = toll_allow;
 								destinations[new_key]['user_exists'] = user_exists;
+								destinations[new_key]['is_follow_me_destination'] = "true";
 
 								--increment x
 								x = x + 1;
@@ -644,7 +699,9 @@
 						user_exists = row.user_exists;
 
 					--follow the forwards
-						count, destination_number = get_forward_all(0, destination_number, leg_domain_name);
+						if (row.ring_group_call_forward_enabled == "true") then
+							count, destination_number = get_forward_all(0, destination_number, leg_domain_name);
+						end
 
 					--check if the user exists
 						cmd = "user_exists id ".. destination_number .." "..domain_name;
@@ -709,7 +766,8 @@
 					--set confirm
 						if (ring_group_strategy == "simultaneous"
 							or ring_group_strategy == "sequence"
-							or ring_group_strategy == "rollover") then
+							or ring_group_strategy == "rollover"
+							or ring_group_strategy == "random") then
 								session:execute("set", "group_confirm_key=exec");
 								session:execute("set", "group_confirm_file=lua ".. scripts_dir:gsub('\\','/') .."/confirm.lua");
 						end
@@ -756,12 +814,20 @@
 							--get the extension_uuid
 							cmd = "user_data ".. destination_number .."@"..domain_name.." var extension_uuid";
 							extension_uuid = trim(api:executeString(cmd));
+
+							--set hold music
+							if (hold_music == nil) then
+								hold_music = '';
+							else
+								hold_music = ",hold_music="..hold_music;
+							end
+
 							--send to user
-							local dial_string_to_user = "[sip_invite_domain="..domain_name..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay..",dialed_extension=" .. row.destination_number .. ",extension_uuid="..extension_uuid .. row.record_session .. "]user/" .. row.destination_number .. "@" .. domain_name;
+							local dial_string_to_user = "[sip_invite_domain="..domain_name..",domain_name="..domain_name..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay..",dialed_extension=" .. row.destination_number .. ",extension_uuid=".. extension_uuid .. row.record_session .. hold_music .."]user/" .. row.destination_number .. "@" .. domain_name;
 							dial_string = dial_string_to_user;
 						elseif (tonumber(destination_number) == nil) then
 							--sip uri
-							dial_string = "[sip_invite_domain="..domain_name..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
+							dial_string = "[sip_invite_domain="..domain_name..",domain_name="..domain_name..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay.."]" .. row.destination_number;
 						else
 							--external number
 								-- have to double destination_delay here due a FS bug requiring a 50% delay value for internal externsions, but not external calls. 
@@ -801,7 +867,7 @@
 								end
 
 							--set the destination dial string
-								dial_string = "[ignore_early_media=true,toll_allow=".. toll_allow ..",".. caller_id ..",sip_invite_domain="..domain_name..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay.."]"..route_bridge
+								dial_string = "[ignore_early_media=true,toll_allow=".. toll_allow ..",".. caller_id ..",sip_invite_domain="..domain_name..",domain_name="..domain_name..",domain_uuid="..domain_uuid..",call_direction="..call_direction..","..group_confirm.."leg_timeout="..destination_timeout..","..delay_name.."="..destination_delay.."]"..route_bridge
 						end
 
 					--add a delimiter between destinations
@@ -831,6 +897,9 @@
 				end
 			end
 
+		--release dbh before bridge
+				dbh:release();
+				
 		--session execute
 			if (session:ready()) then
 				--set the variables
@@ -845,12 +914,14 @@
 					-- end
 
 				--set bind digit action
-					local bind_target = 'peer'
+					local bind_target = 'local'
 					if session:getVariable("sip_authorized") == "true" then
-						bind_target = 'both';
+						bind_target = 'peer';
 					end
 					local bindings = {
 						"local,*2,exec:record_session," .. record_path .. "/" .. record_name,
+						"local,*5,api:uuid_record," .. uuid .. " mask " .. record_path .. "/" .. record_name,
+						"local,*6,api:uuid_record," .. uuid .. " unmask " .. record_path .. "/" .. record_name,
 						-- "local,*0,exec:execute_extension,conf_xfer_from_dialplan XML conf-xfer@" .. context
 					}
 					for _, str in ipairs(bindings) do
@@ -871,10 +942,22 @@
 								user_exists = row.user_exists;
 								destination_number = row.destination_number;
 								domain_name = row.domain_name;
+								destination_prompt = row.destination_prompt;
+
+							--determine confirm prompt
+								if (destination_prompt == nil) then
+									group_confirm = "confirm=false,";
+								elseif (destination_prompt == "1") then
+									group_confirm = "group_confirm_key=exec,group_confirm_file=lua ".. scripts_dir:gsub('\\','/') .."/confirm.lua,confirm=true,";
+								elseif (destination_prompt == "2") then
+									group_confirm = "group_confirm_key=exec,group_confirm_file=lua ".. scripts_dir:gsub('\\','/') .."/confirm.lua,confirm=true,";
+								else
+									group_confirm = "confirm=false,";
+								end
 
 							--if the timeout was reached exit the loop and go to the timeout action
 								if (tonumber(ring_group_call_timeout) == timeout) then
-									break;	
+									break;
 								end
 
 							--send the call to the destination
@@ -909,7 +992,18 @@
 						freeswitch.consoleLog("NOTICE", "[ring group] app_data: "..app_data.."\n");
 						-- log.noticef("bridge begin: originate_disposition:%s answered:%s ready:%s bridged:%s", session:getVariable("originate_disposition"), session:answered() and "true" or "false", session:ready() and "true" or "false", session:bridged() and "true" or "false")
 						if (ring_group_strategy ~= "rollover") then
+							if (session:getVariable("ring_group_send_presence") == "true") then
+								session:setVariable("presence_id", ring_group_extension.."@"..domain_name);
+								send_presence(uuid, ring_group_extension.."@"..domain_name, "early");
+							end
+							
 							session:execute("bridge", app_data);
+							
+							--set the presence to terminated and unset presence_id
+							if (session:getVariable("ring_group_send_presence") == "true") then
+								session:setVariable("presence_id", "");
+								send_presence(uuid, ring_group_extension.."@"..domain_name, "terminated");
+							end
 						end
 						-- log.noticef("bridge done: originate_disposition:%s answered:%s ready:%s bridged:%s", session:getVariable("originate_disposition"), session:answered() and "true" or "false", session:ready() and "true" or "false", session:bridged() and "true" or "false")
 					end
@@ -941,6 +1035,7 @@
 									session:execute(ring_group_timeout_app, ring_group_timeout_data);
 								end
 						else
+							dbh = Database.new('system');
 							local sql = "SELECT ring_group_timeout_app, ring_group_timeout_data FROM v_ring_groups ";
 							sql = sql .. "where ring_group_uuid = :ring_group_uuid";
 							local params = {ring_group_uuid = ring_group_uuid};

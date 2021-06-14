@@ -77,16 +77,8 @@
 	$order = $_GET["order"];
 
 //add the search term
-	$search = strtolower($_GET["search"]);
-	if (strlen($search) > 0) {
-		$sql_search = "and (";
-		$sql_search .= "lower(ring_group_name) like :search ";
-		$sql_search .= "or lower(ring_group_extension) like :search ";
-		$sql_search .= "or lower(ring_group_description) like :search ";
-		$sql_search .= "or lower(ring_group_enabled) like :search ";
-		$sql_search .= "or lower(ring_group_strategy) like :search ";
-		$sql_search .= ") ";
-		$parameters['search'] = '%'.$search.'%';
+	if (isset($_GET["search"])) {
+		$search = strtolower($_GET["search"]);
 	}
 
 //get total domain ring group count
@@ -100,14 +92,24 @@
 //get filtered ring group count
 	if ($search) {
 		$sql = "select count(*) from v_ring_groups where true ";
-		if (!$_GET['show'] == "all" || permission_exists('ring_group_all')) {
+		if ($_GET['show'] != "all" || !permission_exists('ring_group_all')) {
 			$sql .= "and domain_uuid = :domain_uuid ";
 			$parameters['domain_uuid'] = $domain_uuid;
 		}
-		$sql .= $sql_search;
+		if (isset($search)) {
+			$sql = "and (";
+			$sql .= "lower(ring_group_name) like :search ";
+			$sql .= "or lower(ring_group_extension) like :search ";
+			$sql .= "or lower(ring_group_description) like :search ";
+			$sql .= "or lower(ring_group_enabled) like :search ";
+			$sql .= "or lower(ring_group_strategy) like :search ";
+			$sql .= ") ";
+			$parameters['search'] = '%'.$search.'%';
+		}
 		$database = new database;
 		$num_rows = $database->select($sql, $parameters, 'column');
 	}
+	unset($sql, $parameters);
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
@@ -119,7 +121,21 @@
 	$offset = $rows_per_page * $page;
 
 //get the list
-	$sql = str_replace('count(*)', '*', $sql);
+	$sql = "select * from v_ring_groups where true ";
+	if ($_GET['show'] != "all" || !permission_exists('ring_group_all')) {
+		$sql .= "and domain_uuid = :domain_uuid ";
+		$parameters['domain_uuid'] = $domain_uuid;
+	}
+	if (isset($search)) {
+		$sql = "and (";
+		$sql .= "lower(ring_group_name) like :search ";
+		$sql .= "or lower(ring_group_extension) like :search ";
+		$sql .= "or lower(ring_group_description) like :search ";
+		$sql .= "or lower(ring_group_enabled) like :search ";
+		$sql .= "or lower(ring_group_strategy) like :search ";
+		$sql .= ") ";
+		$parameters['search'] = '%'.$search.'%';
+	}
 	$sql .= ($order_by) ? order_by($order_by, $order) : "order by ring_group_name asc, ring_group_extension asc ";
 	$sql .= limit_offset($rows_per_page, $offset);
 	$ring_groups = $database->select($sql, $parameters, 'all');
@@ -141,13 +157,13 @@
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','link'=>'ring_group_edit.php']);
 	}
 	if (permission_exists('ring_group_add') && $ring_groups && (!is_numeric($_SESSION['limit']['ring_groups']['numeric']) || ($total_ring_groups < $_SESSION['limit']['ring_groups']['numeric']))) {
-		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'id'=>'btn_copy','onclick'=>"if (confirm('".$text['confirm-copy']."')) { list_action_set('copy'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-copy'],'icon'=>$_SESSION['theme']['button_icon_copy'],'name'=>'btn_copy','onclick'=>"modal_open('modal-copy','btn_copy');"]);
 	}
 	if (permission_exists('ring_group_edit') && $ring_groups) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','onclick'=>"if (confirm('".$text['confirm-toggle']."')) { list_action_set('toggle'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'name'=>'btn_toggle','onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
 	}
 	if (permission_exists('ring_group_delete') && $ring_groups) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
 	if (permission_exists('ring_group_all')) {
@@ -168,6 +184,16 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('ring_group_add') && $ring_groups && (!is_numeric($_SESSION['limit']['ring_groups']['numeric']) || ($total_ring_groups < $_SESSION['limit']['ring_groups']['numeric']))) {
+		echo modal::create(['id'=>'modal-copy','type'=>'copy','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_copy','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('copy'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('ring_group_edit') && $ring_groups) {
+		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('ring_group_delete') && $ring_groups) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
 
 	echo $text['description']."\n";
 	echo "<br /><br />\n";

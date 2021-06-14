@@ -26,7 +26,7 @@
 */
 
 //includes
-	include "root.php";
+	require_once "root.php";
 	require_once "resources/require.php";
 	require_once "resources/check_auth.php";
 
@@ -135,8 +135,10 @@
 			}
 			$group_uuid_name = $_POST["group_uuid_name"];
 			$user_enabled = $_POST["user_enabled"];
-			$api_key = $_POST["api_key"];
-			if (permission_exists('message_view')) {
+			if (permission_exists('api_key')) {
+				$api_key = $_POST["api_key"];
+			}
+			if (permission_exists('message_key')) {
 				$message_key = $_POST["message_key"];
 			}
 
@@ -150,7 +152,15 @@
 
 		//check required values
 			if ($username == '') {
-				message::add($text['message-required'].$text['label-username'], 'negative', 7500);
+				$invalid[] = $text['label-username'];
+			}
+			if ($_SESSION['users']['username_format']['text'] != '' && $_SESSION['users']['username_format']['text'] != 'any') {
+				if (
+					($_SESSION['users']['username_format']['text'] == 'email' && !valid_email($username)) ||
+					($_SESSION['users']['username_format']['text'] == 'no_email' && valid_email($username))
+					) {
+					message::add($text['message-username_format_invalid'], 'negative', 7500);
+				}
 			}
 			if ((permission_exists('user_edit') && $action == 'edit' && $username != $username_old && $username != '') ||
 				(permission_exists('user_add') && $action == 'add' && $username != '')) {
@@ -174,46 +184,51 @@
 				if ($password == '') {
 					message::add($text['message-password_blank'], 'negative', 7500);
 				}
-				if ($user_email == '') {
-					message::add($text['message-required'].$text['label-email'], 'negative', 7500);
-				}
 				if ($group_uuid_name == '') {
-					message::add($text['message-required'].$text['label-group'], 'negative', 7500);
+					$invalid[] = $text['label-group'];
 				}
+			}
+			if (!valid_email($user_email)) {
+				$invalid[] = $text['label-email'];
 			}
 
 			if (strlen($password) > 0) {
 				if (is_numeric($required['length']) && $required['length'] != 0) {
 					if (strlen($password) < $required['length']) {
-						message::add($text['message-required'].$text['label-characters'], 'negative', 7500);
+						$invalid[] = $text['label-characters'];
 					}
 				}
 				if ($required['number']) {
 					if (!preg_match('/(?=.*[\d])/', $password)) {
-						message::add($text['message-required'].$text['label-numbers'], 'negative', 7500);
+						$invalid[] = $text['label-numbers'];
 					}
 				}
 				if ($required['lowercase']) {
 					if (!preg_match('/(?=.*[a-z])/', $password)) {
-						message::add($text['message-required'].$text['label-lowercase_letters'], 'negative', 7500);
+						$invalid[] = $text['label-lowercase_letters'];
 					}
 				}
 				if ($required['uppercase']) {
 					if (!preg_match('/(?=.*[A-Z])/', $password)) {
-						message::add($text['message-required'].$text['label-uppercase_letters'], 'negative', 7500);
+						$invalid[] = $text['label-uppercase_letters'];
 					}
 				}
 				if ($required['special']) {
 					if (!preg_match('/(?=.*[\W])/', $password)) {
-						message::add($text['message-required'].$text['label-special_characters'], 'negative', 7500);
+						$invalid[] = $text['label-special_characters'];
 					}
 				}
 			}
 
 		//return if error
-			if (message::count() != 0) {
+			if (message::count() != 0 || (is_array($invalid) && @sizeof($invalid) != 0)) {
+				if ($invalid) { message::add($text['message-required'].implode(', ', $invalid), 'negative', 7500); }
+				persistent_form_values('store', $_POST);
 				header("Location: user_edit.php".(permission_exists('user_edit') && $action != 'add' ? "?id=".urlencode($user_uuid) : null));
 				exit;
+			}
+			else {
+				persistent_form_values('clear');
 			}
 
 		//save the data
@@ -324,7 +339,7 @@
 			unset($sql, $parameters, $row);
 
 		//check to see if message key is set
-			if (permission_exists('message_view')) {
+			if (permission_exists('message_key')) {
 				$sql = "select user_setting_uuid, user_setting_value from v_user_settings ";
 				$sql .= "where user_setting_category = 'message' ";
 				$sql .= "and user_setting_subcategory = 'key' ";
@@ -485,7 +500,9 @@
 			$array['users'][$x]['user_email'] = $user_email;
 			$array['users'][$x]['user_status'] = $user_status;
 			if (permission_exists('user_add') || permission_exists('user_edit')) {
-				$array['users'][$x]['api_key'] = ($api_key != '') ? $api_key : null;
+				if (permission_exists('api_key')) {
+					$array['users'][$x]['api_key'] = ($api_key != '') ? $api_key : null;
+				}
 				$array['users'][$x]['user_enabled'] = $user_enabled;
 				if (permission_exists('contact_add')) {
 					$array['users'][$x]['contact_uuid'] = ($contact_uuid != '') ? $contact_uuid : null;
@@ -503,7 +520,7 @@
 			$p->add("user_setting_edit", "temp");
 			$p->add("user_edit", "temp");
 			$p->add('user_group_add', 'temp');
-	
+
 		//save the data
 			$database = new database;
 			$database->app_name = 'users';
@@ -550,61 +567,72 @@
 			else {
 				message::add($text['message-add'],'positive');
 			}
-			header("Location: user_edit.php?id=".urldecode($user_uuid));
+			header("Location: user_edit.php?id=".urlencode($user_uuid));
 			exit;
 	}
 
-//populate the form with values from db
-	if ($action == 'edit') {
-		$sql = "select * from v_users where user_uuid = :user_uuid ";
-		if (!permission_exists('user_all')) {
-			$sql .= "and domain_uuid = :domain_uuid ";
-			$parameters['domain_uuid'] = $domain_uuid;
-		}
-		$parameters['user_uuid'] = $user_uuid;
-		$database = new database;
-		$row = $database->select($sql, $parameters, 'row');
-		if (is_array($row) && sizeof($row) > 0) {
-			$domain_uuid = $row["domain_uuid"];
-			$user_uuid = $row["user_uuid"];
-			$username = $row["username"];
-			$user_email = $row["user_email"];
-			$api_key = $row["api_key"];
-			$user_enabled = $row["user_enabled"];
-			if (permission_exists('contact_view')) {
-				$contact_uuid = $row["contact_uuid"];
-			}
-			$user_status = $row["user_status"];
-		}
-		else {
-			message::add($text['message-invalid_user'], 'negative', 7500);
-			header("Location: user_edit.php?id=".$_SESSION['user_uuid']);
-			exit;
-		}
-		unset($sql, $parameters, $row);
-
-		//get user settings
-		$sql = "select * from v_user_settings ";
-		$sql .= "where user_uuid = :user_uuid ";
-		$sql .= "and user_setting_enabled = 'true' ";
-		$parameters['user_uuid'] = $user_uuid;
-		$database = new database;
-		$result = $database->select($sql, $parameters, 'all');
-		if (is_array($result)) {
-			foreach($result as $row) {
-				$name = $row['user_setting_name'];
-				$category = $row['user_setting_category'];
-				$subcategory = $row['user_setting_subcategory'];
-				if (strlen($subcategory) == 0) {
-					//$$category[$name] = $row['domain_setting_value'];
-					$user_settings[$category][$name] = $row['user_setting_value'];
+//populate form
+	if (persistent_form_values('exists')) {
+		//populate the form with values from session variable
+			persistent_form_values('load');
+		//clear, set $unsaved flag
+			persistent_form_values('clear');
+	}
+	else {
+		//populate the form with values from db
+			if ($action == 'edit') {
+				$sql = "select domain_uuid, user_uuid, username, user_email, api_key, user_enabled, contact_uuid, cast(user_enabled as text), user_status ";
+				$sql .= "from v_users ";
+				$sql .= "where user_uuid = :user_uuid ";
+				if (!permission_exists('user_all')) {
+					$sql .= "and domain_uuid = :domain_uuid ";
+					$parameters['domain_uuid'] = $domain_uuid;
+				}
+				$parameters['user_uuid'] = $user_uuid;
+				$database = new database;
+				$row = $database->select($sql, $parameters, 'row');
+				if (is_array($row) && sizeof($row) > 0) {
+					$domain_uuid = $row["domain_uuid"];
+					$user_uuid = $row["user_uuid"];
+					$username = $row["username"];
+					$user_email = $row["user_email"];
+					$api_key = $row["api_key"];
+					$user_enabled = $row["user_enabled"];
+					if (permission_exists('contact_view')) {
+						$contact_uuid = $row["contact_uuid"];
+					}
+					$user_status = $row["user_status"];
 				}
 				else {
-					$user_settings[$category][$subcategory][$name] = $row['user_setting_value'];
+					message::add($text['message-invalid_user'], 'negative', 7500);
+					header("Location: user_edit.php?id=".$_SESSION['user_uuid']);
+					exit;
 				}
+				unset($sql, $parameters, $row);
+
+				//get user settings
+				$sql = "select * from v_user_settings ";
+				$sql .= "where user_uuid = :user_uuid ";
+				$sql .= "and user_setting_enabled = 'true' ";
+				$parameters['user_uuid'] = $user_uuid;
+				$database = new database;
+				$result = $database->select($sql, $parameters, 'all');
+				if (is_array($result)) {
+					foreach($result as $row) {
+						$name = $row['user_setting_name'];
+						$category = $row['user_setting_category'];
+						$subcategory = $row['user_setting_subcategory'];
+						if (strlen($subcategory) == 0) {
+							//$$category[$name] = $row['domain_setting_value'];
+							$user_settings[$category][$name] = $row['user_setting_value'];
+						}
+						else {
+							$user_settings[$category][$subcategory][$name] = $row['user_setting_value'];
+						}
+					}
+				}
+				unset($sql, $parameters, $result, $row);
 			}
-		}
-		unset($sql, $parameters, $result, $row);
 	}
 
 //create token
@@ -653,15 +681,21 @@
 	echo "	<div class='heading'><b>".$text['header-user_edit']."</b></div>\n";
 	echo "	<div class='actions'>\n";
 	if ($unsaved) {
-		echo "<span style='color: #b00;'>".$text['message-unsaved_changes']." <i class='fas fa-exclamation-triangle' style='margin-right: 15px;'></i></span>";
+		echo "<div class='unsaved'>".$text['message-unsaved_changes']." <i class='fas fa-exclamation-triangle'></i></div>";
 	}
 	if (permission_exists('user_add') || permission_exists('user_edit')) {
-		echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'users.php']);
+		echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'users.php']);
 	}
+	$button_margin = 'margin-left: 15px;';
 	if (permission_exists('ticket_add') || permission_exists('ticket_edit')) {
-		echo button::create(['type'=>'button','label'=>$text['button-tickets'],'icon'=>'tags','style'=>'margin-right: 15px;','link'=>PROJECT_PATH.'/app/tickets/tickets.php?user_uuid='.urlencode($user_uuid)]);
+		echo button::create(['type'=>'button','label'=>$text['button-tickets'],'icon'=>'tags','style'=>$button_margin,'link'=>PROJECT_PATH.'/app/tickets/tickets.php?user_uuid='.urlencode($user_uuid)]);
+		unset($button_margin);
 	}
-	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','onclick'=>'submit_form();']);
+	if (permission_exists('user_permissions') && file_exists('../../app/user_permissions/user_permissions.php')) {
+		echo button::create(['type'=>'button','label'=>$text['button-permissions'],'icon'=>'key','style'=>$button_margin,'link'=>PROJECT_PATH.'/app/user_permissions/user_permissions.php?id='.urlencode($user_uuid)]);
+		unset($button_margin);
+	}
+	echo button::create(['type'=>'button','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;','onclick'=>'submit_form();']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
@@ -753,7 +787,7 @@
 	unset($sql, $languages, $row);
 	if (is_array($_SESSION['app']['languages']) && sizeof($_SESSION['app']['languages']) != 0) {
 		foreach ($_SESSION['app']['languages'] as $code) {
-			$selected = ($code == $user_settings['domain']['language']['code']) ? "selected='selected'" : null;
+			$selected = $code == $user_language || $code == $user_settings['domain']['language']['code'] ? "selected='selected'" : null;
 			echo "	<option value='".$code."' ".$selected.">".escape($language_codes[$code])." [".escape($code)."]</option>\n";
 		}
 	}
@@ -783,12 +817,8 @@
 			}
 			echo "		<optgroup label='".$category."'>\n";
 		}
-		if ($row == $user_settings['domain']['time_zone']['name']) {
-			echo "			<option value='".escape($row)."' selected='selected'>".escape($row)."</option>\n";
-		}
-		else {
-			echo "			<option value='".escape($row)."'>".escape($row)."</option>\n";
-		}
+		$selected = $row == $user_time_zone || $row == $user_settings['domain']['time_zone']['name'] ? "selected='selected'" : null;
+		echo "			<option value='".escape($row)."' ".$selected.">".escape($row)."</option>\n";
 		$previous_category = $category;
 		$x++;
 	}
@@ -911,7 +941,7 @@
 		$sql .= "order by ";
 		$sql .= "	g.domain_uuid desc, ";
 		$sql .= "	g.group_name asc ";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$parameters['domain_uuid'] = $domain_uuid;
 		$parameters['user_uuid'] = $user_uuid;
 		$database = new database;
 		$user_groups = $database->select($sql, $parameters, 'all');
@@ -923,7 +953,7 @@
 					echo "	<td class='vtable' style='white-space: nowrap; padding-right: 30px;' nowrap='nowrap'>";
 					echo escape($field['group_name']).(($field['group_domain_uuid'] != '') ? "@".$_SESSION['domains'][$field['group_domain_uuid']]['domain_name'] : null);
 					echo "	</td>\n";
-					if (permission_exists('group_member_delete') || if_group("superadmin")) {
+					if (permission_exists('user_group_delete') || if_group("superadmin")) {
 						echo "	<td class='list_control_icons' style='width: 25px;'>\n";
 						echo "		<a href='user_edit.php?id=".urlencode($user_uuid)."&domain_uuid=".urlencode($domain_uuid)."&group_uuid=".urlencode($field['group_uuid'])."&a=delete' alt='".$text['button-delete']."' onclick=\"return confirm('".$text['confirm-delete']."')\">".$v_link_label_delete."</a>\n";
 						echo "	</td>\n";
@@ -944,7 +974,7 @@
 			$sql .= "and group_uuid not in ('".implode("','",$assigned_groups)."') ";
 		}
 		$sql .= "order by domain_uuid desc, group_name asc ";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+		$parameters['domain_uuid'] = $domain_uuid;
 		$database = new database;
 		$groups = $database->select($sql, $parameters, 'all');
 		if (is_array($groups)) {
@@ -995,7 +1025,7 @@
 		echo "		<td class='vncell' valign='top'>".$text['label-api_key']."</td>";
 		echo "		<td class='vtable'>\n";
 		echo "			<input type='text' class='formfld' style='width: 250px;' name='api_key' id='api_key' value=\"".escape($api_key)."\" >";
-		echo button::create(['type'=>'button','label'=>$text['button-generate'],'icon'=>'key','onclick'=>"document.getElementById('api_key').value = uuid();"]);
+		echo button::create(['type'=>'button','label'=>$text['button-generate'],'icon'=>'key','onclick'=>"document.getElementById('api_key').value = '".generate_password(32,3)."';"]);
 		if (strlen($text['description-api_key']) > 0) {
 			echo "			<br />".$text['description-api_key']."<br />\n";
 		}
@@ -1003,12 +1033,12 @@
 		echo "	</tr>";
 	}
 
-	if (permission_exists('message_view')) {
+	if (permission_exists('message_key')) {
 		echo "	<tr>";
 		echo "		<td class='vncell' valign='top'>".$text['label-message_key']."</td>";
 		echo "		<td class='vtable'>\n";
-		echo "			<input type='text' class='formfld' style='width: 250px;' name='message_key' id='message_key' value=\"".escape($user_settings["message"]["key"]["text"])."\" >";
-		echo button::create(['type'=>'button','label'=>$text['button-generate'],'icon'=>'key','onclick'=>"document.getElementById('message_key').value = uuid();"]);
+		echo "			<input type='text' class='formfld' style='width: 250px;' name='message_key' id='message_key' value=\"".($message_key ? escape($message_key) : escape($user_settings["message"]["key"]["text"]))."\" >";
+		echo button::create(['type'=>'button','label'=>$text['button-generate'],'icon'=>'key','onclick'=>"document.getElementById('message_key').value = '".generate_password(32,3)."';"]);
 		if (strlen($text['description-message_key']) > 0) {
 			echo "			<br />".$text['description-message_key']."<br />\n";
 		}
@@ -1022,21 +1052,13 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "	<select class='formfld' name='user_enabled'>\n";
-	echo "		<option value='true'>".$text['option-true']."</option>\n";
-	echo "		<option value='false' ".(($user_enabled != "true") ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
+	echo "		<option value='true' ".(($user_enabled == "true") ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
+	echo "		<option value='false' ".(($user_enabled == "false") ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
 	echo "	</select>\n";
 	echo "<br />\n";
 	echo $text['description-enabled']."\n";
 	echo "</td>\n";
 	echo "</tr>\n";
-
-	if ($unsaved) {
-		echo "<tr>";
-		echo "<td colspan='2' align='right' style='white-space: nowrap;'>";
-		echo "	<span style='color: #b00;'>".$text['message-unsaved_changes']." <i class='fas fa-exclamation-triangle' style='margin-right: 15px;'></i></span>";
-		echo "</td>";
-		echo "</tr>";
-	}
 
 	echo "</table>";
 	echo "<br /><br />";
@@ -1057,16 +1079,7 @@
 	}
 
 	echo "<script>\n";
-//uuid generation script
-	echo "function uuid() {\n";
-	echo "	var d = new Date().getTime();\n";
-	echo "	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n";
-	echo "		var r = (d + Math.random()*16)%16 | 0;\n";
-	echo "		d = Math.floor(d/16);\n";
-	echo "		return (c=='x' ? r : (r&0x3|0x8)).toString(16);\n";
-	echo "	});\n";
-	echo "	return uuid;\n";
-	echo "};\n";
+
 //hide password fields before submit
 	echo "	function submit_form() {\n";
 	echo "		hide_password_fields();\n";

@@ -40,7 +40,6 @@
 
 //download the recording
 	if ($_GET['a'] == "download" && (permission_exists('recording_play') || permission_exists('recording_download'))) {
-		//session_cache_limiter('public');
 		if ($_GET['type'] = "rec") {
 			//set the path for the directory
 				$path = $_SESSION['switch']['recordings']['dir']."/".$_SESSION['domain_name'];
@@ -77,7 +76,7 @@
 			//send the headers and then the data stream
 				if (file_exists($full_recording_path)) {
 					//content-range
-					if (isset($_SERVER['HTTP_RANGE']))  {
+					if (isset($_SERVER['HTTP_RANGE']) && $_GET['t'] != "bin")  {
 						range_download($full_recording_path);
 					}
 
@@ -89,25 +88,21 @@
 						header("Content-Description: File Transfer");
 					}
 					else {
-						$file_ext = substr($recording_filename, -3);
-						if ($file_ext == "wav") {
-							header("Content-Type: audio/x-wav");
-						}
-						if ($file_ext == "mp3") {
-							header("Content-Type: audio/mpeg");
+						$file_ext = pathinfo($recording_filename, PATHINFO_EXTENSION);
+						switch ($file_ext) {
+							case "wav" : header("Content-Type: audio/x-wav"); break;
+							case "mp3" : header("Content-Type: audio/mpeg"); break;
+							case "ogg" : header("Content-Type: audio/ogg"); break;
 						}
 					}
 					header('Content-Disposition: attachment; filename="'.$recording_filename.'"');
 					header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 					header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date in the past
-					// header("Content-Length: ".filesize($full_recording_path));
+					if ($_GET['t'] == "bin") {
+						header("Content-Length: ".filesize($full_recording_path));
+					}
 					ob_clean();
 					fpassthru($fd);
-				}
-
-			//if base64, remove temp recording file
-				if ($_SESSION['recordings']['storage_type']['text'] == 'base64' && $row['recording_base64'] != '') {
-					@unlink($full_recording_path);
 				}
 		}
 		exit;
@@ -132,6 +127,11 @@
 
 		//move the uploaded files
 			move_uploaded_file($_FILES['ulfile']['tmp_name'], $_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename);
+
+		//clear the destinations session array
+			if (isset($_SESSION['destinations']['array'])) {
+				unset($_SESSION['destinations']['array']);
+			}
 
 		//set the message
 			message::add($text['message-uploaded'].": ".htmlentities($recording_filename));
@@ -223,39 +223,112 @@
 					}
 					else {
 						//file found in db, check if base64 present
-						if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
-							$found_recording_uuid = array_search($recording_filename, $array_recordings);
-							if (!$array_base64_exists[$found_recording_uuid]) {
-								$recording_base64 = base64_encode(file_get_contents($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename));
-								//build array
-									$array['recordings'][0]['domain_uuid'] = $domain_uuid;
-									$array['recordings'][0]['recording_uuid'] = $found_recording_uuid;
-									$array['recordings'][0]['recording_base64'] = $recording_base64;
-								//set temporary permissions
-									$p = new permissions;
-									$p->add('recording_edit', 'temp');
-								//execute update
-									$database = new database;
-									$database->app_name = 'recordings';
-									$database->app_uuid = '83913217-c7a2-9e90-925d-a866eb40b60e';
-									$database->save($array);
-									unset($array);
-								//remove temporary permissions
-									$p->delete('recording_edit', 'temp');
+							if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
+								$found_recording_uuid = array_search($recording_filename, $array_recordings);
+								if (!$array_base64_exists[$found_recording_uuid]) {
+									$recording_base64 = base64_encode(file_get_contents($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename));
+									//build array
+										$array['recordings'][0]['domain_uuid'] = $domain_uuid;
+										$array['recordings'][0]['recording_uuid'] = $found_recording_uuid;
+										$array['recordings'][0]['recording_base64'] = $recording_base64;
+									//set temporary permissions
+										$p = new permissions;
+										$p->add('recording_edit', 'temp');
+									//execute update
+										$database = new database;
+										$database->app_name = 'recordings';
+										$database->app_uuid = '83913217-c7a2-9e90-925d-a866eb40b60e';
+										$database->save($array);
+										unset($array);
+									//remove temporary permissions
+										$p->delete('recording_edit', 'temp');
+								}
 							}
-						}
-					}
-
-					//if base64, remove local file
-					if ($_SESSION['recordings']['storage_type']['text'] == 'base64' && file_exists($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename)) {
-						@unlink($_SESSION['switch']['recordings']['dir'].'/'.$_SESSION['domain_name'].'/'.$recording_filename);
 					}
 
 				}
 			}
 			closedir($dh);
 		}
+
+		//redirect
+			if ($_GET['rd'] != '') {
+				header("Location: recordings.php");
+				exit;
+			}
 	}
+
+//get posted data
+	if (is_array($_POST['recordings'])) {
+		$action = $_POST['action'];
+		$search = $_POST['search'];
+		$recordings = $_POST['recordings'];
+	}
+
+//process the http post data by action
+	if ($action != '' && is_array($recordings) && @sizeof($recordings) != 0) {
+		switch ($action) {
+			case 'delete':
+				if (permission_exists('recording_delete')) {
+					$obj = new switch_recordings;
+					$obj->delete($recordings);
+				}
+				break;
+		}
+
+		header('Location: recordings.php'.($search != '' ? '?search='.urlencode($search) : null));
+		exit;
+	}
+
+//get order and order by
+	$order_by = $_GET["order_by"];
+	$order = $_GET["order"];
+
+//add the search term
+	$search = strtolower($_GET["search"]);
+	if (strlen($search) > 0) {
+		$sql_search = "and (";
+		$sql_search .= "lower(recording_name) like :search ";
+		$sql_search .= "or lower(recording_filename) like :search ";
+		$sql_search .= "or lower(recording_description) like :search ";
+		$sql_search .= ") ";
+		$parameters['search'] = '%'.$search.'%';
+	}
+
+//get total recordings from the database
+	$sql = "select count(*) from v_recordings ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$sql .= $sql_search;
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$num_rows = $database->select($sql, $parameters, 'column');
+
+//prepare to page the results
+	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
+	$param = "&search=".$search;
+	$param .= "&order_by=".$order_by."&order=".$order;
+	$page = is_numeric($_GET['page']) ? $_GET['page'] : 0;
+	list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page);
+	list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true);
+	$offset = $rows_per_page * $page;
+
+//get the recordings from the database
+	if ($_SESSION['recordings']['storage_type']['text'] == 'base64') {
+		switch ($db_type) {
+			case 'pgsql': $sql_file_size = "length(decode(recording_base64,'base64')) as recording_size, "; break;
+			case 'mysql': $sql_file_size = "length(from_base64(recording_base64)) as recording_size, "; break;
+		}
+	}
+	$sql = str_replace('count(*)', 'recording_uuid, domain_uuid, recording_filename, '.$sql_file_size.' recording_name, recording_description', $sql);
+	$sql .= order_by($order_by, $order, 'recording_name', 'asc');
+	$sql .= limit_offset($rows_per_page, $offset);
+	$database = new database;
+	$recordings = $database->select($sql, $parameters, 'all');
+	unset($sql, $parameters);
+
+//create token
+	$object = new token;
+	$token = $object->create($_SERVER['PHP_SELF']);
 
 //get posted data
 	if (is_array($_POST['recordings'])) {
@@ -362,7 +435,7 @@
 		echo 	"</form>";
 	}
 	if (permission_exists('recording_delete') && $recordings) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
 	echo 		"<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
@@ -375,6 +448,10 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('recording_delete') && $recordings) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
 
 	echo $text['description']."\n";
 	echo "<br /><br />\n";
@@ -502,7 +579,7 @@
 //include the footer
 	require_once "resources/footer.php";
 
-//define the download function
+//define the download function (helps safari play audio sources)
 	function range_download($file) {
 		$fp = @fopen($file, 'rb');
 
@@ -512,16 +589,16 @@
 		$end    = $size - 1;       // End byte
 		// Now that we've gotten so far without errors we send the accept range header
 		/* At the moment we only support single ranges.
-		 * Multiple ranges requires some more work to ensure it works correctly
-		 * and comply with the spesifications: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.2
-		 *
-		 * Multirange support annouces itself with:
-		 * header('Accept-Ranges: bytes');
-		 *
-		 * Multirange content must be sent with multipart/byteranges mediatype,
-		 * (mediatype = mimetype)
-		 * as well as a boundry header to indicate the various chunks of data.
-		 */
+		* Multiple ranges requires some more work to ensure it works correctly
+		* and comply with the spesifications: http://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html#sec19.2
+		*
+		* Multirange support annouces itself with:
+		* header('Accept-Ranges: bytes');
+		*
+		* Multirange content must be sent with multipart/byteranges mediatype,
+		* (mediatype = mimetype)
+		* as well as a boundry header to indicate the various chunks of data.
+		*/
 		header("Accept-Ranges: 0-$length");
 		// header('Accept-Ranges: bytes');
 		// multipart/byteranges
@@ -555,8 +632,8 @@
 				$c_end   = (isset($range[1]) && is_numeric($range[1])) ? $range[1] : $size;
 			}
 			/* Check the range and make sure it's treated according to the specs.
-			 * http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
-			 */
+			* http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+			*/
 			// End bytes can not be larger than $end.
 			$c_end = ($c_end > $end) ? $end : $c_end;
 			// Validate the requested range and return an error if it's not correct.

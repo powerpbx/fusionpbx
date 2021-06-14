@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Define alternate inbound call handling for extensions.";
+		$apps[$x]['description']['en-gb'] = "Define alternate inbound call handling for extensions.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "";
 		$apps[$x]['description']['de-ch'] = "";
@@ -98,6 +99,22 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
 		$apps[$x]['permissions'][$y]['groups'][] = "agent";
+
+	//default settings
+		$y=0;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "ee68b6d6-a510-48c4-bb71-4e65fae8a5e5";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "follow_me";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "strategy";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "enterprise";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Options: simultaneous, enterprise ";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "follow_me_prompt";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "user";
+		$apps[$x]['permissions'][$y]['groups'][] = "agent";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "follow_me_caller_id";
 
@@ -139,15 +156,6 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "follow_me_enabled";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
-		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
-		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "follow_me_caller_id_uuid";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_destinations";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "destination_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "follow_me_ignore_busy";

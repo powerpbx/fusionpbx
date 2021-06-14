@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Manage mod_translation";
+		$apps[$x]['description']['en-gb'] = "Manage mod_translation";
 		$apps[$x]['description']['ar-eg'] = "إدارة mod_translate";  //translation provided by Google Translate
 		$apps[$x]['description']['de-at'] = "Verwalte mod_translate";
 		$apps[$x]['description']['de-ch'] = "Verwalte mod_translate";
@@ -85,6 +86,7 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'number_translation_enabled';
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = 'text';
+		$apps[$x]['db'][$y]['fields'][$z]['toggle'] = ['true','false'];
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = 'Enter the number translation enabled.';
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = 'number_translation_description';

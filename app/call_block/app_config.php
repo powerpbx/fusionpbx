@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "A tool to block incoming numbers.";
+		$apps[$x]['description']['en-gb'] = "A tool to block incoming numbers.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Ein Werkzeug um eingehende Rufnummern zu sperren.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -98,6 +99,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "primary";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_direction";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Select the direction of the calls to block.";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "extension_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
@@ -112,11 +117,15 @@
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the name.";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "call_block_country_code";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the country code.";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_number";
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "blocked_caller_number";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
-		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the full phone number.";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Enter the phone number.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "call_block_count";
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "blocked_call_count";

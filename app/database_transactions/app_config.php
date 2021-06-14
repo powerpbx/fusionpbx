@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Track database transactions";
+		$apps[$x]['description']['en-gb'] = "Track database transactions";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Datenbanktransaktionen verfolgen";
 		$apps[$x]['description']['de-ch'] = "";
@@ -101,7 +102,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Type: add, update, delete, select";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "transaction_date";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Transaction date.";
 		$z++;

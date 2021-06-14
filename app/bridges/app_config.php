@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = 'Mozilla Public License 1.1';
 		$apps[$x]['url'] = 'http://www.fusionpbx.com';
 		$apps[$x]['description']['en-us'] = '';
+		$apps[$x]['description']['en-gb'] = '';
 
 	//permission details
 		$y = 0;
@@ -44,9 +45,11 @@
 		//$apps[$x]['destinations'][$y]['sql'] = "select bridge_name, bridge_destination, bridge_description from v_bridges ";
 		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and bridge_enabled = 'true'";
 		$apps[$x]['destinations'][$y]['order_by'] = "bridge_name asc";
+		$apps[$x]['destinations'][$y]['field']['bridge_uuid'] = "bridge_uuid";
 		$apps[$x]['destinations'][$y]['field']['name'] = "bridge_name";
-		$apps[$x]['destinations'][$y]['field']['destination'] = "bridge_destination";
 		$apps[$x]['destinations'][$y]['field']['description'] = "bridge_description";
+		$apps[$x]['destinations'][$y]['field']['destination'] = "bridge_destination";
+		$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "bridge:\${destination}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:bridge \${destination}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${name} \${description} ";

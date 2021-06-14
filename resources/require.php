@@ -67,19 +67,19 @@
 	}
 	$autoload = new auto_loader();
 
-//define variable(s)
-	$default_login = false;	//used in the themes
-
 //additional includes
 	require_once "resources/php.php";
 	require_once "resources/functions.php";
 	if ($config_exists) {
 		require "resources/pdo.php";
-		require_once "resources/switch.php";
+		if (file_exists($_SERVER["DOCUMENT_ROOT"] . PROJECT_PATH . "/resources/switch.php")) {
+			require_once "resources/switch.php";
+		}
 	}
 
 //change language on the fly - for translate tool (if available)
 	if (isset($_REQUEST['view_lang_code']) && ($_REQUEST['view_lang_code']) != '') {
 		$_SESSION['domain']['language']['code'] = $_REQUEST['view_lang_code'];
 	}
+
 ?>

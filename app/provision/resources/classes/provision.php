@@ -295,11 +295,12 @@ include "root.php";
 				$provision = array();
 				if (is_array($_SESSION['provision'])) {
 					foreach ($_SESSION['provision'] as $key => $val) {
-						if (strlen($val['var']) > 0) { $value = $val['var']; }
-						if (strlen($val['text']) > 0) { $value = $val['text']; }
-						if (strlen($val['boolean']) > 0) { $value = $val['boolean']; }
-						if (strlen($val['numeric']) > 0) { $value = $val['numeric']; }
-						if (strlen($value) > 0) { $provision[$key] = $value; }
+						if (isset($val['var'])) { $value = $val['var']; }
+						elseif (isset($val['text'])) { $value = $val['text']; }
+						elseif (isset($val['boolean'])) { $value = $val['boolean']; }
+						elseif (isset($val['numeric'])) { $value = $val['numeric']; }
+						elseif (is_array($val) && !is_uuid($val['uuid'])) { $value = $val; }
+						if (isset($value)) { $provision[$key] = $value; }
 						unset($value);
 					}
 				}
@@ -340,13 +341,14 @@ include "root.php";
 
 								//register that we have seen the device
 									$sql = "update v_devices ";
-									$sql .= "set device_provisioned_date = :device_provisioned_date, device_provisioned_method = :device_provisioned_method, device_provisioned_ip = :device_provisioned_ip ";
+									$sql .= "set device_provisioned_date = :device_provisioned_date, device_provisioned_method = :device_provisioned_method, device_provisioned_ip = :device_provisioned_ip, device_provisioned_agent = :device_provisioned_agent ";
 									$sql .= "where domain_uuid = :domain_uuid and device_mac_address = :device_mac_address ";
 									$parameters['domain_uuid'] = $domain_uuid;
 									$parameters['device_mac_address'] = strtolower($mac);
 									$parameters['device_provisioned_date'] = date("Y-m-d H:i:s");
 									$parameters['device_provisioned_method'] = (isset($_SERVER["HTTPS"]) ? 'https' : 'http');
 									$parameters['device_provisioned_ip'] = $_SERVER['REMOTE_ADDR'];
+									$parameters['device_provisioned_agent'] = $_SERVER['HTTP_USER_AGENT'];
 									$database = new database;
 									$database->execute($sql, $parameters);
 									unset($parameters);
@@ -460,6 +462,9 @@ include "root.php";
 							$templates['HW GXP1620'] = 'grandstream/gxp16xx';
 							$templates['HW GXP1625'] = 'grandstream/gxp16xx';
 							$templates['HW GXP1630'] = 'grandstream/gxp16xx';
+							$templates['HW GXP1760W'] = 'grandstream/gxp17xx';
+							$templates['HW GXP1780'] = 'grandstream/gxp17xx';
+							$templates['HW GXP1782'] = 'grandstream/gxp17xx';
 							$templates['HW GXP2124'] = 'grandstream/gxp2124';
 							$templates['HW GXP2130'] = 'grandstream/gxp2130';
 							$templates['HW GXP2135'] = 'grandstream/gxp2135';
@@ -1024,6 +1029,7 @@ include "root.php";
 												case "monitored call park": $device_key_type  = "26"; break;
 												case "intercom": $device_key_type  = "20"; break;
 												case "ldap search": $device_key_type  = "21"; break;
+												case "phonebook": $device_key_type = "30"; break;
 											}
 										}
 										if ($device_key_category == "memory" || $device_key_category == "expansion") {
@@ -1195,11 +1201,12 @@ include "root.php";
 				$provision = array();
 				if (is_array($_SESSION['provision'])) {
 					foreach ($_SESSION['provision'] as $key => $val) {
-						if (strlen($val['var']) > 0) { $value = $val['var']; }
-						if (strlen($val['text']) > 0) { $value = $val['text']; }
-						if (strlen($val['boolean']) > 0) { $value = $val['boolean']; }
-						if (strlen($val['numeric']) > 0) { $value = $val['numeric']; }
-						if (strlen($value) > 0) { $provision[$key] = $value; }
+						if (isset($val['var'])) { $value = $val['var']; }
+						elseif (isset($val['text'])) { $value = $val['text']; }
+						elseif (isset($val['boolean'])) { $value = $val['boolean']; }
+						elseif (isset($val['numeric'])) { $value = $val['numeric']; }
+						elseif (is_array($val) && !is_uuid($val['uuid'])) { $value = $val; }
+						if (isset($value)) { $provision[$key] = $value; }
 						unset($value);
 					}
 				}

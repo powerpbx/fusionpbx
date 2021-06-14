@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "To receive a FAX setup a fax extension and then direct the incoming FAX with a dedicated number or you can detect the FAX tone by using on the Public tab.";
+		$apps[$x]['description']['en-gb'] = "To receive a FAX setup a fax extension and then direct the incoming FAX with a dedicated number or you can detect the FAX tone by using on the Public tab.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Um ein Fax zu empfangen, legen Sie eine Fax-Nebenstelle an und leiten das eingehende Fax über eine dedizierte Rufnummer oder die Faxerkennung in den Einstellungen an das Ziel.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -37,6 +38,7 @@
 		$apps[$x]['destinations'][$y]['order_by'] = "fax_extension asc";
 		$apps[$x]['destinations'][$y]['field']['name'] = "fax_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "fax_extension";
+		$apps[$x]['destinations'][$y]['field']['extension'] = "fax_extension";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${name}";
@@ -171,6 +173,22 @@
 		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "fax_destinations";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "fax_extension_view_domain";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "fax_subject";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "fax_message";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "fax_footer";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 
@@ -620,7 +638,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "fax_date";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -728,7 +746,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "fax_date";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -758,11 +776,15 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "FAX server primary key";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "task_next_time";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "task_lock_time";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "task_fax_file";

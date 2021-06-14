@@ -25,10 +25,9 @@
 */
 
 //includes
-	include "root.php";
+	require_once "root.php";
 	require_once "resources/require.php";
 	require_once "resources/check_auth.php";
-	require_once "resources/functions/save_phrases_xml.php";
 
 //check permissions
 	if (permission_exists('phrase_add') || permission_exists('phrase_edit')) {
@@ -133,6 +132,10 @@
 						$array['phrases'][0]['phrase_description'] = $phrase_description;
 
 						if ($_POST['phrase_detail_function'] != '') {
+							if ($_POST['phrase_detail_function'] == 'execute' && substr($_POST['phrase_detail_data'], 0,5) != "sleep" && !permission_exists("phrase_execute")) {
+								header("Location: phrase_edit.php");
+								exit;
+							}
 							$_POST['phrase_detail_tag'] = 'action'; // default, for now
 							$_POST['phrase_detail_group'] = "0"; // one group, for now
 
@@ -171,6 +174,11 @@
 						$cache = new cache;
 						$cache->delete("languages:".$phrase_language.".".$phrase_uuid);
 
+					//clear the destinations session array
+						if (isset($_SESSION['destinations']['array'])) {
+							unset($_SESSION['destinations']['array']);
+						}
+
 					//send a redirect
 						message::add($text['message-add']);
 						header("Location: phrase_edit.php?id=".$phrase_uuid);
@@ -188,6 +196,10 @@
 						$array['phrases'][0]['phrase_description'] = $phrase_description;
 
 						if ($_POST['phrase_detail_function'] != '') {
+							if ($_POST['phrase_detail_function'] == 'execute' && substr($_POST['phrase_detail_data'], 0,5) != "sleep" && !permission_exists("phrase_execute")) {
+								header("Location: phrase_edit.php?id=".$phrase_uuid);
+								exit;
+							}
 							$_POST['phrase_detail_tag'] = 'action'; // default, for now
 							$_POST['phrase_detail_group'] = "0"; // one group, for now
 
@@ -229,12 +241,14 @@
 							$obj->delete_details($phrase_details_delete);
 						}
 
-					//save the xml to the file system if the phrase directory is set
-						save_phrases_xml();
-
 					//clear the cache
 						$cache = new cache;
 						$cache->delete("languages:".$phrase_language.".".$phrase_uuid);
+
+					//clear the destinations session array
+						if (isset($_SESSION['destinations']['array'])) {
+							unset($_SESSION['destinations']['array']);
+						}
 
 					//send a redirect
 						message::add($text['message-update']);
@@ -282,8 +296,8 @@
 		unset($sql, $parameters);
 	}
 
-//get the recordings
-	$sql = "select * from v_recordings ";
+//get the recording names from the database.
+	$sql = "select recording_name, recording_filename from v_recordings ";
 	$sql .= "where domain_uuid = :domain_uuid ";
 	$sql .= "order by recording_name asc ";
 	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
@@ -434,13 +448,17 @@
 	echo "	</div>\n";
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'phrases.php']);
-	if ($action == "update") {
-		echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'action','value'=>'delete','style'=>'margin-left: 15px;','onclick'=>"if (!confirm('".$text['confirm-delete']."')) { this.blur(); return false; }"]);
+	if ($action == "update" && permission_exists('phrase_delete')) {
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save','style'=>'margin-left: 15px;']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($action == "update" && permission_exists('phrase_delete')) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'delete','onclick'=>"modal_close();"])]);
+	}
 
 	echo "<table width='100%'  border='0' cellpadding='0' cellspacing='0'>\n";
 

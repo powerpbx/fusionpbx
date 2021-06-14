@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Schedule to immediately make multiple calls to the extension, an IVR Menu, Conference Room, or any other number.";
+		$apps[$x]['description']['en-gb'] = "Schedule to immediately make multiple calls to the extension, an IVR Menu, Conference Room, or any other number.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Methode um sofort mehrere parallele Anrufe an Nebenstellen, Automatische Zentralen, Conferenzräume oder andere Rufnummern zu leiten.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -40,6 +41,10 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "call_broadcast_edit";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "call_broadcast_caller_id";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
@@ -98,6 +103,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "broadcast_start_time";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "broadcast_timeout";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -146,5 +155,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "broadcast_accountcode";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
-
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "broadcast_toll_allow";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
 ?>

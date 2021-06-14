@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Manage user groups and permissions.";
+		$apps[$x]['description']['en-gb'] = "Manage user groups and permissions.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Verwalte Benutzergruppen und Berechtigungen.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -169,6 +170,14 @@
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "permission_name";
 		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "permission_id";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "permission_protected";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "permission_assigned";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;

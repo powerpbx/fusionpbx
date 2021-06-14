@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Used Configure SIP extensions.";
+		$apps[$x]['description']['en-gb'] = "Used Configure SIP extensions.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Wird verwendet um SIP Nebenstellen zu konfigurieren.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -33,11 +34,13 @@
 		$apps[$x]['destinations'][$y]['type'] = "sql";
 		$apps[$x]['destinations'][$y]['label'] = "extensions";
 		$apps[$x]['destinations'][$y]['name'] = "extensions";
-		$apps[$x]['destinations'][$y]['sql'] = "select extension, number_alias, user_context as context, description from v_extensions ";
+		$apps[$x]['destinations'][$y]['sql'] = "select extension_uuid, extension, number_alias, user_context as context, description from v_extensions ";
 		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and enabled = 'true' ";
 		$apps[$x]['destinations'][$y]['order_by'] = "number_alias, extension asc";
-		$apps[$x]['destinations'][$y]['field']['context'] = "user_context";
+		$apps[$x]['destinations'][$y]['field']['extension_uuid'] = "extension_uuid";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "number_alias,extension";
+		$apps[$x]['destinations'][$y]['field']['extension'] = "number_alias,extension";
+		$apps[$x]['destinations'][$y]['field']['context'] = "user_context";
 		$apps[$x]['destinations'][$y]['field']['description'] = "description";
 		$apps[$x]['destinations'][$y]['select_value']['user_contact'] = "user/\${destination}@\${domain_name}";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
@@ -52,6 +55,7 @@
 		$apps[$x]['destinations'][$y]['sql']['mysql'] = "select distinct(call_group) as destination from v_extensions";
 		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and call_group <> '' and enabled = 'true' ";
 		$apps[$x]['destinations'][$y]['order_by'] = "destination asc";
+		$apps[$x]['destinations'][$y]['field']['extension_uuid'] = "extension_uuid";
 		$apps[$x]['destinations'][$y]['field']['context'] = "user_context";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "destination";
 		//$apps[$x]['destinations'][$y]['field']['destination']['name'] = "destination";
@@ -77,6 +81,10 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "extension_delete";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "extension_extension";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
@@ -152,6 +160,8 @@
 		$apps[$x]['permissions'][$y]['name'] = "emergency_caller_id_number";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "emergency_caller_id_select";
+		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "extension_user_record";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
@@ -180,9 +190,6 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "extension_export";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "extension_all";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
@@ -192,10 +199,36 @@
 		$apps[$x]['permissions'][$y]['name'] = "extension_export";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "extension_advanced";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "extension_destinations";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "user";
+                $y++;
+                $apps[$x]['permissions'][$y]['name'] = "extension_directory";
+                $apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+                $apps[$x]['permissions'][$y]['groups'][] = "admin";
+                $apps[$x]['permissions'][$y]['groups'][] = "user";
+                $y++;
+                $apps[$x]['permissions'][$y]['name'] = "extension_max_registrations";
+                $apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+                $y++;
+                $apps[$x]['permissions'][$y]['name'] = "extension_limit";
+                $apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+                $apps[$x]['permissions'][$y]['groups'][] = "admin";
+                $apps[$x]['permissions'][$y]['groups'][] = "user";
+                $y++;
+                $apps[$x]['permissions'][$y]['name'] = "extension_call_group";
+                $apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+                $apps[$x]['permissions'][$y]['groups'][] = "admin";
+                $apps[$x]['permissions'][$y]['groups'][] = "user";
+                $y++;
+                $apps[$x]['permissions'][$y]['name'] = "extension_hold_music";
+                $apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+                $apps[$x]['permissions'][$y]['groups'][] = "admin";
+                $apps[$x]['permissions'][$y]['groups'][] = "user"; 
 
 
 	//default settings
@@ -205,7 +238,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "dial_string";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "{sip_invite_domain=\${domain_name},leg_timeout=\${call_timeout},presence_id=\${dialed_user}@\${dialed_domain}}\${sofia_contact(*/\${dialed_user}@\${dialed_domain})}";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "3eeb3757-f7bb-437a-9021-8ccf3f27c98b";
@@ -220,7 +253,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "extension";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "password_length";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "10";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "20";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the length for generated passwords for extensions.";
 		$y++;
@@ -281,7 +314,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Default value to set whether to record inbound, outbound, or all calls.";
 
 	//cache details
-		$apps[$x]['cache']['key'] = "directory.\${extension}@\${user_context}";
+		$apps[$x]['cache']['key'] = "directory.\${extension}@\${domain_name}";
 
 	//schema details
 		$y=0;
@@ -405,6 +438,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "max_registrations";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "limit_max";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -485,7 +522,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "nibble_account";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "sip_force_expires";
@@ -560,12 +597,6 @@
 		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_follow_me";
 		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "follow_me_uuid";
-		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "forward_caller_id_uuid";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
-		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "follow_me_enabled";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";

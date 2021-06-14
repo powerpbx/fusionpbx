@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2008-2020
+	Portions created by the Initial Developer are Copyright (C) 2008-2021
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -220,12 +220,23 @@
 	if (!isset($_GET['page'])) { $page = 0; $_GET['page'] = 0; }
 	$offset = $rows_per_page * $page;
 
+//set the time zone
+	if (isset($_SESSION['domain']['time_zone']['name'])) {
+		$time_zone = $_SESSION['domain']['time_zone']['name'];
+	}
+	else {
+		$time_zone = date_default_timezone_get();
+	}
+	$parameters['time_zone'] = $time_zone;
+
 //get the results from the db
 	$sql = "select \n";
 	$sql .= "c.domain_uuid, \n";
 	$sql .= "e.extension, \n";
 	$sql .= "c.start_stamp, \n";
 	$sql .= "c.end_stamp, \n";
+	$sql .= "to_char(timezone(:time_zone, start_stamp), 'DD Mon YYYY') as start_date_formatted, \n";
+	$sql .= "to_char(timezone(:time_zone, start_stamp), 'HH12:MI:SS am') as start_time_formatted, \n";
 	$sql .= "c.start_epoch, \n";
 	$sql .= "c.hangup_cause, \n";
 	$sql .= "c.duration, \n";
@@ -242,8 +253,9 @@
 	$sql .= "c.source_number, \n";
 	$sql .= "c.destination_number, \n";
 	$sql .= "c.leg, \n";
-	$sql .= "(c.xml is not null or c.json is not null) as raw_data_exists, \n";
-	$sql .= "c.json, \n";
+	$sql .= "c.cc_side, \n";
+	//$sql .= "(c.xml is not null or c.json is not null) as raw_data_exists, \n";
+	//$sql .= "c.json, \n";
 	if (is_array($_SESSION['cdr']['field'])) {
 		foreach ($_SESSION['cdr']['field'] as $field) {
 			$array = explode(",", $field);
@@ -279,8 +291,13 @@
 		$sql .= "where c.domain_uuid = :domain_uuid \n";
 		$parameters['domain_uuid'] = $domain_uuid;
 	}
-	if (!permission_exists('xml_cdr_domain') && is_array($extension_uuids)) { //only show the user their calls
-		$sql .= "and (c.extension_uuid = '".implode("' or c.extension_uuid = '", $extension_uuids)."') ";
+	if (!permission_exists('xml_cdr_domain')) { //only show the user their calls
+		if (is_array($extension_uuids) && @sizeof($extension_uuids)) {
+			$sql .= "and (c.extension_uuid = '".implode("' or c.extension_uuid = '", $extension_uuids)."') ";
+		}
+		else {
+			$sql .= "and false ";
+		}
 	}
 	if ($missed == true) {
 		$sql .= "and missed_call = 1 \n";
@@ -351,48 +368,49 @@
 	}
 
 	if (strlen($start_stamp_begin) > 0 && strlen($start_stamp_end) > 0) {
-		$sql .= "and start_stamp between :start_stamp_begin and :start_stamp_end ";
-		$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000';
-		$parameters['start_stamp_end'] = $start_stamp_end.':59.999';
+		$sql .= "and start_stamp between :start_stamp_begin::timestamptz and :start_stamp_end::timestamptz ";
+		$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
+		$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (strlen($start_stamp_begin) > 0) {
 			$sql .= "and start_stamp >= :start_stamp_begin ";
-			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000';
+			$parameters['start_stamp_begin'] = $start_stamp_begin.':00.000 '.$time_zone;
 		}
 		if (strlen($start_stamp_end) > 0) {
 			$sql .= "and start_stamp <= :start_stamp_end ";
-			$parameters['start_stamp_end'] = $start_stamp_end.':59.999';
+			$parameters['start_stamp_end'] = $start_stamp_end.':59.999 '.$time_zone;
 		}
 	}
 	if (strlen($answer_stamp_begin) > 0 && strlen($answer_stamp_end) > 0) {
-		$sql .= "and answer_stamp between :answer_stamp_begin and :answer_stamp_end ";
-		$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000';
-		$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999';
+		$sql .= "and answer_stamp between :answer_stamp_begin::timestamptz and :answer_stamp_end::timestamptz ";
+
+		$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000 '.$time_zone;
+		$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (strlen($answer_stamp_begin) > 0) {
 			$sql .= "and answer_stamp >= :answer_stamp_begin ";
-			$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000';
+			$parameters['answer_stamp_begin'] = $answer_stamp_begin.':00.000 '.$time_zone;;
 		}
 		if (strlen($answer_stamp_end) > 0) {
 			$sql .= "and answer_stamp <= :answer_stamp_end "; 
-			$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999';
+			$parameters['answer_stamp_end'] = $answer_stamp_end.':59.999 '.$time_zone;
 		}
 	}
 	if (strlen($end_stamp_begin) > 0 && strlen($end_stamp_end) > 0) {
-		$sql .= "and end_stamp between :end_stamp_begin and :end_stamp_end ";
-		$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000';
-		$parameters['end_stamp_end'] = $end_stamp_end.':59.999';
+		$sql .= "and end_stamp between :end_stamp_begin::timestamptz and :end_stamp_end::timestamptz ";
+		$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000 '.$time_zone;
+		$parameters['end_stamp_end'] = $end_stamp_end.':59.999 '.$time_zone;
 	}
 	else {
 		if (strlen($end_stamp_begin) > 0) {
 			$sql .= "and end_stamp >= :end_stamp_begin ";
-			$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000';
+			$parameters['end_stamp_begin'] = $end_stamp_begin.':00.000 '.$time_zone;
 		}
 		if (strlen($end_stamp_end) > 0) {
 			$sql .= "and end_stamp <= :end_stamp_end ";
-			$parameters['end_stamp'] = $end_stamp_end.':59.999';
+			$parameters['end_stamp'] = $end_stamp_end.':59.999 '.$time_zone;
 		}
 	}
 	if (is_numeric($duration_min)) {
@@ -406,6 +424,166 @@
 	if (strlen($billsec) > 0) {
 		$sql .= "and billsec like :billsec ";
 		$parameters['billsec'] = '%'.$billsec.'%';
+	}
+	if (strlen($hangup_cause) > 0) {
+		$sql .= "and hangup_cause like :hangup_cause ";
+		$parameters['hangup_cause'] = '%'.$hangup_cause.'%';
+	}
+	elseif (!permission_exists('xml_cdr_lose_race') && !permission_exists('xml_cdr_enterprise_leg')) {
+		$sql .= "and hangup_cause != 'LOSE_RACE' ";
+	}
+	//exclude enterprise ring group legs
+	if (!permission_exists('xml_cdr_enterprise_leg')) {
+		$sql .= "and originating_leg_uuid IS NULL ";
+	}
+	if (strlen($call_result) > 0) {
+		switch ($call_result) {
+			case 'answered':
+				$sql .= "and (answer_stamp is not null and bridge_uuid is not null) ";
+				break;
+			case 'voicemail':
+				$sql .= "and (answer_stamp is not null and bridge_uuid is null) ";
+				break;
+			case 'missed':
+				$sql .= "and missed_call = '1' ";
+				break;
+			case 'cancelled':
+				if ($direction == 'inbound' || $direction == 'local' || $call_result == 'missed') {
+					$sql .= "
+						and ((
+							answer_stamp is null 
+							and bridge_uuid is null 
+							and sip_hangup_disposition <> 'send_refuse'
+						)
+						or (
+							answer_stamp is not null 
+							and bridge_uuid is null 
+							and voicemail_message = false
+						))";
+				}
+				else if ($direction == 'outbound') {
+					$sql .= "and (answer_stamp is null and bridge_uuid is not null) ";
+				}
+				else {
+					$sql .= "
+						and ((
+							(direction = 'inbound' or direction = 'local')
+							and answer_stamp is null
+							and bridge_uuid is null
+							and sip_hangup_disposition <> 'send_refuse'
+						)
+						or (
+							direction = 'outbound'
+							and answer_stamp is null
+							and bridge_uuid is not null
+						)
+						or (
+							(direction = 'inbound' or direction = 'local')
+							and answer_stamp is not null
+							and bridge_uuid is null
+							and voicemail_message = false
+						))";
+				}
+				break;
+			default: 
+			    $sql .= "and (answer_stamp is null and bridge_uuid is null and duration = 0) ";
+				//$sql .= "and (answer_stamp is null and bridge_uuid is null and billsec = 0 and sip_hangup_disposition = 'send_refuse') ";
+		}
+	}
+	if (strlen($xml_cdr_uuid) > 0) {
+		$sql .= "and xml_cdr_uuid = :xml_cdr_uuid ";
+		$parameters['xml_cdr_uuid'] = $xml_cdr_uuid;
+	}
+	if (strlen($bleg_uuid) > 0) {
+		$sql .= "and bleg_uuid = :bleg_uuid ";
+		$parameters['bleg_uuid'] = $bleg_uuid;
+	}
+	if (strlen($accountcode) > 0) {
+		$sql .= "and c.accountcode = :accountcode ";
+		$parameters['accountcode'] = $accountcode;
+	}
+	if (strlen($read_codec) > 0) {
+		$sql .= "and read_codec like :read_codec ";
+		$parameters['read_codec'] = '%'.$read_codec.'%';
+	}
+	if (strlen($write_codec) > 0) {
+		$sql .= "and write_codec like :write_codec ";
+		$parameters['write_codec'] = '%'.$write_codec.'%';
+	}
+	if (strlen($remote_media_ip) > 0) {
+		$sql .= "and remote_media_ip like :remote_media_ip ";
+		$parameters['remote_media_ip'] = $remote_media_ip;
+	}
+	if (strlen($network_addr) > 0) {
+		$sql .= "and network_addr like :network_addr ";
+		$parameters['network_addr'] = '%'.$network_addr.'%';
+	}
+	//if (strlen($mos_comparison) > 0 && strlen($mos_score) > 0 ) {
+	//	$sql .= "and rtp_audio_in_mos = :mos_comparison :mos_score ";
+	//	$parameters['mos_comparison'] = $mos_comparison;
+	//	$parameters['mos_score'] = $mos_score;
+	//}
+	if (strlen($leg) > 0) {
+		$sql .= "and leg = :leg ";
+		$parameters['leg'] = $leg;
+	}
+	if (is_numeric($tta_min)) {
+		$sql .= "and (c.answer_epoch - c.start_epoch) >= :tta_min ";
+		$parameters['tta_min'] = $tta_min;
+	}
+	if (is_numeric($tta_max)) {
+		$sql .= "and (c.answer_epoch - c.start_epoch) <= :tta_max ";
+		$parameters['tta_max'] = $tta_max;
+	}
+	if ($recording == 'true' || $recording == 'false') {
+		if ($recording == 'true') {
+			$sql .= "and c.record_path is not null and c.record_name is not null ";
+		}
+		if ($recording == 'false') {
+			$sql .= "and (c.record_path is null or c.record_name is null) ";
+		}
+	}
+	//show agent originated legs only to those with the permission
+	if (!permission_exists('xml_cdr_cc_agent_leg')) {
+		$sql .= "and (cc_side is null or cc_side != 'agent') ";
+	}
+	//end where
+	if (strlen($order_by) > 0) {
+		$sql .= order_by($order_by, $order);
+	}
+	if ($_REQUEST['export_format'] !== "csv" && $_REQUEST['export_format'] !== "pdf") {
+		if ($rows_per_page == 0) {
+			$sql .= " limit :limit offset 0 \n";
+			$parameters['limit'] = $_SESSION['cdr']['limit']['numeric'];
+		}
+		else {
+			$sql .= " limit :limit offset :offset \n";
+			$parameters['limit'] = $rows_per_page;
+			$parameters['offset'] = $offset;
+		}
+	}
+	$sql = str_replace("  ", " ", $sql);
+//echo $sql;
+//print_r($parameters);
+//exit;
+	$database = new database;
+	if ($archive_request && $_SESSION['cdr']['archive_database']['boolean'] == 'true') {
+		$database->driver = $_SESSION['cdr']['archive_database_driver']['text'];
+		$database->host = $_SESSION['cdr']['archive_database_host']['text'];
+		$database->type = $_SESSION['cdr']['archive_database_type']['text'];
+		$database->port = $_SESSION['cdr']['archive_database_port']['text'];
+		$database->db_name = $_SESSION['cdr']['archive_database_name']['text'];
+		$database->username = $_SESSION['cdr']['archive_database_username']['text'];
+		$database->password = $_SESSION['cdr']['archive_database_password']['text'];
+	}
+	$result = $database->select($sql, $parameters, 'all');
+	$result_count = is_array($result) ? sizeof($result) : 0;
+	unset($database, $sql, $parameters);
+
+//return the paging
+	if ($_REQUEST['export_format'] !== "csv" && $_REQUEST['export_format'] !== "pdf") {
+		list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true, $result_count); //top
+		list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page, false, $result_count); //bottom
 	}
 	if (strlen($hangup_cause) > 0) {
 		$sql .= "and hangup_cause like :hangup_cause ";
@@ -530,11 +708,5 @@
 	$result = $database->select($sql, $parameters, 'all');
 	$result_count = (count($result) ? count($result) : 0);
 	unset($database, $sql, $parameters);
-
-//return the paging
-	if ($_REQUEST['export_format'] !== "csv" && $_REQUEST['export_format'] !== "pdf") {
-		list($paging_controls_mini, $rows_per_page) = paging($num_rows, $param, $rows_per_page, true, $result_count); //top
-		list($paging_controls, $rows_per_page) = paging($num_rows, $param, $rows_per_page, false, $result_count); //bottom
-	}
 
 ?>

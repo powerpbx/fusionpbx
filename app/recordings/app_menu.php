@@ -2,13 +2,14 @@
 
 	$y=0;
 	$apps[$x]['menu'][$y]['title']['en-us'] = "Recordings";
+	$apps[$x]['menu'][$y]['title']['en-gb'] = "Recordings";
 	$apps[$x]['menu'][$y]['title']['ar-eg'] = "";
 	$apps[$x]['menu'][$y]['title']['de-at'] = "Aufnahmen";
 	$apps[$x]['menu'][$y]['title']['de-de'] = "Aufnahmen";
 	$apps[$x]['menu'][$y]['title']['es-cl'] = "Grabaciones";
 	$apps[$x]['menu'][$y]['title']['es-mx'] = "";
-	$apps[$x]['menu'][$y]['title']['fr-ca'] = "";
-	$apps[$x]['menu'][$y]['title']['fr-fr'] = "Guides Vocaux";
+	$apps[$x]['menu'][$y]['title']['fr-ca'] = "Guides vocaux";
+	$apps[$x]['menu'][$y]['title']['fr-fr'] = "Guides vocaux";
 	$apps[$x]['menu'][$y]['title']['he-il'] = "";
 	$apps[$x]['menu'][$y]['title']['it-it'] = "Registrazioni Audio";
 	$apps[$x]['menu'][$y]['title']['nl-nl'] = "Opnamen";

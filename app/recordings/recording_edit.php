@@ -55,10 +55,18 @@
 		$recording_name = $_POST["recording_name"];
 		$recording_description = $_POST["recording_description"];
 
-		//clean the recording filename and name
-		$recording_filename = str_replace(" ", "_", $recording_filename);
-		$recording_filename = str_replace("'", "", $recording_filename);
-		$recording_name = str_replace("'", "", $recording_name);
+		//sanitize recording filename and name
+		$recording_filename_ext = strtolower(pathinfo($recording_filename, PATHINFO_EXTENSION));
+		if (!in_array($recording_filename_ext, ['wav','mp3','ogg'])) {
+			$recording_filename = pathinfo($recording_filename, PATHINFO_FILENAME);
+			$recording_filename = str_replace('.', '', $recording_filename);
+		}
+		$recording_filename = str_replace("\\", '', $recording_filename);
+		$recording_filename = str_replace('/', '', $recording_filename);
+		$recording_filename = str_replace('..', '', $recording_filename);
+		$recording_filename = str_replace(' ', '_', $recording_filename);
+		$recording_filename = str_replace("'", '', $recording_filename);
+		$recording_name = str_replace("'", '', $recording_name);
 	}
 
 if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
@@ -140,7 +148,7 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 //pre-populate the form
 	if (count($_GET)>0 && $_POST["persistformvar"] != "true") {
 		$recording_uuid = $_GET["id"];
-		$sql = "select * from v_recordings ";
+		$sql = "select recording_name, recording_filename, recording_description from v_recordings ";
 		$sql .= "where domain_uuid = :domain_uuid ";
 		$sql .= "and recording_uuid = :recording_uuid ";
 		$parameters['domain_uuid'] = $domain_uuid;
@@ -171,12 +179,16 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','style'=>'margin-right: 15px;','link'=>'recordings.php']);
 	if (permission_exists('recording_delete')) {
-		echo button::create(['type'=>'submit','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','name'=>'action','value'=>'delete','style'=>'margin-right: 15px;','onclick'=>"if (confirm('".$text['confirm-delete']."')) { document.getElementById('frm').submit(); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>'margin-right: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo button::create(['type'=>'submit','label'=>$text['button-save'],'icon'=>$_SESSION['theme']['button_icon_save'],'id'=>'btn_save']);
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('recording_delete')) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'submit','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','name'=>'action','value'=>'delete','onclick'=>"modal_close();"])]);
+	}
 
 	echo "<table width='100%' border='0' cellpadding='0' cellspacing='0'>\n";
 

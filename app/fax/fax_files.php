@@ -17,7 +17,7 @@
 
 	The Initial Developer of the Original Code is
 	Mark J Crane <markjcrane@fusionpbx.com>
-	Portions created by the Initial Developer are Copyright (C) 2018
+	Portions created by the Initial Developer are Copyright (C) 2018-2020
 	the Initial Developer. All Rights Reserved.
 
 	Contributor(s):
@@ -75,7 +75,7 @@
 //get fax extension
 	if (is_uuid($_GET["id"])) {
 		$fax_uuid = $_GET["id"];
-		if (if_group("superadmin") || if_group("admin")) {
+		if (permission_exists('fax_extension_view_domain')) {
 			//show all fax extensions
 			$sql = "select fax_name, fax_extension from v_fax ";
 			$sql .= "where domain_uuid = :domain_uuid ";
@@ -102,7 +102,7 @@
 				$fax_extension = $row["fax_extension"];
 		}
 		else {
-			if (!if_group("superadmin") && !if_group("admin")) {
+			if (!permission_exists('fax_extension_view_domain')) {
 				echo "access denied";
 				exit;
 			}
@@ -115,7 +115,6 @@
 
 //download the fax
 	if ($_GET['a'] == "download") {
-		session_cache_limiter('public');
 		//test to see if it is in the inbox or sent directory.
 		if ($_GET['type'] == "fax_inbox") {
 			if (file_exists($fax_dir.'/'.$_GET['ext'].'/inbox/'.$_GET['filename'])) {
@@ -245,7 +244,7 @@
 	echo "	<div class='actions'>\n";
 	echo button::create(['type'=>'button','label'=>$text['button-back'],'icon'=>$_SESSION['theme']['button_icon_back'],'id'=>'btn_back','link'=>'fax.php']);
 	if (permission_exists('fax_file_delete') && $fax_files) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','style'=>'margin-left: 15px;','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	if ($paging_controls_mini != '') {
 		echo 	"<span style='margin-left: 15px;'>".$paging_controls_mini."</span>\n";
@@ -253,6 +252,10 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('fax_file_delete') && $fax_files) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
 
 	echo "<form id='form_list' method='post'>\n";
 	echo "<input type='hidden' id='action' name='action' value=''>\n";
@@ -345,19 +348,12 @@
 						$page_height = 11.7;
 						$page_size = 'a4';
 					}
-				//generate pdf (a work around, as tiff2pdf improperly inverts the colors)
-					$cmd_tif2pdf = "tiff2pdf -i -u i -p ".$page_size." -w ".$page_width." -l ".$page_height." -f -o ".$dir_fax_temp.'/'.$file_name.".pdf ".$dir_fax.'/'.$file_name.".tif";
-					//echo $cmd_tif2pdf."<br>";
+				//generate pdf from tif
+					$cmd_tif2pdf = "tiff2pdf -u i -p ".$page_size." -w ".$page_width." -l ".$page_height." -f -o ".$dir_fax.'/'.$file_name.".pdf ".$dir_fax.'/'.$file_name.".tif";
 					exec($cmd_tif2pdf);
-					chdir($dir_fax_temp);
-					$cmd_pdf2tif = "gs -q -sDEVICE=tiffg3 -r".$gs_r." -g".$gs_g." -dNOPAUSE -sOutputFile=".$file_name."_temp.tif -- ".$file_name.".pdf -c quit";
-					//echo $cmd_pdf2tif."<br>";
-					exec($cmd_pdf2tif); //convert pdf to tif
-					@unlink($dir_fax_temp.'/'.$file_name.".pdf");
-					$cmd_tif2pdf = "tiff2pdf -i -u i -p ".$page_size." -w ".$page_width." -l ".$page_height." -f -o ".$dir_fax.'/'.$file_name.".pdf ".$dir_fax_temp.'/'.$file_name."_temp.tif";
-					//echo $cmd_tif2pdf."<br>";
-					exec($cmd_tif2pdf);
-					@unlink($dir_fax_temp.'/'.$file_name."_temp.tif");
+				//clean up temporary files, if any
+					if (file_exists($dir_fax_temp.'/'.$file_name.'.pdf')) { @unlink($dir_fax_temp.'/'.$file_name.'.pdf'); }
+					if (file_exists($dir_fax_temp.'/'.$file_name.'.tif')) { @unlink($dir_fax_temp.'/'.$file_name.'.tif'); }
 			}
 
 			if ($_REQUEST['box'] == 'inbox' && permission_exists('fax_inbox_view')) {

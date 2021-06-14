@@ -79,6 +79,16 @@
 	$order_by = $_GET["order_by"];
 	$order = $_GET["order"];
 
+//get total extension count for domain
+if (is_numeric($_SESSION['limit']['extensions']['numeric'])) {
+	$sql = "select count(*) from v_extensions ";
+	$sql .= "where domain_uuid = :domain_uuid ";
+	$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
+	$database = new database;
+	$total_extensions = $database->select($sql, $parameters, 'column');
+	unset($sql, $parameters);
+}
+
 //add the search term
 	$search = strtolower($_GET["search"]);
 	if (strlen($search) > 0) {
@@ -101,15 +111,7 @@
 		$parameters['search'] = '%'.$search.'%';
 	}
 
-//get total extension count for domain
-	if (is_numeric($_SESSION['limit']['extensions']['numeric'])) {
-		$sql = "select count(*) from v_extensions ";
-		$sql .= "where domain_uuid = :domain_uuid ";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$database = new database;
-		$total_extensions = $database->select($sql, $parameters, 'column');
-		unset($sql, $parameters);
-	}
+
 
 //get total extension count
 	$sql = "select count(*) from v_extensions where true ";
@@ -153,6 +155,9 @@
 //get the registrations
 	if (permission_exists('extension_registered')) {
 		$obj = new registrations;
+		if ($_GET['show'] == 'all') {
+			$obj->show = 'all';
+		}
 		$registrations = $obj->get('all');
 	}
 
@@ -180,25 +185,15 @@
 		unset($margin_left);
 	}
 	if (permission_exists('extension_enabled') && $extensions) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','style'=>$margin_left,'onclick'=>"if (confirm('".$text['confirm-toggle']."')) { list_action_set('toggle'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'name'=>'btn_toggle','style'=>$margin_left,'onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
 		unset($margin_left);
 	}
 	if (permission_exists('extension_delete') && $extensions) {
 		if (permission_exists('voicemail_delete')) {
-			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','style'=>$margin_left,'link'=>'#modal-delete-options']);
-			echo modal::create([
-				'id'=>'modal-delete-options',
-				'title'=>$text['modal_title-confirmation'],
-				'message'=>$text['message-delete_selection'],
-				'actions'=>
-					button::create(['type'=>'button','label'=>$text['button-cancel'],'icon'=>$_SESSION['theme']['button_icon_cancel'],'collapse'=>'hide-xs','onclick'=>'modal_close();']).
-					button::create(['type'=>'button','label'=>$text['label-extension_and_voicemail'],'icon'=>'voicemail','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete_extension_voicemail'); list_form_submit('form_list');"]).
-					button::create(['type'=>'button','label'=>$text['label-extension_only'],'icon'=>'phone-alt','collapse'=>'never','style'=>'float: right;','onclick'=>"modal_close(); list_action_set('delete_extension'); list_form_submit('form_list');"])
-				]);
+			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$margin_left,'onclick'=>"modal_open('modal-delete-options');"]);
 		}
 		else {
-			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'style'=>$margin_left,'link'=>"#modal-delete"]);
-			echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete_extension'); list_form_submit('form_list');"])]);
+			echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$margin_left,'onclick'=>"modal_open('modal-delete');"]);
 		}
 		unset($margin_left);
 	}
@@ -222,6 +217,26 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
+	if (permission_exists('extension_enabled') && $extensions) {
+		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('extension_delete') && $extensions) {
+		if (permission_exists('voicemail_delete')) {
+			echo modal::create([
+				'id'=>'modal-delete-options',
+				'title'=>$text['modal_title-confirmation'],
+				'message'=>$text['message-delete_selection'],
+				'actions'=>
+					button::create(['type'=>'button','label'=>$text['button-cancel'],'icon'=>$_SESSION['theme']['button_icon_cancel'],'collapse'=>'hide-xs','onclick'=>'modal_close();']).
+					button::create(['type'=>'button','label'=>$text['label-extension_and_voicemail'],'icon'=>'voicemail','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete_extension_voicemail'); list_form_submit('form_list');"]).
+					button::create(['type'=>'button','label'=>$text['label-extension_only'],'icon'=>'phone-alt','collapse'=>'never','style'=>'float: right;','onclick'=>"modal_close(); list_action_set('delete_extension'); list_form_submit('form_list');"])
+				]);
+		}
+		else {
+			echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'id'=>'btn_delete','icon'=>'check','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete_extension'); list_form_submit('form_list');"])]);
+		}
+	}
+
 	echo $text['description-extensions']."\n";
 	echo "<br /><br />\n";
 
@@ -242,7 +257,9 @@
 	}
 	echo th_order_by('extension', $text['label-extension'], $order_by, $order);
 	echo th_order_by('effective_caller_id_name', $text['label-effective_cid_name'], $order_by, $order, null, "class='hide-xs'");
-	echo th_order_by('outbound_caller_id_name', $text['label-outbound_cid_name'], $order_by, $order, null, "class='hide-sm-dn'");
+	if (permission_exists("outbound_caller_id_name")) {
+		echo th_order_by('outbound_caller_id_name', $text['label-outbound_cid_name'], $order_by, $order, null, "class='hide-sm-dn'");
+	}
 	echo th_order_by('call_group', $text['label-call_group'], $order_by, $order);
 	if (permission_exists("extension_user_context")) {
 		echo th_order_by('user_context', $text['label-user_context'], $order_by, $order);
@@ -283,17 +300,19 @@
 			echo "	</td>\n";
 
 			echo "	<td class='hide-xs'>".escape($row['effective_caller_id_name'])."&nbsp;</td>\n";
-			echo "	<td class='hide-sm-dn'>".escape($row['outbound_caller_id_name'])."&nbsp;</td>\n";
+			if (permission_exists("outbound_caller_id_name")) {
+				echo "	<td class='hide-sm-dn'>".escape($row['outbound_caller_id_name'])."&nbsp;</td>\n";
+			}
 			echo "	<td>".escape($row['call_group'])."&nbsp;</td>\n";
 			if (permission_exists("extension_user_context")) {
 				echo "	<td>".escape($row['user_context'])."</td>\n";
 			}
 			if (permission_exists('extension_registered')) {
 				echo "	<td>";
-				$extension_number = $row['extension'].'@'.$_SESSION['domain_name'];
+				$extension_number = $row['extension'].'@'.$_SESSION['domains'][$row['domain_uuid']]['domain_name'];
 				$extension_number_alias = $row['number_alias'];
-				if(strlen($extension_number_alias) > 0) {
-					$extension_number_alias .= '@'.$_SESSION['domain_name'];
+				if (strlen($extension_number_alias) > 0) {
+					$extension_number_alias .= '@'.$_SESSION['domains'][$row['domain_uuid']]['domain_name'];
 				}
 				$found_count = 0;
 				if (is_array($registrations)) {

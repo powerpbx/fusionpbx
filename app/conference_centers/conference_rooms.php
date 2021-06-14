@@ -73,22 +73,6 @@
 		exit;
 	}
 
-//get the meeting_uuid using the pin number
-	$search = preg_replace('{\D}', '', $_GET["search"]);
-	if (strlen($search) > 0) {
-		$sql = "select meeting_uuid ";
-		$sql .= "from v_meetings ";
-		$sql .= "where domain_uuid = :domain_uuid ";
-		$sql .= "and ( ";
-		$sql .= "moderator_pin = :search ";
-		$sql .= "or participant_pin = :search ";
-		$sql .= ") ";
-		$parameters['domain_uuid'] = $_SESSION['domain_uuid'];
-		$parameters['search'] = '%'.$search.'%';
-		$database = new database;
-		$meeting_uuid = $database->select($sql, $parameters, 'column');
-	}
-
 /*
 //if the $_GET array exists then process it
 	if (count($_GET) > 0 && strlen($_GET["search"]) == 0) {
@@ -100,7 +84,6 @@
 			$mute = $_GET["mute"];
 			$sounds = $_GET["sounds"];
 			$enabled = $_GET["enabled"];
-			$meeting_uuid = $_GET["meeting_uuid"];
 
 		//record announcement
 			if ($record == "true" && is_uuid($meeting_uuid)) {
@@ -188,9 +171,6 @@
 	$conference_center = new conference_centers;
 	$conference_center->db = $db;
 	$conference_center->domain_uuid = $_SESSION['domain_uuid'];
-	if (strlen($meeting_uuid) > 0) {
-		$conference_center->meeting_uuid = $meeting_uuid;
-	}
 	if (strlen($search) > 0) {
 		$conference_center->search = $search;
 	}
@@ -211,9 +191,6 @@
 	$conference_center->offset = $offset;
 	$conference_center->order_by = $order_by;
 	$conference_center->order = $order;
-	if (strlen($meeting_uuid) > 0) {
-		$conference_center->meeting_uuid = $meeting_uuid;
-	}
 	if (strlen($search) > 0) {
 		$conference_center->search = $search;
 	}
@@ -246,19 +223,21 @@
 		echo button::create(['type'=>'button','label'=>$text['button-add'],'icon'=>$_SESSION['theme']['button_icon_add'],'id'=>'btn_add','link'=>'conference_room_edit.php']);
 	}
 	if (permission_exists('conference_room_edit') && $result) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','onclick'=>"toggle_select(); this.blur();"]);
-		echo 		"<select class='formfld' style='display: none; width: auto;' id='conference_room_feature' onchange=\"if (confirm('".$text['confirm-toggle']."')) { list_action_set('toggle'); document.getElementById('toggle_field').value = this.options[this.selectedIndex].value; list_form_submit('form_list'); } else { this.blur(); this.style.display = 'none'; return false; }\">";
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'name'=>'btn_toggle','onclick'=>"toggle_select(); this.blur();"]);
+		echo 		"<select class='formfld' style='display: none; width: auto;' id='conference_room_feature' onchange=\"if (this.selectedIndex != 0) { modal_open('modal-toggle','btn_toggle'); }\">";
 		echo "			<option value='' selected='selected'>".$text['label-select']."</option>";
 		echo "			<option value='record'>".$text['label-record']."</option>";
 		echo "			<option value='wait_mod'>".$text['label-wait_moderator']."</option>";
-		echo "			<option value='announce'>".$text['label-announce']."</option>";
+		echo "			<option value='announce_name'>".$text['label-announce_name']."</option>";
+		echo "			<option value='announce_count'>".$text['label-announce_count']."</option>";
+		echo "			<option value='announce_recording'>".$text['label-announce_recording']."</option>";
 		echo "			<option value='mute'>".$text['label-mute']."</option>";
 		echo "			<option value='sounds'>".$text['label-sounds']."</option>";
 		echo "			<option value='enabled'>".$text['label-enabled']."</option>";
 		echo "		</select>";
 	}
 	if (permission_exists('conference_room_delete') && $result) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','onclick'=>"modal_open('modal-delete','btn_delete');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
 	echo 		"<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
@@ -271,6 +250,13 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if (permission_exists('conference_room_edit') && $result) {
+		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); document.getElementById('toggle_field').value = document.getElementById('conference_room_feature').options[document.getElementById('conference_room_feature').selectedIndex].value; list_action_set('toggle'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('conference_room_delete') && $result) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
 
 	echo $text['title_description-conference_rooms']."\n";
 	echo "<br /><br />\n";
@@ -288,7 +274,6 @@
 		echo "	</th>\n";
 	}
 	//echo th_order_by('conference_center_uuid', 'Conference UUID', $order_by, $order);
-	//echo th_order_by('meeting_uuid', 'Meeting UUID', $order_by, $order);
 	echo "<th>".$text['label-name']."</th>\n";
 	echo "<th>".$text['label-moderator-pin']."</th>\n";
 	echo "<th>".$text['label-participant-pin']."</th>\n";
@@ -296,7 +281,9 @@
 	echo th_order_by('record', $text['label-record'], $order_by, $order, null, "class='center'");
 	//echo th_order_by('max_members', 'Max', $order_by, $order);
 	echo th_order_by('wait_mod', $text['label-wait_moderator'], $order_by, $order, null, "class='center'");
-	echo th_order_by('announce', $text['label-announce'], $order_by, $order, null, "class='center'");
+	echo th_order_by('announce', $text['label-announce_name'], $order_by, $order, null, "class='center'");
+	echo th_order_by('announce', $text['label-announce_count'], $order_by, $order, null, "class='center'");
+	echo th_order_by('announce', $text['label-announce_recording'], $order_by, $order, null, "class='center'");
 	//echo th_order_by('enter_sound', 'Enter Sound', $order_by, $order);
 	echo th_order_by('mute', $text['label-mute'], $order_by, $order, null, "class='center'");
 	echo th_order_by('sounds', $text['label-sounds'], $order_by, $order, null, "class='center'");
@@ -315,7 +302,6 @@
 	if (is_array($result) > 0) {
 		$x = 0;
 		foreach ($result as $row) {
-			$meeting_uuid = $row['meeting_uuid'];
 			$conference_room_name = $row['conference_room_name'];
 			$moderator_pin = $row['moderator_pin'];
 			$participant_pin = $row['participant_pin'];
@@ -334,14 +320,12 @@
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='conference_rooms[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
 				echo "		<input type='hidden' name='conference_rooms[$x][uuid]' value='".escape($row['conference_room_uuid'])."' />\n";
-				echo "		<input type='hidden' name='conference_rooms[$x][meeting_uuid]' value='".escape($meeting_uuid)."' />\n";
 				echo "	</td>\n";
 			}
 			echo "	<td><a href='".$list_row_url."'>".escape($conference_room_name)."</a>&nbsp;</td>\n";
 			echo "	<td>".$moderator_pin."</td>\n";
 			echo "	<td>".$participant_pin."</td>\n";
 			//echo "	<td>".escape($row['conference_center_uuid'])."&nbsp;</td>\n";
-			//echo "	<td>".escape($row['meeting_uuid'])."&nbsp;</td>\n";
 			//echo "	<td>".escape($row['profile'])."&nbsp;</td>\n";
 
 			if (permission_exists('conference_room_edit')) {
@@ -381,13 +365,31 @@
 // 			}
 // 			echo "	</td>\n";
 
-			if (permission_exists('conference_room_edit')) {
+			if (permission_exists('conference_room_edit') && permission_exists('conference_room_announce_name')) {
 				echo "	<td class='no-link center'>\n";
-				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.($row['announce'] == "true" ? 'true' : 'false')],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); document.getElementById('toggle_field').value = 'announce'; list_form_submit('form_list')"]);
+				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.($row['announce_name'] == "true" ? 'true' : 'false')],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); document.getElementById('toggle_field').value = 'announce_name'; list_form_submit('form_list')"]);
 			}
 			else {
 				echo "	<td class='center'>\n";
-				echo $text['label-'.($row['announce'] == "true" ? 'true' : 'false')];
+				echo $text['label-'.($row['announce_name'] == "true" ? 'true' : 'false')];
+			}
+			echo "	</td>\n";
+			if (permission_exists('conference_room_edit') && permission_exists('conference_room_announce_count')) {
+				echo "	<td class='no-link center'>\n";
+				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.($row['announce_count'] == "true" ? 'true' : 'false')],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); document.getElementById('toggle_field').value = 'announce_count'; list_form_submit('form_list')"]);
+			}
+			else {
+				echo "	<td class='center'>\n";
+				echo $text['label-'.($row['announce_count'] == "true" ? 'true' : 'false')];
+			}
+			echo "	</td>\n";
+			if (permission_exists('conference_room_edit') && permission_exists('conference_room_announce_recording')) {
+				echo "	<td class='no-link center'>\n";
+				echo button::create(['type'=>'submit','class'=>'link','label'=>$text['label-'.($row['announce_recording'] == "true" ? 'true' : 'false')],'title'=>$text['button-toggle'],'onclick'=>"list_self_check('checkbox_".$x."'); list_action_set('toggle'); document.getElementById('toggle_field').value = 'announce_recording'; list_form_submit('form_list')"]);
+			}
+			else {
+				echo "	<td class='center'>\n";
+				echo $text['label-'.($row['announce_recording'] == "true" ? 'true' : 'false')];
 			}
 			echo "	</td>\n";
 // 			echo "	<td>";
@@ -442,8 +444,15 @@
 				echo "	<td class='center'>0</td>\n";
 			}
 			echo "	<td class='no-link no-wrap'>\n";
-			echo "		<a href='".PROJECT_PATH."/app/conferences_active/conference_interactive.php?c=".urlencode($row['meeting_uuid'])."'>".$text['label-view']."</a>&nbsp;\n";
-			echo "		<a href='conference_sessions.php?id=".urlencode($row['meeting_uuid'])."'>".$text['label-sessions']."</a>\n";
+			if (permission_exists('conference_interactive_view')) {
+				echo "		<a href='".PROJECT_PATH."/app/conferences_active/conference_interactive.php?c=".urlencode($row['conference_room_uuid'])."'>".$text['label-view']."</a>&nbsp;\n";
+			}
+			if (permission_exists('conference_cdr_view')) {	
+				echo "		<a href='/app/conference_cdr/conference_cdr.php?id=".urlencode($row['conference_room_uuid'])."'>".$text['button-cdr']."</a>\n";
+			}
+			if (permission_exists('conference_session_view')) {	
+				echo "		<a href='conference_sessions.php?id=".urlencode($row['conference_room_uuid'])."'>".$text['label-sessions']."</a>\n";
+			}
 			echo "	</td>\n";
 
 			if (permission_exists('conference_room_enabled')) {

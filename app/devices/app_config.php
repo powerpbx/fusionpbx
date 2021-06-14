@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Devices for provisioning.";
+		$apps[$x]['description']['en-gb'] = "Devices for provisioning.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Geräte die verwaltet werden sollen.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -257,9 +258,6 @@
 		$apps[$x]['permissions'][$y]['name'] = "device_vendor_function_group_delete";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "device_export";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'device_profile_view';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
@@ -412,7 +410,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_enabled_date";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "device_template";
@@ -461,7 +461,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_provisioned_date";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_provisioned_method";
@@ -470,6 +472,11 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_provisioned_ip";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "device_provisioned_agent";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['search'] = 'true';
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -2154,6 +2161,13 @@
 		$vendors[$y]['functions'][$z]['value'] = "none";
 		$vendors[$y]['functions'][$z]['groups'][] = "superadmin";
 		$vendors[$y]['functions'][$z]['groups'][] = "admin";
+		$z++;
+		$vendors[$y]['functions'][$z]['uuid'] = "5fab2239-b72c-404a-a392-251e22770ec5";
+		$vendors[$y]['functions'][$z]['label'] = "label-phonebook";
+		$vendors[$y]['functions'][$z]['name'] = "phonebook";
+		$vendors[$y]['functions'][$z]['value'] = "phonebook";
+		$vendors[$y]['functions'][$z]['groups'][] = "superadmin";
+		$vendors[$y]['functions'][$z]['groups'][] = "admin";
 //mitel
 		$y++;
 		$vendors[$y]['uuid'] = "03931359-917e-455b-b4fc-f875c530b79c";
@@ -2754,6 +2768,13 @@
 		$vendors[$y]['functions'][$z]['label'] = "label-line";
 		$vendors[$y]['functions'][$z]['name'] = "line";
 		$vendors[$y]['functions'][$z]['value'] = "1";
+		$vendors[$y]['functions'][$z]['groups'][] = "superadmin";
+		$vendors[$y]['functions'][$z]['groups'][] = "admin";
+		$z++;
+		$vendors[$y]['functions'][$z]['uuid'] = "298ea214-4773-42e8-ac9b-b72c10be6a75";
+		$vendors[$y]['functions'][$z]['label'] = "label-na";
+		$vendors[$y]['functions'][$z]['name'] = "na";
+		$vendors[$y]['functions'][$z]['value'] = "0";
 		$vendors[$y]['functions'][$z]['groups'][] = "superadmin";
 		$vendors[$y]['functions'][$z]['groups'][] = "admin";
 		$z++;

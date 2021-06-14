@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Settings assigned to a particular domain.";
+		$apps[$x]['description']['en-gb'] = "Settings assigned to a particular domain.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Verwalte eine einzelne Domäne oder mehrere Domänen für Multi-Mandanten.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -99,7 +100,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "domain_setting_enabled";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "boolean";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['toggle'] = ['true','false'];
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "domain_setting_description";

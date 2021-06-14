@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "A tool to call multiple extensions.";
+		$apps[$x]['description']['en-gb'] = "A tool to call multiple extensions.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Ein Werkzeug um mehrere Nebenstellen anzurufen.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -35,13 +36,18 @@
 		$apps[$x]['destinations'][$y]['name'] = "ring_groups";
 		$apps[$x]['destinations'][$y]['where'] = "where domain_uuid = '\${domain_uuid}' and ring_group_enabled = 'true' ";
 		$apps[$x]['destinations'][$y]['order_by'] = "ring_group_extension asc";
+		$apps[$x]['destinations'][$y]['field']['ring_group_uuid'] = "ring_group_uuid";
 		$apps[$x]['destinations'][$y]['field']['name'] = "ring_group_name";
 		$apps[$x]['destinations'][$y]['field']['destination'] = "ring_group_extension";
+		$apps[$x]['destinations'][$y]['field']['extension'] = "ring_group_extension";
 		$apps[$x]['destinations'][$y]['field']['description'] = "ring_group_description";
 		$apps[$x]['destinations'][$y]['field']['context'] = "ring_group_context";
 		$apps[$x]['destinations'][$y]['select_value']['dialplan'] = "transfer:\${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_value']['ivr'] = "menu-exec-app:transfer \${destination} XML \${context}";
 		$apps[$x]['destinations'][$y]['select_label'] = "\${destination} \${name} \${description}";
+
+	//cache details
+		$apps[$x]['cache']['key'] = "dialplan.\${ring_group_context}";
 
 	//permission details
 		$y=0;
@@ -244,9 +250,13 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Select the ringback.";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "ring_group_call_forward_enabled";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Choose to follow a ring group destination's call forward.";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "ring_group_follow_me_enabled";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
-		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Select the follow me enabled.";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Choose to follow a ring group destination's follow me.";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "ring_group_missed_call_app";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";

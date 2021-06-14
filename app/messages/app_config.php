@@ -9,43 +9,39 @@
 		$apps[$x]['license'] = 'Mozilla Public License 1.1';
 		$apps[$x]['url'] = 'http://www.fusionpbx.com';
 		$apps[$x]['description']['en-us'] = '';
+		$apps[$x]['description']['en-gb'] = '';
 
 	//permission details
 		$y = 0;
 		$apps[$x]['permissions'][$y]['name'] = 'message_view';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_add';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_edit';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_delete';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_all';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_media_view';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_media_add';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_media_edit';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = 'message_media_delete';
 		$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
-		//$apps[$x]['permissions'][$y]['groups'][] = 'admin';
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = 'message_key';
+		//$apps[$x]['permissions'][$y]['groups'][] = 'superadmin';
 		$y++;
 
 	//messages table

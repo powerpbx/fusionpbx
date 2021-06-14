@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Call Detail Records with all information about the call.";
+		$apps[$x]['description']['en-gb'] = "Call Detail Records with all information about the call.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Detaillierte Historie mit informationen über alle Anrufe.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -38,6 +39,7 @@
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_domain";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_add";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
@@ -192,6 +194,15 @@
 		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_b_leg";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_lose_race";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_enterprise_leg";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_cc_agent_leg";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_archive";
 		//$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$y++;
@@ -199,6 +210,17 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_export";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_export_csv";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
+		$y++;
+		$apps[$x]['permissions'][$y]['name'] = "xml_cdr_export_pdf";
+		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
+		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 
 	//default settings
 		$y=0;
@@ -241,14 +263,6 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "db";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
-		$y++;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "53c56ddb-bd20-4fbd-b646-1ca9f8d2af11";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "cdr";
-		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "remove_prefix";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Remove outbound prefix in the call detail records.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "cdb19dda-234b-407a-9eda-e8af74597d4b";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "cdr";
@@ -329,6 +343,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "fusionpbx";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Archive Database Name";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "d47ba248-0257-45c6-b418-22c8032414ce";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "cdr";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "cidr";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "array";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "127.0.0.1/32";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Limit allowed range of addresses for CDR over HTTP POST.";
 
 	//schema details
 		$y=0;
@@ -364,9 +386,9 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_extensions";
-		$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "extension_uuid";
+		//$apps[$x]['db'][$y]['fields'][$z]['key']['type'] = "foreign";
+		//$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['table'] = "v_extensions";
+		//$apps[$x]['db'][$y]['fields'][$z]['key']['reference']['field'] = "extension_uuid";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "v_id";
@@ -428,13 +450,13 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "start_stamp";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "answer_stamp";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -452,7 +474,7 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "end_stamp";
-		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamp";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "timestamptz";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "date";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "timestamp";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
@@ -526,6 +548,12 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(1)";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "The leg of the call a or b.";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "originating_leg_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "char(36)";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Originating Leg UUID. Used to identify legs of an enterprise ring group - and exclude them ";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "pdd_ms";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "numeric";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "numeric";
@@ -544,11 +572,21 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Save the last application data.";
 		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "voicemail_message";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "boolean";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "missed_call";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "boolean";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
+		$z++;
+		$apps[$x]['db'][$y]['fields'][$z]['name'] = "call_center_queue_uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['type'] = "uuid";
+		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "Queue uuid";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "cc_side";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";

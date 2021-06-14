@@ -126,9 +126,9 @@
 		echo button::create(['type'=>'button','label'=>$text['button-refresh'],'icon'=>$_SESSION['theme']['button_icon_refresh'],'link'=>$location.($qs ? '?' : null).$qs['show'].$qs['search'].$qs['profile']]);
 	}
 	if ($registrations) {
-		echo button::create(['type'=>'button','label'=>$text['button-unregister'],'title'=>$text['button-unregister'],'icon'=>'user-slash','style'=>'margin-left: 15px;','onclick'=>"if (confirm('".$text['confirm-unregister']."')) { list_action_set('unregister'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
-		echo button::create(['type'=>'button','label'=>$text['button-provision'],'title'=>$text['button-provision'],'icon'=>'fax','onclick'=>"if (confirm('".$text['confirm-provision']."')) { list_action_set('provision'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
-		echo button::create(['type'=>'button','label'=>$text['button-reboot'],'title'=>$text['button-reboot'],'icon'=>'power-off','onclick'=>"if (confirm('".$text['confirm-reboot']."')) { list_action_set('reboot'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-unregister'],'title'=>$text['button-unregister'],'icon'=>'user-slash','style'=>'margin-left: 15px;','onclick'=>"modal_open('modal-unregister','btn_unregister');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-provision'],'title'=>$text['button-provision'],'icon'=>'fax','onclick'=>"modal_open('modal-provision','btn_provision');"]);
+		echo button::create(['type'=>'button','label'=>$text['button-reboot'],'title'=>$text['button-reboot'],'icon'=>'power-off','onclick'=>"modal_open('modal-reboot','btn_reboot');"]);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
 	if (permission_exists('registration_all')) {
@@ -153,6 +153,12 @@
 	echo "	</div>\n";
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
+
+	if ($registrations) {
+		echo modal::create(['id'=>'modal-unregister','type'=>'general','message'=>$text['confirm-unregister'],'actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_unregister','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('unregister'); list_form_submit('form_list');"])]);
+		echo modal::create(['id'=>'modal-provision','type'=>'general','message'=>$text['confirm-provision'],'actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_provision','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('provision'); list_form_submit('form_list');"])]);
+		echo modal::create(['id'=>'modal-reboot','type'=>'general','message'=>$text['confirm-reboot'],'actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_reboot','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('reboot'); list_form_submit('form_list');"])]);
+	}
 
 	echo $text['description-registrations']."\n";
 	echo "<br /><br />\n";
@@ -185,13 +191,28 @@
 		foreach ($registrations as $row) {
 			$matches = preg_grep('/'.$search.'/i', $row);
 			if ($matches != false) {
+
+				//prepare the user variable
 				$user = explode('@', $row['user']);
 				if ($user[1] == $_SESSION['domains'][$_SESSION['domain_uuid']]['domain_name']) {
-					$user = "<span class='hide-sm-dn'>".escape($row['user'])."</span><span class='hide-md-up cursor-help' title='".$row['user']."'>".escape($user[0])."@...</span>";
+					$user = "<span class='hide-sm-dn'>".escape($row['user'])."</span><span class='hide-md-up cursor-help' title='".escape($row['user'])."'>".escape($user[0])."</span>";
 				}
 				else {
 					$user = escape($row['user']);
 				}
+
+				//reformat the status
+				$patterns = array();
+				$patterns[] = '/(\d{4})-(\d{2})-(\d{2})/';
+				$patterns[] = '/(\d{2}):(\d{2}):(\d{2})/';
+				$patterns[] = '/unknown/';
+				$patterns[] = '/exp\(/';
+				$patterns[] = '/\(/';
+				$patterns[] = '/\)/';
+				$patterns[] = '/\s+/';
+				$status = preg_replace($patterns, ' ', $row['status']);
+
+				//show the content
 				echo "<tr class='list-row' href='#'>\n";
 				echo "	<td class='checkbox'>\n";
 				echo "		<input type='checkbox' name='registrations[$x][checked]' id='checkbox_".$x."' value='true' onclick=\"if (!this.checked) { document.getElementById('checkbox_all').checked = false; }\">\n";
@@ -201,14 +222,14 @@
 				echo "		<input type='hidden' name='registrations[$x][host]' value='".escape($row['host'])."' />\n";
 				echo "		<input type='hidden' name='registrations[$x][domain]' value='".escape($row['sip-auth-realm'])."' />\n";
 				echo "	</td>\n";
-				echo "	<td>".$user."</td>\n";
-				echo "	<td class='overflow' title=\"".escape($row['agent'])."\"><span class='cursor-help'>".escape($row['agent'])."</span></td>\n";
+				echo "	<td class=''>".$user."</td>\n";
+				echo "	<td class='' title=\"".escape($row['agent'])."\"><span class='cursor-help'>".escape($row['agent'])."</span></td>\n";
 				echo "	<td class='hide-md-dn'>".escape(explode('"',$row['contact'])[1])."</td>\n";
 				echo "	<td class='hide-sm-dn no-link'><a href='https://".urlencode($row['lan-ip'])."' target='_blank'>".escape($row['lan-ip'])."</a></td>\n";
 				echo "	<td class='hide-sm-dn no-link'><a href='https://".urlencode($row['network-ip'])."' target='_blank'>".escape($row['network-ip'])."</a></td>\n";
 				echo "	<td class='hide-sm-dn'>".escape($row['network-port'])."</td>\n";
 				echo "	<td class='hide-md-dn'>".escape($row['host'])."</td>\n";
-				echo "	<td class='overflow' title=\"".escape($row['status'])."\"><span class='cursor-help'>".escape($row['status'])."</span></td>\n";
+				echo "	<td class='' title=\"".escape($row['status'])."\"><span class='cursor-help'>".escape($status)."</span></td>\n";
 				echo "	<td class='hide-md-dn'>".escape($row['ping-time'])."</td>\n";
 				echo "	<td class='hide-md-dn'>".escape($row['sip_profile_name'])."</td>\n";
 				echo "	<td class='action-button'>\n";

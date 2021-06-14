@@ -17,7 +17,7 @@
 
  The Initial Developer of the Original Code is
  Mark J Crane <markjcrane@fusionpbx.com>
- Portions created by the Initial Developer are Copyright (C) 2008-2019
+ Portions created by the Initial Developer are Copyright (C) 2008-2021
  the Initial Developer. All Rights Reserved.
 
  Contributor(s):
@@ -79,14 +79,17 @@ if (!class_exists('registrations')) {
 					$sql .= "and sip_profile_name = :sip_profile_name ";
 					$parameters['sip_profile_name'] = $profile;
 				}
+				$sql .= "and sip_profile_enabled = 'true' ";
 				$database = new database;
 				$sip_profiles = $database->select($sql, $parameters, 'all');
 				if (is_array($sip_profiles) && @sizeof($sip_profiles) != 0) {
 					foreach ($sip_profiles as $field) {
 
 						//get sofia status profile information including registrations
-							$cmd = "api sofia xmlstatus profile ".$field['sip_profile_name']." reg";
+							$cmd = "api sofia xmlstatus profile '".$field['sip_profile_name']."' reg";
 							$xml_response = trim(event_socket_request($fp, $cmd));
+							if (function_exists('iconv')) { $xml_response = iconv("utf-8", "utf-8//IGNORE", $xml_response); }
+							$xml_response = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $xml_response);
 							if ($xml_response == "Invalid Profile!") { $xml_response = "<error_msg>".$text['label-message']."</error_msg>"; }
 							$xml_response = str_replace("<profile-info>", "<profile_info>", $xml_response);
 							$xml_response = str_replace("</profile-info>", "</profile_info>", $xml_response);
@@ -97,7 +100,10 @@ if (!class_exists('registrations')) {
 									$xml = new SimpleXMLElement($xml_response);
 								}
 								catch(Exception $e) {
-									echo $e->getMessage();
+									echo basename(__FILE__)."<br />\n";
+									echo "line: ".__line__."<br />\n";
+									echo "error: ".$e->getMessage()."<br />\n";
+									//echo $xml_response;
 									exit;
 								}
 								$array = json_decode(json_encode($xml), true);
@@ -149,28 +155,26 @@ if (!class_exists('registrations')) {
 													array('0','1','2','3','4','5','6','7','8','9'),
 													$lan_ip);
 											}
-																elseif(1 === preg_match('/\ACL750A/', $agent)) {
+											elseif (1 === preg_match('/\ACL750A/', $agent)) {
 												//required for GIGASET Sculpture CL750A puts _ in it's lan ip account
 												$lan_ip = preg_replace('/_/', '.', $lan_ip);
-																}
+											}
 											$registrations[$id]['lan-ip'] = $lan_ip;
 										}
 										else if (preg_match('/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/', $row['contact'], $ip_match)) {
-										    $lan_ip = preg_replace('/_/', '.', $ip_match[0]);
-										    $registrations[$id]['lan-ip'] = "$lan_ip";
+											$lan_ip = preg_replace('/_/', '.', $ip_match[0]);
+											$registrations[$id]['lan-ip'] = "$lan_ip";
 										}
 										else {
 											$registrations[$id]['lan-ip'] = '';
 										}
 
 									//remove unrelated domains
-										if (count($_SESSION["domains"]) > 1) {
-											if (!permission_exists('registration_all') || $this->show != 'all') {
-												if ($registrations[$id]['sip-auth-realm'] == $_SESSION['domain_name']) {}
-												else if ($user_array[1] == $_SESSION['domain_name']) {}
-												else {
-													unset($registrations[$id]);
-												}
+										if (!permission_exists('registration_all') || $this->show != 'all') {
+											if ($registrations[$id]['sip-auth-realm'] == $_SESSION['domain_name']) {}
+											else if ($user_array[1] == $_SESSION['domain_name']) {}
+											else {
+												unset($registrations[$id]);
 											}
 										}
 
@@ -179,6 +183,7 @@ if (!class_exists('registrations')) {
 								}
 								unset($array);
 							}
+
 					}
 				}
 
@@ -306,75 +311,80 @@ if (!class_exists('registrations')) {
 
 						//loop through registrations
 							if ($fp) {
-								foreach ($registrations as $registration) {
+								//check if registrations exist
+								if (is_array($registrations)) {
+									foreach ($registrations as $registration) {
 
-									//validate the submitted profile
-										if ($registration['profile'] != '' && is_array($sip_profiles) && @sizeof($sip_profiles) != 0) {
-											foreach ($sip_profiles as $field) {
-												if ($field['name'] == $registration['profile']) {
-													$profile = $registration['profile'];
-													break;
+										//validate the submitted profile
+											if ($registration['profile'] != '' && is_array($sip_profiles) && @sizeof($sip_profiles) != 0) {
+												foreach ($sip_profiles as $field) {
+													if ($field['name'] == $registration['profile']) {
+														$profile = $registration['profile'];
+														break;
+													}
 												}
 											}
-										}
-										else {
-											header('Location: '.$this->list_page);
-											exit;
-										}
-
-									//validate the submitted user
-										if ($registration['user'] != '') {
-											$user = preg_replace('#[^a-zA-Z0-9_\-\.\@]#', '', $registration['user']);
-										}
-
-									//validate the submitted host
-										if ($registration['host'] != '') {
-											$host = preg_replace('#[^a-zA-Z0-9_\-\.]#', '', $registration['host']);
-										}
-
-									//lookup vendor by agent
-										if ($registration['agent'] != '') {
-											$vendor = device::get_vendor_by_agent($registration['agent']);
-										}
-
-									//prepare the api command
-										if ($profile && $user) {
-											switch ($action) {
-												case 'unregister':
-													$command = "sofia profile ".$profile." flush_inbound_reg ".$user." reboot";
-													$response_message = $text['message-registrations_unregistered'];
-													break;
-												case 'provision':
-													if ($vendor && $host) {
-														$command = "lua app.lua event_notify ".$profile." check_sync ".$user." ".$vendor." ".$host;
-														$response_message = $text['message-registrations_provisioned'];
-													}
-													break;
-												case 'reboot':
-													if ($vendor && $host) {
-														$command = "lua app.lua event_notify ".$profile." reboot ".$user." ".$vendor." ".$host;
-														$response_message = $text['message-registrations_rebooted'];
-													}
-													break;
-												default:
-													header('Location: '.$this->list_page);
-													exit;
+											else {
+												header('Location: '.$this->list_page);
+												exit;
 											}
-										}
 
-									//send the api command
-										if ($command && $fp) {
-											$response_api[$registration['user']]['command'] = event_socket_request($fp, "api ".$command);
-											$response_api[$registration['user']]['log'] = event_socket_request($fp, "api log notice ".$command);
-										}
+										//validate the submitted user
+											if ($registration['user'] != '') {
+												$user = preg_replace('#[^a-zA-Z0-9_\-\.\@]#', '', $registration['user']);
+											}
 
+										//validate the submitted host
+											if ($registration['host'] != '') {
+												$host = preg_replace('#[^a-zA-Z0-9_\-\.]#', '', $registration['host']);
+											}
+
+										//lookup vendor by agent
+											if ($registration['agent'] != '') {
+												$vendor = device::get_vendor_by_agent($registration['agent']);
+											}
+
+										//prepare the api command
+											if ($profile && $user) {
+												switch ($action) {
+													case 'unregister':
+														$command = "sofia profile ".$profile." flush_inbound_reg ".$user." reboot";
+														$response_message = $text['message-registrations_unregistered'];
+														break;
+													case 'provision':
+														if ($vendor && $host) {
+															$command = "lua app.lua event_notify ".$profile." check_sync ".$user." ".$vendor." ".$host;
+															$response_message = $text['message-registrations_provisioned'];
+														}
+														break;
+													case 'reboot':
+														if ($vendor && $host) {
+															$command = "lua app.lua event_notify ".$profile." reboot ".$user." ".$vendor." ".$host;
+															$response_message = $text['message-registrations_rebooted'];
+														}
+														break;
+													default:
+														header('Location: '.$this->list_page);
+														exit;
+												}
+											}
+
+										//send the api command
+											if ($command && $fp) {
+												$response_api[$registration['user']]['command'] = event_socket_request($fp, "api ".$command);
+												$response_api[$registration['user']]['log'] = event_socket_request($fp, "api log notice ".$command);
+											}
+
+									}
 								}
 
 								//set message
 									if (is_array($response_api)) {
 										$message = $response_message;
 										foreach ($response_api as $registration_user => $response) {
-											$message .= "<br>\n<strong>".$registration_user."</strong>: ".$response['command'];
+											if (trim($response['command']) != '-ERR no reply') {
+												$message .= "<br>\n<strong>".$registration_user."</strong>: ".$response['command'];
+											}
 										}
 										message::add($message, 'positive', '7000');
 									}

@@ -69,6 +69,7 @@
 	if (strlen($destination_context) == 0) { $destination_context = 'public'; }
 	if ($destination_type =="outbound" && $destination_context == "public") { $destination_context = $_SESSION['domain_name']; }
 	if ($destination_type =="outbound" && strlen($destination_context) == 0) { $destination_context = $_SESSION['domain_name']; }
+	if (strlen($from_row) == 0) { $from_row = '2'; }
 
 //save the data to the csv file
 	if (isset($_POST['data'])) {
@@ -219,18 +220,25 @@
 										$destination_number = $row['destination_number'];
 										$destination_app = $row['destination_app'];
 										$destination_data = $row['destination_data'];
+										$destination_prefix = $row['destination_prefix'];
 										$destination_accountcode = $row['destination_accountcode'];
 										$destination_cid_name_prefix = $row['destination_cid_name_prefix'];
 										$destination_description = $row['destination_description'];
 
 									//convert the number to a regular expression
-										$destination_number_regex = string_to_regex($destination_number);
+										if (isset($destination_prefix) && strlen($destination_prefix) > 0) {
+											$destination_number_regex = string_to_regex($destination_number, $destination_prefix);
+										}
+										else {
+											$destination_number_regex = string_to_regex($destination_number);
+										}
 
 									//add the additional fields
 										$dialplan_uuid = uuid();
 										$array["destinations"][$row_id]['destination_type'] = $destination_type;
 										$array["destinations"][$row_id]['destination_record'] = $destination_record;
 										$array["destinations"][$row_id]['destination_context'] = $destination_context;
+										$array["destinations"][$row_id]['destination_number_regex'] = $destination_number_regex;
 										$array["destinations"][$row_id]['destination_enabled'] = $destination_enabled;
 										$array["destinations"][$row_id]['dialplan_uuid'] = $dialplan_uuid;
 
@@ -888,7 +896,7 @@
 	echo "</td>\n";
 	echo "<td class='vtable' align='left'>\n";
 	echo "		<select class='formfld' name='from_row'>\n";
-	$i=1;
+	$i=2;
 	while($i<=99) {
 		$selected = ($i == $from_row) ? "selected" : null;
 		echo "			<option value='$i' ".$selected.">$i</option>\n";

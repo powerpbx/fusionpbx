@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "User account settings can be changed by the user.";
+		$apps[$x]['description']['en-gb'] = "User account settings can be changed by the user.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Einstellungen des Benutzerkontos können durch den Benutzer geändert werden.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -47,17 +48,6 @@
 		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$y++;
 		$apps[$x]['permissions'][$y]['name'] = "user_setting_category_edit";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "user_account_setting_view";
-		$apps[$x]['permissions'][$y]['menu']['uuid'] = "4d532f0b-c206-c39d-ff33-fc67d668fb69";
-		$apps[$x]['permissions'][$y]['groups'][] = "user";
-		$apps[$x]['permissions'][$y]['groups'][] = "admin";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "user_account_setting_edit";
-		$apps[$x]['permissions'][$y]['groups'][] = "user";
-		$apps[$x]['permissions'][$y]['groups'][] = "admin";
 		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
 
 	//schema details
@@ -113,7 +103,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "user_setting_enabled";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "boolean";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['toggle'] = ['true','false'];
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "user_setting_description";

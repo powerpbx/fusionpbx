@@ -51,6 +51,7 @@
 
 //get the search
 	$search = strtolower($_REQUEST["search"]);
+	$fields = strtolower($_REQUEST["fields"]);
 
 //process the http post data by action
 	if ($action != '' && is_array($devices) && @sizeof($devices) != 0) {
@@ -69,7 +70,7 @@
 				break;
 		}
 
-		header('Location: devices.php'.($search != '' ? '?search='.urlencode($search) : null));
+		header('Location: devices.php'.($search != '' ? '?search='.urlencode($search).'&fields='.urlencode($fields) : null));
 		exit;
 	}
 
@@ -126,6 +127,29 @@
 		$sql .= "	or lower(d.device_description) like :search ";
 		$sql .= "	or lower(d.device_provisioned_method) like :search ";
 		$sql .= "	or lower(d.device_provisioned_ip) like :search ";
+		if ($fields == 'all' || $fields == 'lines') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select dl.device_uuid from v_device_lines as dl ";
+			$sql .= "		where dl.display_name like :search ";
+			$sql .= "		or dl.user_id like :search ";
+			$sql .= "		or dl.auth_id like :search ";
+			$sql .= "	) ";
+		}
+		if ($fields == 'all' || $fields == 'keys') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select dk.device_uuid from v_device_keys as dk ";
+			$sql .= "		where dk.device_key_value like :search ";
+			$sql .= "		or dk.device_key_label like :search ";
+			$sql .= "	) ";
+		}
+		if ($fields == 'all' || $fields == 'settings') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select ds.device_uuid from v_device_settings as ds ";
+			$sql .= "		where ds.device_setting_subcategory like :search ";
+			$sql .= "		or ds.device_setting_value like :search ";
+			$sql .= "		or ds.device_setting_description like :search ";
+			$sql .= "	) ";
+		}
 		$sql .= ") ";
 		$parameters['search'] = '%'.strtolower($search).'%';
 	}
@@ -135,11 +159,12 @@
 
 //prepare to page the results
 	$rows_per_page = ($_SESSION['domain']['paging']['numeric'] != '') ? $_SESSION['domain']['paging']['numeric'] : 50;
-	if (isset($_GET['show']) && $_GET['show'] == "all" && permission_exists('device_all')) {
-		$param = "&search=".$search."&show=all";
-	}
-	else {
+	if ($search) {
 		$param = "&search=".$search;
+		$param .= "&fields=".$fields;
+	}
+	if ($_GET['show'] == "all" && permission_exists('device_all')) {
+		$param .= "&show=all";
 	}
 	$page = $_GET['page'];
 	if (strlen($page) == 0) { $page = 0; $_GET['page'] = 0; }
@@ -150,12 +175,18 @@
 //get the list
 	$sql = "select d.*, d2.device_label as alternate_label ";
 	$sql .= "from v_devices as d, v_devices as d2 ";
+	if (isset($_GET['show']) && $_GET['show'] == "all" && permission_exists('device_all')) {
+		$sql .= ", v_domains as d3 ";
+	}
 	$sql .= "where ( ";
 	$sql .= "	d.device_uuid_alternate = d2.device_uuid  ";
-	$sql .= "	or d.device_uuid_alternate is null and d.device_uuid = d2.device_uuid ";
+	$sql .= "	or ( ";
+	$sql .= "		d.device_uuid_alternate is null and ";
+	$sql .= "		d.device_uuid = d2.device_uuid ";
+	$sql .= "	) ";
 	$sql .= ") ";
 	if (isset($_GET['show']) && $_GET['show'] == "all" && permission_exists('device_all')) {
-		//echo __line__."<br \>\n";
+		$sql .= " and d.domain_uuid = d3.domain_uuid ";
 	}
 	else {
 		$sql .= "and (";
@@ -180,6 +211,29 @@
 		$sql .= "	or lower(d.device_description) like :search ";
 		$sql .= "	or lower(d.device_provisioned_method) like :search ";
 		$sql .= "	or lower(d.device_provisioned_ip) like :search ";
+		if ($fields == 'all' || $fields == 'lines') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select dl.device_uuid from v_device_lines as dl ";
+			$sql .= "		where dl.display_name like :search ";
+			$sql .= "		or dl.user_id like :search ";
+			$sql .= "		or dl.auth_id like :search ";
+			$sql .= "	) ";
+		}
+		if ($fields == 'all' || $fields == 'keys') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select dk.device_uuid from v_device_keys as dk ";
+			$sql .= "		where dk.device_key_value like :search ";
+			$sql .= "		or dk.device_key_label like :search ";
+			$sql .= "	) ";
+		}
+		if ($fields == 'all' || $fields == 'settings') {
+			$sql .= "	or d.device_uuid in ( ";
+			$sql .= "		select ds.device_uuid from v_device_settings as ds ";
+			$sql .= "		where ds.device_setting_subcategory like :search ";
+			$sql .= "		or ds.device_setting_value like :search ";
+			$sql .= "		or ds.device_setting_description like :search ";
+			$sql .= "	) ";
+		}
 		$sql .= ") ";
 		$parameters['search'] = '%'.strtolower($search).'%';
 	}
@@ -235,11 +289,11 @@
 		unset($margin_left);
 	}
 	if (permission_exists('device_edit') && $devices) {
-		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'id'=>'btn_toggle','style'=>$margin_left,'onclick'=>"if (confirm('".$text['confirm-toggle']."')) { list_action_set('toggle'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-toggle'],'icon'=>$_SESSION['theme']['button_icon_toggle'],'name'=>'btn_toggle','style'=>$margin_left,'onclick'=>"modal_open('modal-toggle','btn_toggle');"]);
 		unset($margin_left);
 	}
 	if (permission_exists('device_delete') && $devices) {
-		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'id'=>'btn_delete','style'=>$margin_left,'onclick'=>"if (confirm('".$text['confirm-delete']."')) { list_action_set('delete'); list_form_submit('form_list'); } else { this.blur(); return false; }"]);
+		echo button::create(['type'=>'button','label'=>$text['button-delete'],'icon'=>$_SESSION['theme']['button_icon_delete'],'name'=>'btn_delete','style'=>$margin_left,'onclick'=>"modal_open('modal-delete','btn_delete');"]);
 		unset($margin_left);
 	}
 	echo 		"<form id='form_search' class='inline' method='get'>\n";
@@ -252,7 +306,15 @@
 		}
 	}
 
-	echo 		"<input type='text' class='txt list-search' name='search' id='search' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
+	echo 		"<select class='formfld' name='fields' id='select_fields' style='width: auto; margin-left: 15px;' onchange=\"if (document.getElementById('search').value != '') { this.form.submit(); }\">\n";
+	echo "			<option value=''>".$text['label-fields']."...</option>\n";
+	echo "			<option value=''>".$text['label-default']."</option>\n";
+	echo "			<option value='lines' ".($fields == 'lines' ? " selected='selected'" : null).">".$text['label-lines']."</option>\n";
+	echo "			<option value='keys' ".($fields == 'keys' ? " selected='selected'" : null).">".$text['label-keys']."</option>\n";
+	echo "			<option value='settings' ".($fields == 'settings' ? " selected='selected'" : null).">".$text['label-settings']."</option>\n";
+	echo "			<option value='all' ".($fields == 'all' ? " selected='selected'" : null).">".$text['label-all']."</option>\n";
+	echo "		</select>";
+	echo 		"<input type='text' class='txt list-search' name='search' id='search' style='margin-left: 0 !important;' value=\"".escape($search)."\" placeholder=\"".$text['label-search']."\" onkeydown='list_search_reset();'>";
 	echo button::create(['label'=>$text['button-search'],'icon'=>$_SESSION['theme']['button_icon_search'],'type'=>'submit','id'=>'btn_search','style'=>($search != '' ? 'display: none;' : null)]);
 	echo button::create(['label'=>$text['button-reset'],'icon'=>$_SESSION['theme']['button_icon_reset'],'type'=>'button','id'=>'btn_reset','link'=>'devices.php','style'=>($search == '' ? 'display: none;' : null)]);
 	if ($paging_controls_mini != '') {
@@ -263,12 +325,20 @@
 	echo "	<div style='clear: both;'></div>\n";
 	echo "</div>\n";
 
+	if (permission_exists('device_edit') && $devices) {
+		echo modal::create(['id'=>'modal-toggle','type'=>'toggle','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_toggle','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('toggle'); list_form_submit('form_list');"])]);
+	}
+	if (permission_exists('device_delete') && $devices) {
+		echo modal::create(['id'=>'modal-delete','type'=>'delete','actions'=>button::create(['type'=>'button','label'=>$text['button-continue'],'icon'=>'check','id'=>'btn_delete','style'=>'float: right; margin-left: 15px;','collapse'=>'never','onclick'=>"modal_close(); list_action_set('delete'); list_form_submit('form_list');"])]);
+	}
+
 	echo $text['description-devices']."\n";
 	echo "<br /><br />\n";
 
 	echo "<form id='form_list' method='post'>\n";
 	echo "<input type='hidden' id='action' name='action' value=''>\n";
 	echo "<input type='hidden' name='search' value=\"".escape($search)."\">\n";
+	echo "<input type='hidden' name='fields' value=\"".escape($fields)."\">\n";
 
 	echo "<table class='list'>\n";
 	echo "<tr class='list-header'>\n";
@@ -278,19 +348,19 @@
 		echo "	</th>\n";
 	}
 	if ($_GET['show'] == "all" && permission_exists('device_all')) {
-		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order, $param);
+		echo th_order_by('domain_name', $text['label-domain'], $order_by, $order, null, null, $param);
 	}
-	echo th_order_by('device_mac_address', $text['label-device_mac_address'], $order_by, $order);
-	echo th_order_by('device_label', $text['label-device_label'], $order_by, $order);
+	echo th_order_by('device_mac_address', $text['label-device_mac_address'], $order_by, $order, null, null, $param);
+	echo th_order_by('device_label', $text['label-device_label'], $order_by, $order, null, null, $param);
 	if ($device_alternate) {
-		echo th_order_by('device_template', $text['label-device_uuid_alternate'], $order_by, $order);
+		echo th_order_by('device_template', $text['label-device_uuid_alternate'], $order_by, $order, null, null, $param);
 	}
-	echo th_order_by('device_vendor', $text['label-device_vendor'], $order_by, $order);
-	echo th_order_by('device_template', $text['label-device_template'], $order_by, $order);
+	echo th_order_by('device_vendor', $text['label-device_vendor'], $order_by, $order, null, null, $param);
+	echo th_order_by('device_template', $text['label-device_template'], $order_by, $order, null, null, $param);
 	echo "<th>". $text['label-device_profiles']."</th>\n";
-	echo th_order_by('device_enabled', $text['label-device_enabled'], $order_by, $order, null, "class='center'");
-	echo th_order_by('device_status', $text['label-device_status'], $order_by, $order);
-	echo th_order_by('device_description', $text['label-device_description'], $order_by, $order, null, "class='hide-sm-dn'");
+	echo th_order_by('device_enabled', $text['label-device_enabled'], $order_by, $order, null, "class='center'", $param);
+	echo th_order_by('device_provisioned_date', $text['label-device_status'], $order_by, $order, null, null, $param);
+	echo th_order_by('device_description', $text['label-device_description'], $order_by, $order, null, "class='hide-sm-dn'", $param);
 	if (permission_exists('device_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 		echo "	<td class='action-button'>&nbsp;</td>\n";
 	}
@@ -310,6 +380,17 @@
 			if (permission_exists('device_edit')) {
 				$list_row_url = "device_edit.php?id=".urlencode($row['device_uuid']);
 			}
+
+			$device_provisioned_method = '';
+			if (isset($row['device_provisioned_method']) && ($row['device_provisioned_method'] == 'http' || $row['device_provisioned_method'] == 'https')) {
+				$device_provisioned_method = $row['device_provisioned_method'];
+			}
+
+			$device_provisioned_ip = '';
+			if (isset($row['device_provisioned_ip']) && filter_var($row['device_provisioned_ip'], FILTER_VALIDATE_IP)) {
+				$device_provisioned_ip = $row['device_provisioned_ip'];
+			}
+
 			echo "<tr class='list-row' href='".$list_row_url."'>\n";
 			if (permission_exists('device_edit') || permission_exists('device_delete')) {
 				echo "	<td class='checkbox'>\n";
@@ -346,7 +427,7 @@
 				echo $text['label-'.$row['device_enabled']];
 			}
 			echo "	</td>\n";
-			echo "	<td class='no-link'>".escape($row['device_provisioned_date'])." - ".escape($row['device_provisioned_method'])." - <a href='http://".escape($row['device_provisioned_ip'])."' target='_blank'>".escape($row['device_provisioned_ip'])."</a>&nbsp;</td>\n";
+			echo "	<td class='no-link'><a title='".escape($row['device_provisioned_agent'])."' href='javascript:void(0)'>".escape($row['device_provisioned_date'])."</a> &nbsp; ".escape($device_provisioned_method)." &nbsp; <a href='".escape($device_provisioned_method)."://".escape($row['device_provisioned_ip'])."' target='_blank'>".escape($row['device_provisioned_ip'])."</a>&nbsp;</td>\n";
 			echo "	<td class='description overflow hide-sm-dn'>".escape($row['device_description'])."&nbsp;</td>\n";
 			if (permission_exists('device_edit') && $_SESSION['theme']['list_row_edit_button']['boolean'] == 'true') {
 				echo "	<td class='action-button'>";

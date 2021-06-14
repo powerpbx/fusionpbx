@@ -3,12 +3,13 @@
 	//application details
 		$apps[$x]['name'] = "Music on Hold";
 		$apps[$x]['uuid'] = "1dafe0f8-c08a-289b-0312-15baf4f20f81";
-		$apps[$x]['category'] = "Switch";;
+		$apps[$x]['category'] = "Switch";
 		$apps[$x]['subcategory'] = "";
 		$apps[$x]['version'] = "1.0";
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Add, Delete, or Play Music on hold files.";
+		$apps[$x]['description']['en-gb'] = "Add, Delete, or Play Music on hold files.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Dateien für die Wartemusik hinzufügen, löschen oder abspielen.";
 		$apps[$x]['description']['de-ch'] = "";

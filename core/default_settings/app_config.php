@@ -9,6 +9,7 @@
 		$apps[$x]['license'] = "Mozilla Public License 1.1";
 		$apps[$x]['url'] = "http://www.fusionpbx.com";
 		$apps[$x]['description']['en-us'] = "Default settings that apply to all domains.";
+		$apps[$x]['description']['en-gb'] = "Default settings that apply to all domains.";
 		$apps[$x]['description']['ar-eg'] = "";
 		$apps[$x]['description']['de-at'] = "Grundlegende Einstellungen die für alle Domänen gültig sind.";
 		$apps[$x]['description']['de-ch'] = "";
@@ -81,7 +82,7 @@
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "domain";
 		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "time_zone";
 		$apps[$x]['default_settings'][$y]['default_setting_name'] = "name";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "UTC";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
 		$y++;
@@ -220,6 +221,14 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = base64_encode(openssl_random_pseudo_bytes(32));
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Display a Reset Password link on the login box (requires smtp_host be defined).";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "a21a002c-c065-411c-ae56-3d33a09f64b4";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "login";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "password_reset_domain";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Set the domain to use in the Password Reset link sent via email.";
 		$y++;
 		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "962ac32c-74ce-4cce-b1d9-89f4d921493d";
 		$apps[$x]['default_settings'][$y]['default_setting_category'] = "login";
@@ -444,6 +453,22 @@
 		$apps[$x]['default_settings'][$y]['default_setting_value'] = "/var/cache/fusionpbx";
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Location for the file cache.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "31b60c5f-e501-4982-893b-b56ef4ef5b56";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "log";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "enabled";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "false";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Enable logging true or false.";
+		$y++;
+		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "81008738-aec1-4535-b451-29c25f213694";
+		$apps[$x]['default_settings'][$y]['default_setting_category'] = "log";
+		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "type";
+		$apps[$x]['default_settings'][$y]['default_setting_name'] = "text";
+		$apps[$x]['default_settings'][$y]['default_setting_value'] = "syslog";
+		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
+		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Options: syslog, file";
 
 	//schema details
 		$y=0;
@@ -486,7 +511,10 @@
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "default_setting_enabled";
-		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['pgsql'] = "boolean";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['sqlite'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['type']['mysql'] = "text";
+		$apps[$x]['db'][$y]['fields'][$z]['toggle'] = ['true','false'];
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "";
 		$z++;
 		$apps[$x]['db'][$y]['fields'][$z]['name'] = "default_setting_description";
@@ -538,7 +566,8 @@
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "numeric";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "The numerical code.";
 		$z++;
-		$apps[$x]['db'][$y]['fields'][$z]['name'] = "calling_code";
+		$apps[$x]['db'][$y]['fields'][$z]['name']['text'] = "country_code";
+		$apps[$x]['db'][$y]['fields'][$z]['name']['deprecated'] = "calling_code";
 		$apps[$x]['db'][$y]['fields'][$z]['type'] = "text";
 		$apps[$x]['db'][$y]['fields'][$z]['description']['en-us'] = "The calling code.";
 
