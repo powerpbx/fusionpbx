@@ -297,7 +297,6 @@ if ($db_type == "pgsql") {
 							$domains[] = $row;
 						}
 					}
-					$_SESSION['domains'][$row['domain_uuid']] = $row;
 				}
 				unset($result);
 			}

@@ -949,7 +949,6 @@
 						if (document.getElementById('checkbox_all'+(modifier !== undefined ? '_'+modifier : ''))) {
 							document.getElementById('checkbox_all'+(modifier !== undefined ? '_'+modifier : '')).checked = false;
 						}
-						echo "						<li class='nav-item'><a class='nav-link' href='".$mod_a_2."' ".$mod_a_3.">".($_SESSION['theme']['menu_sub_icons'] ? "<span class='fas fa-bar d-inline-block d-sm-none float-left' style='margin: 4px 10px 0 25px;'></span>" : null).escape($menu_sub['menu_language_title']).$menu_sub_icon."</a></li>\n";
 					}
 				}
 				document.getElementById('btn_delete').value = checkbox_checked ? '' : 'delete';

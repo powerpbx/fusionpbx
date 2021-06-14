@@ -2135,16 +2135,6 @@ class PHPMailer {
         $pattern = '\075\000-\011\013\014\016-\037\077\137\177-\377' . $pattern;
         break;
     }
-    
-    if (preg_match_all("/[{$pattern}]/", $encoded, $matches)) {
-      foreach (array_unique($matches[0]) as $char) {
-        $encoded = str_replace($char, '=' . sprintf('%02X', ord($char)), $encoded);
-      }
-    }
-    
-    //Replace every spaces to _ (more readable than =20)
-    return str_replace(' ', '_', $encoded);
-}
 
     if (preg_match_all("/[{$pattern}]/", $encoded, $matches)) {
       foreach (array_unique($matches[0]) as $char) {

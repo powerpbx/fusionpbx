@@ -187,35 +187,6 @@
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Options: default, dynamic";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "destination_fax";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$y++;
-		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "destination_destinations";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$apps[$x]['permissions'][$y]['groups'][] = "admin";
-		$y++;
-
-	//default settings
-		$y = 0;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "70d8538a-89ab-4db6-87b1-f5e447680283";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "limit";
-		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "destinations";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "numeric";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "3";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "false";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
-		$y++;
-		$apps[$x]['default_settings'][$y]['default_setting_uuid'] = "911412de-e0a6-49db-a3c8-65f05c9d847f";
-		$apps[$x]['default_settings'][$y]['default_setting_category'] = "destinations";
-		$apps[$x]['default_settings'][$y]['default_setting_subcategory'] = "dialplan_details";
-		$apps[$x]['default_settings'][$y]['default_setting_name'] = "boolean";
-		$apps[$x]['default_settings'][$y]['default_setting_value'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
-		$apps[$x]['default_settings'][$y]['default_setting_description'] = "";
-
-	//cache details
-		$apps[$x]['cache']['key'] = "dialplan.\${destination_context}";
 
 	//cache details
 		$apps[$x]['cache']['key'] = "dialplan.\${destination_context}";

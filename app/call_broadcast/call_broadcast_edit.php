@@ -43,10 +43,6 @@
 	$language = new text;
 	$text = $language->get();
 
-//add multi-lingual support
-	$language = new text;
-	$text = $language->get();
-
 //set the action with add or update
 	if (is_uuid($_REQUEST["id"])) {
 		$action = "update";
@@ -511,21 +507,6 @@ if (count($_POST) > 0 && strlen($_POST["persistformvar"]) == 0) {
 	echo "</td>\n";
 	echo "</tr>\n";
 		
-	echo "<tr>\n";
-	echo "<td class='vncell' valign='top' align='left' nowrap='nowrap'>\n";
-	echo "    ".$text['label-avmd']."\n";
-	echo "</td>\n";
-	echo "<td class='vtable' align='left'>\n";
-	echo "    <select class='formfld' name='broadcast_avmd'>\n";
-	echo "    	<option value='false' ".(($broadcast_avmd == "false") ? "selected='selected'" : null).">".$text['option-false']."</option>\n";
-	echo "    	<option value='true' ".(($broadcast_avmd == "true") ? "selected='selected'" : null).">".$text['option-true']."</option>\n";
-	echo "    </select>\n";
-	echo "<br />\n";
-	echo "<br />\n";
-	echo $text['description-avmd']."\n";
-	echo "</td>\n";
-	echo "</tr>\n";
-
 	echo "<tr>\n";
 	echo "<td class='vncell' valign='top' align='left' nowrap>\n";
 	echo "	".$text['label-description']."\n";

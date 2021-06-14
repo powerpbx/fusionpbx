@@ -110,13 +110,6 @@
 		$apps[$x]['default_settings'][$y]['default_setting_enabled'] = "true";
 		$apps[$x]['default_settings'][$y]['default_setting_description'] = "Options: simultaneous, enterprise ";
 		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "follow_me_prompt";
-		$apps[$x]['permissions'][$y]['groups'][] = "superadmin";
-		$apps[$x]['permissions'][$y]['groups'][] = "admin";
-		$apps[$x]['permissions'][$y]['groups'][] = "user";
-		$apps[$x]['permissions'][$y]['groups'][] = "agent";
-		$y++;
-		$apps[$x]['permissions'][$y]['name'] = "follow_me_caller_id";
 
 	//schema details
 		$y=0;

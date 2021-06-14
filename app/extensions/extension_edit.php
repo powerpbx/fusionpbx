@@ -197,11 +197,6 @@
 					$device_uuids[$d] = is_uuid($device_uuid) ? $device_uuid : uuid();
 				}
 			}
-		}
-	}
-
-//get the http values and set them as php variables
-	if (count($_POST) > 0) {
 
 	}
 
@@ -881,25 +876,6 @@
 		$emergency_destinations = $database->select($sql, $parameters, 'all');
 		unset($sql, $parameters);
 	}
-	$sql .= "and user_enabled = 'true' ";
-	$sql .= "order by username asc ";
-	$parameters['domain_uuid'] = $domain_uuid;
-	$database = new database;
-	$users = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters, $assigned_user_uuids, $assigned_user_uuid);
-
-//get the destinations
-	$sql = "select * from v_destinations ";
-	$sql .= "where domain_uuid = :domain_uuid ";
-	$sql .= "and destination_type = 'inbound' ";
-	$sql .= "order by destination_number asc ";
-	$parameters['domain_uuid'] = $domain_uuid;
-	$database = new database;
-	$destinations = $database->select($sql, $parameters, 'all');
-	unset($sql, $parameters);
-
-//change toll allow delimiter
-	$toll_allow = str_replace(':',',', $toll_allow);
 
 //change toll allow delimiter
 	$toll_allow = str_replace(':',',', $toll_allow);

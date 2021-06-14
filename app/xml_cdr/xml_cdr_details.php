@@ -42,10 +42,6 @@
 	$language = new text;
 	$text = $language->get();
 
-//add multi-lingual support
-	$language = new text;
-	$text = $language->get();
-
 //get the http values and set them to a variable
 	if (is_uuid($_REQUEST["id"])) {
 		$uuid = $_REQUEST["id"];

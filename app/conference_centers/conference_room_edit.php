@@ -38,14 +38,6 @@
 		echo "access denied";
 		exit;
 	}
-	else {
-		echo "access denied";
-		exit;
-	}
-
-//add multi-lingual support
-	$language = new text;
-	$text = $language->get();
 
 //add multi-lingual support
 	$language = new text;

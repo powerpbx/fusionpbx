@@ -611,9 +611,6 @@
 	echo "</tr>\n";
 	*/
 
-	sound_select_list($call_flow_sound, 'call_flow_sound', 'call_flow_sound', true);
-
-	/*
 	echo "<tr>\n";
 	echo "<td class='vncellreq' valign='top' align='left' nowrap='nowrap'>\n";
 	echo "	".$text['label-call_flow_destination']."\n";

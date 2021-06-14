@@ -344,15 +344,6 @@
 					echo $content;
 					exit;
 				}
-				unset($password);
-			}
-			if (!$authorized) {
-				header('HTTP/1.0 401 Unauthorized');
-				header("Content-Type: text/html");
-				$content = 'Unauthorized '.$__line__;
-				header("Content-Length: ".strval(strlen($content)));
-				echo $content;
-				exit;
 			}
 
 		//generate the valid response
@@ -489,7 +480,5 @@
 	if (file_exists($_SERVER["PROJECT_ROOT"]."/app/device_logs/app_config.php")){
 		require_once "app/device_logs/resources/device_logs.php";
 	}
-	echo $file_contents;
-	closelog();
 
 ?>
